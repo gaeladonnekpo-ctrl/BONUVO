@@ -1,0 +1,63 @@
+{
+  "name": "bonuvo",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:unit": "vitest run tests/unit",
+    "test:e2e": "playwright test",
+    "db:generate": "node --conditions=react-server ./node_modules/drizzle-kit/bin.cjs generate",
+    "db:migrate": "tsx --conditions=react-server scripts/migrate.ts",
+    "env:check": "tsx --conditions=react-server scripts/check-env.ts",
+    "prepare": "husky"
+  },
+  "dependencies": {
+    "drizzle-orm": "0.45.4",
+    "next": "16.4.6",
+    "postgres": "4.1.1",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "server-only": "0.0.1",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.65.1",
+    "@tailwindcss/postcss": "4.3.5",
+    "@types/node": "26.6.6",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.3.0",
+    "dotenv": "18.0.10",
+    "drizzle-kit": "0.31.11",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.4.6",
+    "eslint-config-prettier": "10.1.8",
+    "husky": "9.1.7",
+    "lint-staged": "17.6.1",
+    "prettier": "3.10.1",
+    "tailwindcss": "4.3.5",
+    "tsx": "4.23.15",
+    "typescript": "6.0.3",
+    "vite": "8.3.8",
+    "vitest": "5.1.0"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx,mjs,cjs}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,css,yml,yaml}": [
+      "prettier --write"
+    ]
+  }
+}
