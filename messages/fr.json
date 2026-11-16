@@ -245,5 +245,88 @@
     "boundaryTitle": "Une erreur inattendue est survenue",
     "boundaryDescription": "Le rendu de cette page a rencontré un incident technique. Aucune donnée sensible n'a été exposée.",
     "retryAction": "Recharger la vue"
+  },
+  "auth": {
+    "fields": {
+      "email": "Adresse e-mail",
+      "emailPlaceholder": "vous@exemple.com",
+      "password": "Mot de passe",
+      "newPassword": "Nouveau mot de passe",
+      "displayName": "Nom affiché",
+      "displayNamePlaceholder": "Votre nom ou pseudo",
+      "showPassword": "Afficher le mot de passe",
+      "hidePassword": "Masquer le mot de passe",
+      "passwordHint": "12 caractères minimum, avec minuscule, majuscule et chiffre.",
+      "passwordStrengthOk": "Critères de robustesse respectés (12+ car.).",
+      "otpLegend": "Code TOTP à 6 chiffres",
+      "otpDigitLabel": "Chiffre {index} sur 6",
+      "consentAnalytics": "J'accepte la mesure d'audience anonymisée (optionnel)",
+      "consentNotifications": "J'accepte les alertes d'offres vérifiées (optionnel)",
+      "consentMarketing": "J'accepte les communications par e-mail (optionnel)"
+    },
+    "signIn": {
+      "title": "Connexion à BONUVO",
+      "description": "Accédez à votre espace membre ou back-office sécurisé.",
+      "submit": "Se connecter",
+      "submitting": "Connexion...",
+      "forgotLink": "Mot de passe oublié ?",
+      "noAccount": "Pas encore de compte ?",
+      "signUpLink": "Créer un compte"
+    },
+    "signUp": {
+      "title": "Créer un compte BONUVO",
+      "description": "L'inscription est facultative pour consulter les offres. Vos données restent protégées.",
+      "submit": "Créer mon compte",
+      "submitting": "Création du compte...",
+      "hasAccount": "Déjà inscrit ?",
+      "signInLink": "Se connecter"
+    },
+    "forgot": {
+      "title": "Mot de passe oublié",
+      "description": "Saisissez votre adresse e-mail pour recevoir un lien de réinitialisation à usage unique.",
+      "submit": "Envoyer le lien",
+      "submitting": "Envoi en cours...",
+      "backToSignIn": "Retour à la connexion"
+    },
+    "reset": {
+      "title": "Réinitialiser le mot de passe",
+      "description": "Choisissez un nouveau mot de passe d'au moins 12 caractères. Toutes vos sessions actives seront déconnectées.",
+      "submit": "Valider le nouveau mot de passe",
+      "submitting": "Mise à jour...",
+      "backToSignIn": "Retour à la connexion"
+    },
+    "verification": {
+      "title": "Vérification d'adresse e-mail",
+      "description": "Votre adresse e-mail doit être confirmée avant d'accéder à l'espace membre ou à l'administration.",
+      "invalidToken": "Ce lien de vérification est invalide ou expiré. Demandez un nouvel envoi ci-dessous.",
+      "submit": "Renvoyer l'e-mail de vérification",
+      "submitting": "Envoi...",
+      "backToSignIn": "Aller à la connexion"
+    },
+    "totp": {
+      "title": "Double authentification (TOTP)",
+      "description": "Un second facteur TOTP valide est obligatoire pour accéder aux fonctions d'administration.",
+      "enrollButton": "Configurer une application TOTP",
+      "enrolling": "Initialisation...",
+      "qrAlt": "QR code de configuration TOTP BONUVO",
+      "secretLabel": "Clé manuelle :",
+      "submit": "Valider le code TOTP",
+      "submitting": "Vérification...",
+      "noFactor": "Aucun facteur TOTP vérifié trouvé pour ce compte. Initialisez-en un ci-dessous."
+    },
+    "protected": {
+      "memberNavAria": "Navigation espace membre",
+      "memberNavOverview": "Aperçu du compte",
+      "memberTitle": "Espace membre BONUVO",
+      "memberSubtitle": "Session serveur vérifiée (Phase 2). Les préférences et historiques détaillés seront branchés en Phase 8.",
+      "adminTitle": "Administration BONUVO",
+      "adminSubtitle": "Accès vérifié par rôle RBAC et double authentification TOTP (AAL2).",
+      "sessionCardTitle": "Session active",
+      "identityLabel": "Identité",
+      "rolesLabel": "Rôles",
+      "assuranceLabel": "Assurance MFA",
+      "countryLabel": "Pays par défaut",
+      "signOut": "Se déconnecter"
+    }
   }
 }

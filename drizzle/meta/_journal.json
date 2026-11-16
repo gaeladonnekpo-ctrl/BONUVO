@@ -8,6 +8,27 @@
       "when": 1794783715866,
       "tag": "0000_init",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1794792545909,
+      "tag": "0001_lucky_harpoon",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794792557448,
+      "tag": "0002_phase2_rls_and_security",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1794793716184,
+      "tag": "0003_fix_actor_id_helper",
+      "breakpoints": true
     }
   ]
 }

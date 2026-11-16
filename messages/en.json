@@ -245,5 +245,88 @@
     "boundaryTitle": "An unexpected error occurred",
     "boundaryDescription": "Rendering this view failed unexpectedly. No sensitive details were exposed.",
     "retryAction": "Reload view"
+  },
+  "auth": {
+    "fields": {
+      "email": "Email address",
+      "emailPlaceholder": "you@example.com",
+      "password": "Password",
+      "newPassword": "New password",
+      "displayName": "Display name",
+      "displayNamePlaceholder": "Your name or handle",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
+      "passwordHint": "Minimum 12 characters, including lowercase, uppercase, and a digit.",
+      "passwordStrengthOk": "Strength requirements met (12+ chars).",
+      "otpLegend": "6-digit TOTP code",
+      "otpDigitLabel": "Digit {index} of 6",
+      "consentAnalytics": "I accept anonymized audience analytics (optional)",
+      "consentNotifications": "I accept verified offer alerts (optional)",
+      "consentMarketing": "I accept marketing emails (optional)"
+    },
+    "signIn": {
+      "title": "Sign in to BONUVO",
+      "description": "Access your member space or secured back-office.",
+      "submit": "Sign in",
+      "submitting": "Signing in...",
+      "forgotLink": "Forgot your password?",
+      "noAccount": "No account yet?",
+      "signUpLink": "Create an account"
+    },
+    "signUp": {
+      "title": "Create a BONUVO account",
+      "description": "Signing up is optional to browse offers. Your data stays protected.",
+      "submit": "Create account",
+      "submitting": "Creating account...",
+      "hasAccount": "Already registered?",
+      "signInLink": "Sign in"
+    },
+    "forgot": {
+      "title": "Forgot password",
+      "description": "Enter your email address to receive a single-use reset link.",
+      "submit": "Send reset link",
+      "submitting": "Sending...",
+      "backToSignIn": "Back to sign in"
+    },
+    "reset": {
+      "title": "Reset password",
+      "description": "Choose a new password of at least 12 characters. All active sessions will be signed out.",
+      "submit": "Update password",
+      "submitting": "Updating...",
+      "backToSignIn": "Back to sign in"
+    },
+    "verification": {
+      "title": "Email verification",
+      "description": "Your email address must be confirmed before accessing the member area or back-office.",
+      "invalidToken": "This verification link is invalid or expired. Request a new email below.",
+      "submit": "Resend verification email",
+      "submitting": "Sending...",
+      "backToSignIn": "Go to sign in"
+    },
+    "totp": {
+      "title": "Two-factor authentication (TOTP)",
+      "description": "A verified TOTP second factor is mandatory to access administration routes.",
+      "enrollButton": "Set up a TOTP authenticator",
+      "enrolling": "Initializing...",
+      "qrAlt": "BONUVO TOTP enrollment QR code",
+      "secretLabel": "Manual secret:",
+      "submit": "Verify TOTP code",
+      "submitting": "Verifying...",
+      "noFactor": "No verified TOTP factor found on this account. Enroll one below."
+    },
+    "protected": {
+      "memberNavAria": "Member account navigation",
+      "memberNavOverview": "Account overview",
+      "memberTitle": "BONUVO Member Space",
+      "memberSubtitle": "Verified server session (Phase 2). Full preferences and history arrive in Phase 8.",
+      "adminTitle": "BONUVO Administration",
+      "adminSubtitle": "Verified via RBAC role permissions and TOTP multi-factor assurance (AAL2).",
+      "sessionCardTitle": "Active session",
+      "identityLabel": "Identity",
+      "rolesLabel": "Roles",
+      "assuranceLabel": "MFA assurance",
+      "countryLabel": "Default country",
+      "signOut": "Sign out"
+    }
   }
 }

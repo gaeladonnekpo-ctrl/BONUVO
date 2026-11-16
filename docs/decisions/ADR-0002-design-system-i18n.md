@@ -1,6 +1,6 @@
 # ADR-0002 : Design system, typographie, logo officiel et internationalisation (Phase 1)
 
-- **Statut** : Proposé pour validation humaine en fin de Phase 1
+- **Statut** : Validé par l'utilisateur avant démarrage de la Phase 2 (2026-11-16)
 - **Date** : 2026-11-16
 - **Contexte** : Implémentation de la Phase 1 décrite dans [Plan.md](../../Plan.md) et intégration de la maquette de logo officielle `Choix.dc.html`.
 
