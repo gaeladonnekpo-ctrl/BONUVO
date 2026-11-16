@@ -1,0 +1,249 @@
+{
+  "brand": {
+    "name": "BONUVO",
+    "tagline": "SMART OFFERS. BETTER CHOICES.",
+    "fullSignature": "BONUVO: SMART OFFERS. BETTER CHOICES.",
+    "homeAriaLabel": "Accueil BONUVO"
+  },
+  "nav": {
+    "offers": "Offres",
+    "bookmakers": "Bookmakers",
+    "promoCodes": "Codes promo",
+    "predictions": "Pronostics",
+    "community": "Communauté",
+    "openMenu": "Ouvrir le menu de navigation",
+    "closeMenu": "Fermer le menu",
+    "menuTitle": "Navigation BONUVO",
+    "skipToContent": "Aller au contenu principal"
+  },
+  "controls": {
+    "countryLabel": "Pays affiché",
+    "countryUpdated": "Pays mis à jour : {country}",
+    "localeLabel": "Langue",
+    "switchToFr": "Français",
+    "switchToEn": "English",
+    "themeLabel": "Thème d'affichage",
+    "switchToLight": "Passer en thème clair",
+    "switchToDark": "Passer en thème sombre",
+    "darkMode": "Sombre",
+    "lightMode": "Clair"
+  },
+  "continents": {
+    "global": "International",
+    "africa": "Afrique",
+    "europe": "Europe",
+    "americas": "Amériques",
+    "asia": "Asie",
+    "oceania": "Océanie"
+  },
+  "countries": {
+    "GLOBAL": "Tous pays",
+    "BJ": "Bénin",
+    "CI": "Côte d'Ivoire",
+    "SN": "Sénégal",
+    "CM": "Cameroun",
+    "CD": "RD Congo",
+    "MA": "Maroc",
+    "NG": "Nigeria",
+    "ZA": "Afrique du Sud",
+    "FR": "France",
+    "BE": "Belgique",
+    "CH": "Suisse",
+    "GB": "Royaume-Uni",
+    "ES": "Espagne",
+    "CA": "Canada",
+    "BR": "Brésil",
+    "MX": "Mexique",
+    "IN": "Inde",
+    "AU": "Australie"
+  },
+  "home": {
+    "eyebrow": "Design system et architecture éditoriale — Phase 1",
+    "heroTitle": "Comparer les bookmakers avec des faits vérifiables.",
+    "heroDescription": "BONUVO centralise les bonus, codes promo vérifiés, licences par pays et analyses football sans promesse de gain ni données inventées.",
+    "disclosureBanner": "Transparence : certaines redirections sortantes peuvent générer une commission d'affiliation lorsque le catalogue partenaire sera activé (18+).",
+    "catalogEmptyTitle": "Catalogue d'offres en préparation",
+    "catalogEmptyDescription": "Aucune offre de bookmaker n'est affichée tant que la saisie vérifiée en base de données (Phase 3) et l'éligibilité par pays ne sont pas activées.",
+    "catalogEmptyAction": "Consulter notre méthodologie",
+    "partnersEmptyTitle": "Grille partenaires en attente de configuration",
+    "partnersEmptyDescription": "Les marques retenues (1xBet, Melbet, 888starz, Megapari, Linebet, Winwinbet, 1win, Paripesa) apparaîtront ici dès validation de leurs fiches et licences.",
+    "trustSectionTitle": "Engagements et pages de confiance",
+    "trustSectionDescription": "Chaque règle de notation, lien d'affiliation et mesure de jeu responsable est publiée avant même l'ouverture du catalogue.",
+    "readMore": "Lire la page"
+  },
+  "states": {
+    "loadingTitle": "Chargement en cours",
+    "loadingDescription": "Préparation des données vérifiées...",
+    "emptyDefaultTitle": "Aucune donnée disponible",
+    "emptyDefaultDescription": "Aucun élément ne correspond actuellement à votre sélection.",
+    "errorDefaultTitle": "Impossible de charger cet espace",
+    "errorDefaultDescription": "Une erreur technique empêche l'affichage des informations. Veuillez réessayer.",
+    "retry": "Réessayer"
+  },
+  "offerCard": {
+    "rankLabel": "Rang #{rank}",
+    "badgeRecommended": "Recommandé",
+    "badgeExclusive": "Exclusif",
+    "badgeNew": "Nouveau",
+    "badgeVerified": "Vérifié",
+    "ratingOutOf": "{score} / {max}",
+    "ratingUnavailable": "Note en attente de grille",
+    "promoLabel": "Code promo",
+    "validOn": "Valable sur {target}",
+    "copyCode": "Copier",
+    "copiedCode": "Copié",
+    "copyAnnouncement": "Code promo {code} copié dans le presse-papiers.",
+    "copyFailed": "Impossible de copier automatiquement le code.",
+    "ctaLabel": "Voir l'offre chez {bookmaker}",
+    "ctaUnavailable": "Lien indisponible",
+    "rolloverLabel": "Conditions de mise",
+    "paymentsLabel": "Paiements",
+    "strengthsLabel": "Points forts",
+    "weaknessLabel": "Point d'attention",
+    "verifiedOn": "Vérifié le {date}",
+    "unverifiedDate": "Date de vérification non renseignée",
+    "licenseLabel": "Licence : {license}",
+    "termsTrigger": "Conditions générales",
+    "termsDialogTitle": "Conditions d'offre — {bookmaker}",
+    "termsDialogClose": "Fermer",
+    "adultNotice": "18+ Jeu responsable",
+    "emptyTitle": "Offre non disponible",
+    "emptyDescription": "Aucune offre active n'est éligible pour le pays sélectionné.",
+    "errorTitle": "Carte d'offre indisponible",
+    "errorDescription": "Les données de cette offre n'ont pas pu être vérifiées."
+  },
+  "communityFab": {
+    "groupLabel": "Canaux communautaires",
+    "telegram": "Rejoindre Telegram",
+    "whatsapp": "Rejoindre WhatsApp",
+    "unconfigured": "Les liens communautaires officiels seront activés en Phase 8."
+  },
+  "trustPages": {
+    "methodology": {
+      "nav": "Méthodologie",
+      "title": "Méthodologie de notation et de classement",
+      "lead": "Aucune note ni aucun classement sur BONUVO n'est arbitraire : chaque bookmaker est évalué selon une grille publiée, et chaque date de vérification correspond à un contrôle réel.",
+      "sections": [
+        {
+          "title": "1. Règle de tri des classements",
+          "body": "Les offres éligibles pour votre pays sont triées d'abord par priorité éditoriale par pays, puis par note vérifiée, puis par date de dernière vérification. Aucun opérateur ne peut payer pour falsifier sa note technique."
+        },
+        {
+          "title": "2. Grille d'évaluation transparente",
+          "body": "La note repose sur des critères pondérés : transparence des conditions de bonus (rollover, cote minimale, délai), méthodes de paiement disponibles dans le pays, qualité du support client, stabilité technique mobile et présence d'une licence valide."
+        },
+        {
+          "title": "3. Fraîcheur et interdiction des fausses mentions",
+          "body": "La mention « Vérifié aujourd'hui » ne s'affiche que si l'horodatage réel de contrôle date du jour même. En l'absence de contrôle récent, BONUVO affiche la date réelle ou signale que la fiche attend une relecture."
+        },
+        {
+          "title": "4. Pronostics football basés sur des données",
+          "body": "Les probabilités affichées dans le futur module BONUVO AI sont calculées par un modèle déterministe versionné, verrouillé avant le coup d'envoi et réglé sans modification a posteriori, pertes comprises."
+        }
+      ]
+    },
+    "affiliation": {
+      "nav": "Mention d'affiliation",
+      "title": "Transparence et fonctionnement de l'affiliation",
+      "lead": "BONUVO est un média indépendant de comparaison. Nos services restent gratuits pour les visiteurs grâce aux partenariats d'affiliation conclus avec des opérateurs licenciés.",
+      "sections": [
+        {
+          "title": "1. Comment BONUVO est rémunéré",
+          "body": "Lorsque vous utilisez un lien sortant ou un code promo vers un bookmaker partenaire, BONUVO peut percevoir une commission sans aucun surcoût pour vous."
+        },
+        {
+          "title": "2. Indépendance éditoriale",
+          "body": "Les liens sponsorisés portent systématiquement les attributs rel=\"sponsored nofollow noopener\" et restent clairement signalés. Chaque fiche affiche également au moins un point d'attention objectif lorsque cela s'applique."
+        },
+        {
+          "title": "3. Séparation des faits mesurés",
+          "body": "Un clic sortant est comptabilisé distinctement d'une inscription, d'un premier dépôt ou d'une commission confirmée par un partenaire via postback vérifié."
+        }
+      ]
+    },
+    "responsible": {
+      "nav": "Jeu responsable (18+)",
+      "title": "Jeu responsable et prévention (18+)",
+      "lead": "Les paris sportifs comportent des risques financiers et de dépendance. BONUVO s'adresse exclusivement aux personnes majeures (18 ans et plus, ou âge légal local).",
+      "sections": [
+        {
+          "title": "1. Aucune promesse de gain",
+          "body": "Aucune cote, aucun code promo et aucun modèle statistique ne garantit un profit. Ne misez jamais de l'argent dont vous avez besoin pour vos dépenses essentielles."
+        },
+        {
+          "title": "2. Bonnes pratiques de maîtrise",
+          "body": "Fixez un budget mensuel strict avant de jouer, ne tentez jamais de vous refaire après une perte, et utilisez les outils d'auto-limitation ou d'auto-exclusion proposés par les opérateurs agréés."
+        },
+        {
+          "title": "3. Besoin d'aide ?",
+          "body": "Si le jeu devient une source de stress, d'isolement ou de difficulté financière, contactez les services d'aide spécialisés de votre pays (par exemple Joueurs Info Service au 09 74 75 13 13 en France, ou l'organisme national de santé et d'addictologie de votre territoire)."
+        }
+      ]
+    },
+    "privacy": {
+      "nav": "Confidentialité",
+      "title": "Politique de confidentialité et protection des données",
+      "lead": "BONUVO applique le principe de minimisation des données : toutes les offres publiques restent consultables sans créer de compte.",
+      "sections": [
+        {
+          "title": "1. Préférences locales strictement utiles",
+          "body": "Le choix de pays et le thème clair/sombre sont mémorisés uniquement via des cookies de préférence techniques sans traçage publicitaire."
+        },
+        {
+          "title": "2. Mesure technique sans suivi invasif",
+          "body": "Les futurs journaux techniques hachent les adresses IP avant stockage afin de détecter les abus et respecter le principe de confidentialité dès la conception."
+        },
+        {
+          "title": "3. Droits des futurs membres",
+          "body": "À l'ouverture de l'espace membre (Phase 2 et Phase 8), chaque utilisateur pourra exporter ses données, retirer son consentement en un clic ou demander la suppression complète de son compte."
+        }
+      ]
+    }
+  },
+  "footer": {
+    "navigationHeading": "Explorer",
+    "trustHeading": "Confiance & Conformité",
+    "adultBadge": "18+ · Jouer comporte des risques",
+    "rights": "© {year} BONUVO. Aucun pari n'est collecté sur ce site.",
+    "designSystemLink": "Design System (Dev)"
+  },
+  "admin": {
+    "badge": "Administration",
+    "searchPlaceholder": "Rechercher dans le back-office...",
+    "searchLabel": "Rechercher dans le back-office",
+    "sidebarToggle": "Réduire ou étendre le menu latéral",
+    "profileRole": "Mode gabarit (Phase 1)",
+    "nav": {
+      "dashboard": "Tableau de bord",
+      "catalog": "Catalogue",
+      "affiliation": "Affiliation",
+      "predictions": "Pronostics",
+      "contents": "Contenus",
+      "users": "Utilisateurs",
+      "stats": "Statistiques",
+      "audit": "Journal",
+      "settings": "Paramètres",
+      "designSystem": "Design System (Dev)"
+    }
+  },
+  "designShowcase": {
+    "devBanner": "Page interne réservée au développement — bloquée en production.",
+    "sampleBadge": "Exemple de développement",
+    "title": "Design System & Coques BONUVO",
+    "subtitle": "Inventaire complet des jetons, composants de base, états (chargement, contenu, vide, erreur) et coques d'interface.",
+    "statesHeading": "Composants métier — 4 états obligatoires",
+    "primitivesHeading": "Primitives UI & Feedback",
+    "feedbackHeading": "États génériques & Toast",
+    "shellsHeading": "Navigation & Brand",
+    "triggerToast": "Déclencher un Toast de test"
+  },
+  "errors": {
+    "notFoundCode": "404",
+    "notFoundTitle": "Page introuvable",
+    "notFoundDescription": "La ressource demandée n'existe pas, a expiré ou n'est pas accessible dans cet environnement.",
+    "backHome": "Retour à l'accueil",
+    "boundaryTitle": "Une erreur inattendue est survenue",
+    "boundaryDescription": "Le rendu de cette page a rencontré un incident technique. Aucune donnée sensible n'a été exposée.",
+    "retryAction": "Recharger la vue"
+  }
+}

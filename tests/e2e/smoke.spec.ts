@@ -10,10 +10,13 @@ test.describe("Phase 0 — Smoke tests", () => {
     await expect(page.getByText("BONUVO: SMART OFFERS. BETTER CHOICES.")).toBeVisible();
   });
 
-  test("la racine / redirige vers /fr avec un rendu 200", async ({ page }) => {
+  test("la racine / redirige vers /fr avec un rendu 200 pour la locale fr", async ({ browser }) => {
+    const context = await browser.newContext({ locale: "fr-FR" });
+    const page = await context.newPage();
     const response = await page.goto("/");
     expect(response?.status()).toBe(200);
     await expect(page).toHaveURL(/\/fr$/);
+    await context.close();
   });
 
   test("la route /api/health répond sans exposer de données sensibles", async ({ request }) => {

@@ -1,0 +1,249 @@
+{
+  "brand": {
+    "name": "BONUVO",
+    "tagline": "SMART OFFERS. BETTER CHOICES.",
+    "fullSignature": "BONUVO: SMART OFFERS. BETTER CHOICES.",
+    "homeAriaLabel": "BONUVO home"
+  },
+  "nav": {
+    "offers": "Offers",
+    "bookmakers": "Bookmakers",
+    "promoCodes": "Promo Codes",
+    "predictions": "Predictions",
+    "community": "Community",
+    "openMenu": "Open navigation menu",
+    "closeMenu": "Close menu",
+    "menuTitle": "BONUVO Navigation",
+    "skipToContent": "Skip to main content"
+  },
+  "controls": {
+    "countryLabel": "Selected country",
+    "countryUpdated": "Country updated: {country}",
+    "localeLabel": "Language",
+    "switchToFr": "Français",
+    "switchToEn": "English",
+    "themeLabel": "Display theme",
+    "switchToLight": "Switch to light theme",
+    "switchToDark": "Switch to dark theme",
+    "darkMode": "Dark",
+    "lightMode": "Light"
+  },
+  "continents": {
+    "global": "International",
+    "africa": "Africa",
+    "europe": "Europe",
+    "americas": "Americas",
+    "asia": "Asia",
+    "oceania": "Oceania"
+  },
+  "countries": {
+    "GLOBAL": "All countries",
+    "BJ": "Benin",
+    "CI": "Côte d'Ivoire",
+    "SN": "Senegal",
+    "CM": "Cameroon",
+    "CD": "DR Congo",
+    "MA": "Morocco",
+    "NG": "Nigeria",
+    "ZA": "South Africa",
+    "FR": "France",
+    "BE": "Belgium",
+    "CH": "Switzerland",
+    "GB": "United Kingdom",
+    "ES": "Spain",
+    "CA": "Canada",
+    "BR": "Brazil",
+    "MX": "Mexico",
+    "IN": "India",
+    "AU": "Australia"
+  },
+  "home": {
+    "eyebrow": "Design system & UI shells — Phase 1",
+    "heroTitle": "Compare bookmakers with verifiable facts.",
+    "heroDescription": "BONUVO brings together country-eligible bonuses, verified promo codes, local licensing, and data-driven football predictions without fabricated claims.",
+    "disclosureBanner": "Transparency: outbound affiliate links may earn BONUVO a commission once the partner catalog is enabled (18+).",
+    "catalogEmptyTitle": "Offer catalog in preparation",
+    "catalogEmptyDescription": "No bookmaker offer is listed yet until verified database records (Phase 3) and per-country eligibility rules are active.",
+    "catalogEmptyAction": "Read our methodology",
+    "partnersEmptyTitle": "Partner grid awaiting verified records",
+    "partnersEmptyDescription": "Target operators (1xBet, Melbet, 888starz, Megapari, Linebet, Winwinbet, 1win, Paripesa) will appear once their profiles and licenses are configured.",
+    "trustSectionTitle": "Trust & compliance commitments",
+    "trustSectionDescription": "Every scoring rule, affiliate disclosure, and responsible gambling measure is published before any offer goes live.",
+    "readMore": "Open page"
+  },
+  "states": {
+    "loadingTitle": "Loading",
+    "loadingDescription": "Preparing verified data...",
+    "emptyDefaultTitle": "No data available",
+    "emptyDefaultDescription": "No items currently match your selection.",
+    "errorDefaultTitle": "Unable to load this section",
+    "errorDefaultDescription": "A technical error prevented this content from rendering. Please try again.",
+    "retry": "Try again"
+  },
+  "offerCard": {
+    "rankLabel": "Rank #{rank}",
+    "badgeRecommended": "Recommended",
+    "badgeExclusive": "Exclusive",
+    "badgeNew": "New",
+    "badgeVerified": "Verified",
+    "ratingOutOf": "{score} / {max}",
+    "ratingUnavailable": "Score pending rubric",
+    "promoLabel": "Promo code",
+    "validOn": "Valid on {target}",
+    "copyCode": "Copy",
+    "copiedCode": "Copied",
+    "copyAnnouncement": "Promo code {code} copied to clipboard.",
+    "copyFailed": "Automatic copy failed.",
+    "ctaLabel": "Claim on {bookmaker}",
+    "ctaUnavailable": "Link unavailable",
+    "rolloverLabel": "Wagering terms",
+    "paymentsLabel": "Payments",
+    "strengthsLabel": "Highlights",
+    "weaknessLabel": "Consideration",
+    "verifiedOn": "Verified on {date}",
+    "unverifiedDate": "Verification date unavailable",
+    "licenseLabel": "License: {license}",
+    "termsTrigger": "Terms & conditions",
+    "termsDialogTitle": "Offer terms — {bookmaker}",
+    "termsDialogClose": "Close",
+    "adultNotice": "18+ Gamble responsibly",
+    "emptyTitle": "Offer unavailable",
+    "emptyDescription": "No active offer is eligible in the selected country.",
+    "errorTitle": "Offer card unavailable",
+    "errorDescription": "This offer could not be verified for display."
+  },
+  "communityFab": {
+    "groupLabel": "Community channels",
+    "telegram": "Join Telegram",
+    "whatsapp": "Join WhatsApp",
+    "unconfigured": "Official community channel links will be connected in Phase 8."
+  },
+  "trustPages": {
+    "methodology": {
+      "nav": "Methodology",
+      "title": "Scoring & ranking methodology",
+      "lead": "No score or ranking on BONUVO is arbitrary: every operator is rated through a published rubric, and every verification date reflects a real check.",
+      "sections": [
+        {
+          "title": "1. Ranking order rule",
+          "body": "Eligible offers for your country are ordered first by editorial country priority, then by verified score, then by verification date. No operator can pay to inflate its rubric score."
+        },
+        {
+          "title": "2. Transparent evaluation criteria",
+          "body": "Scores reflect weighted criteria: bonus terms clarity (rollover, minimum odds, expiry window), local payment availability, customer support quality, mobile stability, and valid licensing."
+        },
+        {
+          "title": "3. Freshness and zero fabricated badges",
+          "body": "\"Verified today\" is only shown when the stored verification timestamp matches the current day. Otherwise BONUVO shows the actual verification date or omits the claim."
+        },
+        {
+          "title": "4. Data-driven football predictions",
+          "body": "Probabilities in the upcoming BONUVO AI module are generated by a versioned deterministic model, locked prior to kickoff, and settled transparently including losses."
+        }
+      ]
+    },
+    "affiliation": {
+      "nav": "Affiliate disclosure",
+      "title": "Transparency & affiliate disclosure",
+      "lead": "BONUVO is an independent comparison media platform. Access remains free for visitors thanks to affiliate partnerships with licensed operators.",
+      "sections": [
+        {
+          "title": "1. How BONUVO is funded",
+          "body": "When you follow an outbound link or use a partner promo code, BONUVO may receive a commission at no extra cost to you."
+        },
+        {
+          "title": "2. Editorial independence",
+          "body": "Sponsored outbound links carry rel=\"sponsored nofollow noopener\" and clear disclosure labels. Cards also highlight an objective limitation whenever relevant."
+        },
+        {
+          "title": "3. Distinct measured facts",
+          "body": "Outbound clicks are tracked separately from partner registrations, first deposits, and confirmed postback commissions."
+        }
+      ]
+    },
+    "responsible": {
+      "nav": "Responsible gambling (18+)",
+      "title": "Responsible gambling & 18+ notice",
+      "lead": "Sports betting involves financial risk and potential addiction. BONUVO is strictly intended for adults aged 18 or older (or local legal age).",
+      "sections": [
+        {
+          "title": "1. No guaranteed winnings",
+          "body": "No odds, promo code, or statistical model guarantees profit. Never wager money needed for essential living expenses."
+        },
+        {
+          "title": "2. Healthy betting habits",
+          "body": "Set a strict monthly limit before wagering, avoid chasing losses, and use self-limitation or self-exclusion tools provided by licensed operators."
+        },
+        {
+          "title": "3. Need support?",
+          "body": "If betting causes stress, isolation, or financial strain, reach out to local addiction support helplines and national regulatory support organizations in your jurisdiction."
+        }
+      ]
+    },
+    "privacy": {
+      "nav": "Privacy policy",
+      "title": "Privacy policy & data protection",
+      "lead": "BONUVO follows strict data minimization: public offer listings stay accessible without creating an account.",
+      "sections": [
+        {
+          "title": "1. Essential preference cookies",
+          "body": "Your selected country and theme preference are stored solely in functional preference cookies without advertising trackers."
+        },
+        {
+          "title": "2. Privacy-by-design logging",
+          "body": "Future security and redirect logs hash IP addresses prior to storage to protect visitor privacy while preventing abuse."
+        },
+        {
+          "title": "3. Member rights",
+          "body": "Once member accounts open (Phases 2 and 8), members can export their data, revoke communication consent in one click, or request full account deletion."
+        }
+      ]
+    }
+  },
+  "footer": {
+    "navigationHeading": "Explore",
+    "trustHeading": "Trust & Compliance",
+    "adultBadge": "18+ · Gambling involves risk",
+    "rights": "© {year} BONUVO. No wagers are accepted on this website.",
+    "designSystemLink": "Design System (Dev)"
+  },
+  "admin": {
+    "badge": "Administration",
+    "searchPlaceholder": "Search back-office...",
+    "searchLabel": "Search back-office",
+    "sidebarToggle": "Collapse or expand sidebar",
+    "profileRole": "Shell preview (Phase 1)",
+    "nav": {
+      "dashboard": "Dashboard",
+      "catalog": "Catalog",
+      "affiliation": "Affiliation",
+      "predictions": "Predictions",
+      "contents": "Contents",
+      "users": "Users",
+      "stats": "Statistics",
+      "audit": "Audit log",
+      "settings": "Settings",
+      "designSystem": "Design System (Dev)"
+    }
+  },
+  "designShowcase": {
+    "devBanner": "Internal development page — blocked in production.",
+    "sampleBadge": "Development example",
+    "title": "BONUVO Design System & UI Shells",
+    "subtitle": "Complete inventory of tokens, UI primitives, 4-state data components, and layout shells.",
+    "statesHeading": "Business components — 4 mandatory states",
+    "primitivesHeading": "UI Primitives & Feedback",
+    "feedbackHeading": "Generic States & Toast",
+    "shellsHeading": "Navigation & Brand",
+    "triggerToast": "Trigger sample Toast"
+  },
+  "errors": {
+    "notFoundCode": "404",
+    "notFoundTitle": "Page not found",
+    "notFoundDescription": "The requested page does not exist, has expired, or is disabled in this environment.",
+    "backHome": "Back to home",
+    "boundaryTitle": "An unexpected error occurred",
+    "boundaryDescription": "Rendering this view failed unexpectedly. No sensitive details were exposed.",
+    "retryAction": "Reload view"
+  }
+}

@@ -1,0 +1,25 @@
+import { getTranslations, setRequestLocale } from "next-intl/server";
+import { TrustPageView } from "@/components/layout/TrustPageView";
+import type { AppLocale } from "@/lib/i18n/config";
+import { buildLocalizedMetadata } from "@/lib/i18n/metadata";
+
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  const resolvedLocale: AppLocale = locale === "en" ? "en" : "fr";
+  const t = await getTranslations({
+    locale: resolvedLocale,
+    namespace: "trustPages.affiliation",
+  });
+  return buildLocalizedMetadata({
+    locale: resolvedLocale,
+    pathname: "/affiliation",
+    title: `${t("title")} — BONUVO`,
+    description: t("lead"),
+  });
+}
+
+export default async function AffiliationPage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+  return <TrustPageView pageKey="affiliation" />;
+}
