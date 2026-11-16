@@ -131,6 +131,8 @@ function normalizeServerRawEnv(
     ...rawEnv,
     APP_ENV: appEnv,
     DATABASE_URL: rawEnv.DATABASE_URL || rawEnv.POSTGRES_URL,
+    UPSTASH_REDIS_REST_URL: rawEnv.UPSTASH_REDIS_REST_URL || rawEnv.KV_REST_API_URL,
+    UPSTASH_REDIS_REST_TOKEN: rawEnv.UPSTASH_REDIS_REST_TOKEN || rawEnv.KV_REST_API_TOKEN,
     NEXT_PUBLIC_SITE_URL:
       rawEnv.NEXT_PUBLIC_SITE_URL || (vercelHost ? `https://${vercelHost}` : undefined),
   };

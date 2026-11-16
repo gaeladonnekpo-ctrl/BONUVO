@@ -120,4 +120,22 @@ describe("env-schema", () => {
     expect(parsed.NEXT_PUBLIC_SITE_URL).toBe("https://bonuvo-preview.vercel.app");
     expect(parsed.DATABASE_SSL).toBe("require");
   });
+
+  it("prend en charge KV_REST_API_URL et KV_REST_API_TOKEN fournis par Vercel Upstash", () => {
+    const {
+      UPSTASH_REDIS_REST_URL: _url,
+      UPSTASH_REDIS_REST_TOKEN: _token,
+      ...withoutUpstashDirect
+    } = validExternalEnv;
+
+    const parsed = parseServerEnv({
+      ...validBaseEnv,
+      ...withoutUpstashDirect,
+      KV_REST_API_URL: "https://kv-alias.upstash.io",
+      KV_REST_API_TOKEN: "kv_alias_token",
+    });
+
+    expect(parsed.UPSTASH_REDIS_REST_URL).toBe("https://kv-alias.upstash.io");
+    expect(parsed.UPSTASH_REDIS_REST_TOKEN).toBe("kv_alias_token");
+  });
 });
