@@ -70,4 +70,17 @@ describe("env-schema", () => {
     });
     expect(client.NEXT_PUBLIC_SITE_URL).toBe("https://bonuvo.example");
   });
+
+  it("prend en charge POSTGRES_URL et les variables Vercel en preview", () => {
+    const parsed = parseServerEnv({
+      NODE_ENV: "production",
+      POSTGRES_URL: "postgresql://user:pass@pooler.example:6543/postgres?supa=base-pooler.x",
+      VERCEL_ENV: "preview",
+      VERCEL_URL: "bonuvo-preview.vercel.app",
+    });
+    expect(parsed.APP_ENV).toBe("preview");
+    expect(parsed.DATABASE_URL).toContain("pooler.example:6543");
+    expect(parsed.NEXT_PUBLIC_SITE_URL).toBe("https://bonuvo-preview.vercel.app");
+    expect(parsed.DATABASE_SSL).toBe("require");
+  });
 });

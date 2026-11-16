@@ -4,6 +4,7 @@ import { sql } from "drizzle-orm";
 import { drizzle, type PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import postgres, { type Sql } from "postgres";
 import { getServerEnv } from "@/server/env";
+import { resolveSslOption, sanitizePostgresUrl } from "./connection-config";
 import * as schema from "./schema";
 
 export type AppDatabase = PostgresJsDatabase<typeof schema>;
@@ -11,16 +12,10 @@ export type AppDatabase = PostgresJsDatabase<typeof schema>;
 let clientInstance: Sql | null = null;
 let dbInstance: AppDatabase | null = null;
 
-function resolveSslOption(mode: "require" | "verify-full" | "disable") {
-  if (mode === "disable") return false as const;
-  if (mode === "verify-full") return "verify-full" as const;
-  return "require" as const;
-}
-
 export function getSqlClient(): Sql {
   if (!clientInstance) {
     const env = getServerEnv();
-    clientInstance = postgres(env.DATABASE_URL, {
+    clientInstance = postgres(sanitizePostgresUrl(env.DATABASE_URL), {
       prepare: false,
       max: 5,
       connect_timeout: 5,

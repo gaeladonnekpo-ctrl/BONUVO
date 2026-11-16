@@ -54,8 +54,32 @@ function formatEnvIssues(issues: readonly z.ZodIssue[]): string {
     .join("\n");
 }
 
+function resolveVercelAppEnv(vercelEnv: string | undefined): string | undefined {
+  if (vercelEnv === "production") return "production";
+  if (vercelEnv === "preview") return "preview";
+  return undefined;
+}
+
+function normalizeServerRawEnv(
+  rawEnv: Record<string, string | undefined>,
+): Record<string, string | undefined> {
+  const appEnv = rawEnv.APP_ENV || resolveVercelAppEnv(rawEnv.VERCEL_ENV);
+  const vercelHost =
+    appEnv === "production"
+      ? rawEnv.VERCEL_PROJECT_PRODUCTION_URL || rawEnv.VERCEL_URL
+      : rawEnv.VERCEL_URL;
+
+  return {
+    ...rawEnv,
+    APP_ENV: appEnv,
+    DATABASE_URL: rawEnv.DATABASE_URL || rawEnv.POSTGRES_URL,
+    NEXT_PUBLIC_SITE_URL:
+      rawEnv.NEXT_PUBLIC_SITE_URL || (vercelHost ? `https://${vercelHost}` : undefined),
+  };
+}
+
 export function parseServerEnv(rawEnv: Record<string, string | undefined>): ServerEnv {
-  const result = fullEnvSchema.safeParse(rawEnv);
+  const result = fullEnvSchema.safeParse(normalizeServerRawEnv(rawEnv));
   if (!result.success) {
     throw new Error(
       `Configuration d'environnement invalide :\n${formatEnvIssues(result.error.issues)}`,
@@ -65,7 +89,13 @@ export function parseServerEnv(rawEnv: Record<string, string | undefined>): Serv
 }
 
 export function parseClientEnv(rawEnv: Record<string, string | undefined>): ClientEnv {
-  const result = clientEnvSchema.safeParse(rawEnv);
+  const normalized = {
+    ...rawEnv,
+    NEXT_PUBLIC_SITE_URL:
+      rawEnv.NEXT_PUBLIC_SITE_URL ||
+      (rawEnv.NEXT_PUBLIC_VERCEL_URL ? `https://${rawEnv.NEXT_PUBLIC_VERCEL_URL}` : undefined),
+  };
+  const result = clientEnvSchema.safeParse(normalized);
   if (!result.success) {
     throw new Error(
       `Configuration d'environnement client invalide :\n${formatEnvIssues(result.error.issues)}`,

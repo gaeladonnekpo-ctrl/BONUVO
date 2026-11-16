@@ -4,23 +4,17 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
 import { parseServerEnv } from "@/server/env-schema";
+import { resolveSslOption, sanitizePostgresUrl } from "@/server/db/connection-config";
 
 dotenv.config({ path: path.resolve(process.cwd(), ".env.local"), quiet: true });
 dotenv.config({ path: path.resolve(process.cwd(), ".env"), quiet: true });
 
 async function runMigrations(): Promise<void> {
   const env = parseServerEnv(process.env);
-  const ssl =
-    env.DATABASE_SSL === "disable"
-      ? false
-      : env.DATABASE_SSL === "verify-full"
-        ? "verify-full"
-        : "require";
-
-  const sqlClient = postgres(env.DATABASE_URL, {
+  const sqlClient = postgres(sanitizePostgresUrl(env.DATABASE_URL), {
     max: 1,
     prepare: false,
-    ssl,
+    ssl: resolveSslOption(env.DATABASE_SSL),
   });
 
   try {

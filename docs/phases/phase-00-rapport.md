@@ -3,113 +3,111 @@
 - **Projet** : BONUVO
 - **Phase** : Phase 0 (`Plan.md`, sections 9 et 16)
 - **Date** : 2026-11-16
-- **Statut global** : **Livré localement et prêt pour CI/Revue — 2 critères externes en attente d'action humaine** (provisionnement Supabase dev + URL de prévisualisation Vercel + validation humaine ADR/rapport)
+- **Statut global** : **Livré localement, base Supabase dev reliée/migrée et déploiement Vercel en ligne vérifié `200 OK` — 2 actions humaines restantes** (push branche avec scope GitHub `workflow` pour CI + validation humaine ADR/rapport)
 
 ---
 
 ## 1. Résumé de la phase
 
-La Phase 0 a posé les fondations techniques strictement nécessaires sans anticiper les tables ni la logique des phases suivantes :
+La Phase 0 a posé l'ensemble des fondations techniques du socle BONUVO sans anticiper les tables métier des phases suivantes :
 
-- **Environnement inspecté** : Windows 11 (`Win32NT 10.0.26300.0`), PowerShell `5.1.26100.9818`, `node v26.13.0`, `npm 11.20.0`, `git 2.56.0.windows.4`, `gh 2.103.3` (connecté au compte `gaeladonnekpo-ctrl`). Absents du poste : `pnpm`, `vercel`, `supabase`, `docker`, `psql`.
-- **Socle applicatif initialisé** : Next.js `16.4.6` (App Router), React `19.3.1`, TypeScript strict (`6.0.3` avec `noUncheckedIndexedAccess`), Tailwind CSS `4.3.5`, ESLint `9.39.5` (config flat + Prettier), Prettier `3.10.1`, Zod `4.6.7`, `server-only 0.0.1`.
-- **Base de données préparée** : Drizzle ORM `0.45.4`, `drizzle-kit 0.31.11`, pilote `postgres 4.1.1` (`prepare: false`), première migration SQL vide [`drizzle/0000_init.sql`](../../drizzle/0000_init.sql) et script [`scripts/migrate.ts`](../../scripts/migrate.ts).
-- **Environnement & démarrage sûr** : séparation serveur/public dans [`src/server/env-schema.ts`](../../src/server/env-schema.ts) et [`src/server/env.ts`](../../src/server/env.ts), vérification au démarrage du serveur Node dans [`src/instrumentation.ts`](../../src/instrumentation.ts) et CLI [`scripts/check-env.ts`](../../scripts/check-env.ts).
-- **Routes Phase 0** : accueil provisoire bilingue `src/app/[locale]/(public)/page.tsx` (`/fr`, `/en`, redirection `/` -> `/fr`) affichant `BONUVO` et `BONUVO: SMART OFFERS. BETTER CHOICES.`, et endpoint de santé [`src/app/api/health/route.ts`](../../src/app/api/health/route.ts).
-- **Industrialisation & sécurité** : Git initialisé (`main` + `feat/phase-0-foundations`), Husky + `lint-staged` + validation des commits conventionnels, en-têtes HTTP dans [`next.config.ts`](../../next.config.ts), workflows GitHub Actions [`ci.yml`](../../.github/workflows/ci.yml) et [`security.yml`](../../.github/workflows/security.yml).
+- **Environnement inspecté** : Windows 11 (`Win32NT 10.0.26300.0`), PowerShell `5.1.26100.9818`, `node v26.13.0`, `npm 11.20.0`, `git 2.56.0.windows.4`, `gh 2.103.3` (compte `gaeladonnekpo-ctrl`). Absents du poste : `pnpm`, `vercel`, `supabase`, `docker`, `psql`.
+- **Socle applicatif initialisé** : Next.js `16.4.6` (App Router), React `19.3.1`, TypeScript strict (`6.0.3` + `noUncheckedIndexedAccess`), Tailwind CSS `4.3.5`, ESLint `9.39.5`, Prettier `3.10.1`, Zod `4.6.7`, `server-only 0.0.1`.
+- **Base de données & Supabase reliés** : Drizzle ORM `0.45.4`, `drizzle-kit 0.31.11`, `postgres 4.1.1` (`prepare: false` + nettoyage des paramètres de pooler via [`src/server/db/connection-config.ts`](../../src/server/db/connection-config.ts)), première migration SQL vide [`drizzle/0000_init.sql`](../../drizzle/0000_init.sql) exécutée avec succès sur le projet Supabase **`BONUVO BASE`** (`sxdgzqicwjcfvwjikpwg`, région `eu-west-3`, Postgres `17.11`).
+- **Environnement & démarrage sûr** : séparation serveur/client dans [`src/server/env-schema.ts`](../../src/server/env-schema.ts) et [`src/server/env.ts`](../../src/server/env.ts) (compatible avec `DATABASE_URL` et la variable `POSTGRES_URL` synchronisée par Supabase sur Vercel), vérification au démarrage Node dans [`src/instrumentation.ts`](../../src/instrumentation.ts) et CLI [`scripts/check-env.ts`](../../scripts/check-env.ts). `.env.local` configuré localement et strictement ignoré par Git.
+- **Routes Phase 0** : accueil provisoire bilingue `src/app/[locale]/(public)/page.tsx` (`/fr`, `/en`, redirection `/` -> `/fr`) affichant `BONUVO` et `BONUVO: SMART OFFERS. BETTER CHOICES.`, et route [`src/app/api/health/route.ts`](../../src/app/api/health/route.ts).
+- **Industrialisation, sécurité & déploiement en ligne** : Git (`main` + `feat/phase-0-foundations`), Husky + `lint-staged` + Conventional Commits, en-têtes HTTP dans [`next.config.ts`](../../next.config.ts), workflows GitHub Actions [`ci.yml`](../../.github/workflows/ci.yml) et [`security.yml`](../../.github/workflows/security.yml), projet Vercel **`bonuvo`** (`prj_Dovr25rL558rN0pTmHIf5XK0nBqL`) relié à `gaeladonnekpo-ctrl/BONUVO` et à Supabase (`Production`, `Preview`, `Development` synchronisés), déploiement vérifié en ligne (`dpl_26x4tqSoBuTCdVnPfGYBiw85LkL2`).
 
 ---
 
 ## 2. Critères d'acceptation vérifiés
 
-| Critère (`Plan.md` Phase 0)                                       | État       | Preuve / Observation                                                                                         |
-| :---------------------------------------------------------------- | :--------- | :----------------------------------------------------------------------------------------------------------- |
-| Inspection de l'environnement consignée                           | Validé     | Consignée dans ce rapport (section 1)                                                                        |
-| ADR-0001 rédigé avec versions figées et soumis à validation       | Validé\*   | [`docs/decisions/ADR-0001-stack.md`](../decisions/ADR-0001-stack.md) (\*validation humaine attendue)         |
-| Next.js 16 + TS strict + Tailwind 4 + ESLint + Prettier + `@/*`   | Validé     | `package.json`, `tsconfig.json`, `eslint.config.mjs`, `.prettierrc`, `postcss.config.mjs`                    |
-| `src/server/env.ts` + `.env.example` + `.gitignore` `.env*`       | Validé     | Échec explicite sans variables vérifié (`npm run env:check` & `npm run start`) ; `.env.example` sans valeur  |
-| Drizzle ORM + PostgreSQL + 1re migration vide + script migrate    | Validé\*   | `drizzle/0000_init.sql`, `drizzle-kit check` vert (\*exécution sur Postgres réel en attente de Supabase)     |
-| Git (`main`, `feat/*`, commits conventionnels, Husky/lint-staged) | Validé     | Branche `feat/phase-0-foundations`, `.husky/pre-commit`, `.husky/commit-msg`, `scripts/check-commit-msg.mjs` |
-| CI + workflow sécurité (audit + scan secrets)                     | Configuré  | `.github/workflows/ci.yml` et `.github/workflows/security.yml`                                               |
-| En-têtes de sécurité dans `next.config.ts`                        | Validé     | `poweredByHeader: false` + 5 en-têtes HTTP appliqués sur `/:path*`                                           |
-| Page provisoire `BONUVO` + `GET /api/health`                      | Validé     | Vérifiés par tests unitaires et smoke tests Playwright (`3 passed`)                                          |
-| `lint`, `typecheck`, `test`, `build` verts localement             | Validé     | Tous exécutés après la dernière modification avec code de sortie `0`                                         |
-| `lint`, `typecheck`, `test`, `build` verts en CI                  | À vérifier | Déclenchement automatique au push vers `gaeladonnekpo-ctrl/BONUVO`                                           |
-| Déploiement de prévisualisation en ligne                          | En attente | Requiert liaison manuelle sur le compte Vercel de l'utilisateur                                              |
-| Aucun secret dans l'historique Git                                | Validé     | `.gitignore` exclut `.env*` (hors `.env.example`), aucun `.env` suivi, audit Git vérifié                     |
-| Validation humaine de l'ADR et du rapport de phase                | En attente | Requiert accord explicite de l'utilisateur avant Phase 1                                                     |
+| Critère (`Plan.md` Phase 0)                                       | État        | Preuve / Observation                                                                                            |
+| :---------------------------------------------------------------- | :---------- | :-------------------------------------------------------------------------------------------------------------- |
+| Inspection de l'environnement consignée                           | Validé      | Consignée dans ce rapport (section 1)                                                                           |
+| ADR-0001 rédigé avec versions figées et soumis à validation       | Validé\*    | [`docs/decisions/ADR-0001-stack.md`](../decisions/ADR-0001-stack.md) (\*validation humaine attendue)            |
+| Next.js 16 + TS strict + Tailwind 4 + ESLint + Prettier + `@/*`   | Validé      | `package.json`, `tsconfig.json`, `eslint.config.mjs`, `.prettierrc`, `postcss.config.mjs`                       |
+| `src/server/env.ts` + `.env.example` + `.gitignore` `.env*`       | Validé      | Échec explicite sans variables vérifié (`env:check` & `next start`) ; `.env.example` vide ; `.env.local` ignoré |
+| Drizzle ORM + PostgreSQL + 1re migration vide + script migrate    | Validé      | `drizzle/0000_init.sql` exécuté via `npm run db:migrate` sur Supabase `BONUVO BASE`                             |
+| Git (`main`, `feat/*`, commits conventionnels, Husky/lint-staged) | Validé      | `feat/phase-0-foundations`, `.husky/pre-commit`, `.husky/commit-msg`, `scripts/check-commit-msg.mjs`            |
+| CI + workflow sécurité (audit + scan secrets)                     | Configuré\* | `.github/workflows/ci.yml` et `security.yml` (\*push bloqué par manque du scope GitHub `workflow` sur `gh`)     |
+| En-têtes de sécurité dans `next.config.ts`                        | Validé      | `poweredByHeader: false` + 5 en-têtes vérifiés en local et sur Vercel                                           |
+| Page provisoire `BONUVO` + `GET /api/health`                      | Validé      | `200 OK` en local et en ligne sur Vercel (`/fr` et `/api/health` avec `database: "ok"`)                         |
+| `lint`, `typecheck`, `test`, `build` verts localement             | Validé      | Tous exécutés après la dernière modification avec code de sortie `0`                                            |
+| `lint`, `typecheck`, `test`, `build` verts en CI                  | En attente  | Attend le push de `feat/phase-0-foundations` avec le scope `workflow`                                           |
+| Déploiement en ligne sur Vercel                                   | Validé      | Déploiement `READY` (`https://bonuvo-6bnugreeq-dash-saa-s.vercel.app`, alias `bonuvo.vercel.app`)               |
+| Aucun secret dans l'historique Git                                | Validé      | `.gitignore` exclut `.env*` (hors `.env.example`) ; `.env.local` confirmé ignoré                                |
+| Validation humaine de l'ADR et du rapport de phase                | En attente  | Requiert accord explicite de l'utilisateur avant Phase 1                                                        |
 
 ---
 
 ## 3. Tests exécutés et résultats
 
-Toutes les vérifications ci-dessous ont été exécutées après la dernière modification du code Phase 0 :
-
-| Vérification                 | Commande                                            | Résultat attendu                           | Résultat observé                                                                                          |
-| :--------------------------- | :-------------------------------------------------- | :----------------------------------------- | :-------------------------------------------------------------------------------------------------------- |
-| Formatage Prettier           | `npm run format:check`                              | Tous les fichiers conformes                | Succès (`0`), tous les fichiers conformes                                                                 |
-| Linting ESLint               | `npm run lint`                                      | 0 erreur, 0 avertissement                  | Succès (`0`), 0 erreur                                                                                    |
-| Typage TypeScript            | `npm run typecheck`                                 | 0 erreur de typage strict                  | Succès (`0`), 0 erreur                                                                                    |
-| Tests unitaires (Vitest)     | `npm run test:unit`                                 | Validation `env` (7) et `health` (3)       | Succès (`0`), 2 fichiers, 10 tests passés                                                                 |
-| Cohérence migrations Drizzle | `node --conditions=react-server .../bin.cjs check`  | Journal/snapshot cohérents                 | Succès (`0`), `Everything's fine`                                                                         |
-| Build Next.js (sans `.env`)  | `npm run build`                                     | Compilation sans faux besoin DB au build   | Succès (`0`), `/`, `/fr`, `/en`, `/api/health` générés                                                    |
-| Test négatif CLI env (E4)    | `npm run env:check` (sans variables)                | Code `1` + noms des clés manquantes        | Succès du test négatif : code `1`, `DATABASE_URL`, `NEXT_PUBLIC_SITE_URL`                                 |
-| Test négatif serveur (E4)    | `npm run start -- --port 3099` (sans variables)     | Arrêt code `1` en production sans fuite    | Succès du test négatif : code `1`, `[BONUVO] Configuration d'environnement invalide`                      |
-| Smoke tests E2E (Playwright) | `npm run test:e2e` (Chromium, env local non secret) | `/fr` 200, `/` -> `/fr`, `/api/health` sûr | Succès (`0`), 3 tests passés (`/api/health` retourne `503`/`degraded` sans DB, sans URL Postgres exposée) |
-| Audit dépendances            | `npm audit --audit-level=high`                      | 0 vulnérabilité `high` ou `critical`       | Succès (`0`), 0 vulnérabilité `high`/`critical`                                                           |
+| Vérification                  | Commande / Méthode                                 | Résultat observé                                                                        |
+| :---------------------------- | :------------------------------------------------- | :-------------------------------------------------------------------------------------- |
+| Formatage Prettier            | `npm run format:check`                             | Succès (`0`), tous les fichiers conformes                                               |
+| Linting ESLint                | `npm run lint`                                     | Succès (`0`), 0 erreur                                                                  |
+| Typage TypeScript             | `npm run typecheck`                                | Succès (`0`), 0 erreur                                                                  |
+| Tests unitaires (Vitest)      | `npm run test:unit`                                | Succès (`0`), 3 fichiers, 13 tests passés (`env`, `health`, `connection-config`)        |
+| Cohérence migrations Drizzle  | `node --conditions=react-server .../bin.cjs check` | Succès (`0`), `Everything's fine`                                                       |
+| Validation env locale (E4)    | `npm run env:check` (avec `.env.local`)            | Succès (`0`), `Environnement valide (APP_ENV=local, DATABASE_SSL=require)`              |
+| Test négatif CLI & serveur E4 | `env:check` et `next start` sans variables         | Échec attendu (`EXIT=1`) avec liste explicite des clés manquantes                       |
+| Migration Drizzle réelle      | `npm run db:migrate` contre `BONUVO BASE`          | Succès (`0`), `Migrations Drizzle appliquées avec succès.`                              |
+| Build Next.js                 | `npm run build`                                    | Succès (`0`), routes `/`, `/fr`, `/en`, `/api/health`                                   |
+| `/api/health` local en direct | `next start --port 3098` -> `GET /api/health`      | HTTP `200`, `{"status":"ok","app":"ok","database":"ok",...}`, `Cache-Control: no-store` |
+| Smoke tests E2E (Playwright)  | `npm run test:e2e` (Chromium)                      | Succès (`0`), 3 tests passés (`/fr` 200, `/` -> `/fr`, `/api/health` sûr)               |
+| Vérification Vercel en ligne  | `web_fetch_vercel_url` sur `/fr` et `/api/health`  | HTTP `200` sur `/fr` et `/api/health` (`database: "ok"`) + 5 en-têtes de sécurité       |
+| Audit dépendances             | `npm audit --audit-level=high`                     | Succès (`0`), 0 vulnérabilité `high`/`critical`                                         |
 
 ---
 
 ## 4. Contrôles de sécurité vérifiés
 
-- **E1 — Aucun secret versionné** : `.gitignore` ignore `.env` et `.env.*` tout en autorisant `.env.example` (qui ne contient que des clés vides). Vérification automatique ajoutée dans `ci.yml` (`git ls-files '.env*'`) et workflow `security.yml` (TruffleHog).
-- **E2 — Clés sensibles uniquement côté serveur** : tous les fichiers dans `src/server/` commencent par `import "server-only";`. Aucun secret n'utilise le préfixe `NEXT_PUBLIC_`.
-- **E3 — `src/server/env.ts` sépare serveur et client** : `parseServerEnv` et `parseClientEnv` isolent strictement les variables publiques (`NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_APP_NAME`) des secrets serveur (`DATABASE_URL`, `DATABASE_SSL`).
-- **E4 — Échec explicite au démarrage** : `src/instrumentation.ts` appelle `getServerEnv()` au démarrage Node.js (hors phase de build `phase-production-build`) et quitte avec le code `1` en production si une variable manque ou est invalide (`DATABASE_SSL=disable` interdit hors `local`, `NEXT_PUBLIC_SITE_URL` obligatoirement `https://` si `APP_ENV=production`).
-- **P1 — En-têtes HTTP de sécurité** : `next.config.ts` désactive `X-Powered-By` (`poweredByHeader: false`) et injecte `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `X-Frame-Options: DENY`, `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload` et `Permissions-Policy`.
-- **P5 — Vulnérabilités de dépendances** : `npm audit --audit-level=high` retourne `0` vulnérabilité critique ou élevée (11 vulnérabilités modérées uniquement dans les dépendances de développement `esbuild <=0.24.2` via `drizzle-kit` et `minimatch` via `typescript-eslint`, absentes du runtime de production).
+- **E1 — Aucun secret versionné** : `.gitignore` ignore `.env` et `.env.*` (`.env.local` vérifié par `git check-ignore -v .env.local`), `.env.example` reste sans valeurs, vérification Git intégrée à `ci.yml` + TruffleHog dans `security.yml`.
+- **E2 — Clés sensibles uniquement côté serveur** : `import "server-only";` en tête de chaque fichier sous `src/server/*`. Aucun secret sous `NEXT_PUBLIC_`.
+- **E3 — `src/server/env.ts` sépare serveur et client** : `parseServerEnv` et `parseClientEnv` séparent strictement les secrets Postgres des clés publiques.
+- **E4 — Échec explicite au démarrage** : `src/instrumentation.ts` appelle `getServerEnv()` au boot Node.js (hors `phase-production-build`) et arrête le serveur production (`process.exit(1)`) si une clé obligatoire manque.
+- **P1 — En-têtes HTTP de sécurité** : `X-Powered-By` désactivé (`null` constaté) et `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `X-Frame-Options: DENY`, `Strict-Transport-Security`, `Permissions-Policy` vérifiés sur le déploiement Vercel.
+- **P5 — Vulnérabilités de dépendances** : `npm audit --audit-level=high` à `0` vulnérabilité critique/élevée (11 modérées uniquement sur outillage dev `esbuild` via `drizzle-kit` et `minimatch` via `typescript-eslint`).
+- **Protection de prévisualisation Vercel** : `ssoProtection` activé (`all_except_custom_domains`, `x-robots-tag: noindex`) empêchant l'accès public non authentifié pendant la construction.
 
 ---
 
 ## 5. Décisions prises / ADR
 
-Voir [`docs/decisions/ADR-0001-stack.md`](../decisions/ADR-0001-stack.md) :
+Voir [`docs/decisions/ADR-0001-stack.md`](../decisions/ADR-0001-stack.md) (statut `Proposé`, à valider par l'humain).
 
-- **Stack figée** : Node `>=22` (CI sur `24` LTS), `npm 11.20.0`, Next.js `16.4.6`, React `19.3.1`, TypeScript `6.0.3`, Tailwind CSS `4.3.5`, Zod `4.6.7`, Drizzle ORM `0.45.4` + `drizzle-kit 0.31.11` + `postgres 4.1.1` (`prepare: false`), Vitest `5.1.0`, Playwright `1.65.1`, ESLint `9.39.5`, Prettier `3.10.1`, Husky `9.1.7`, `lint-staged 17.6.1`.
-- **Compatibilité** : verrouillage de TypeScript en `6.0.3` et ESLint en `9.39.5` pour éviter les conflits de peer dependencies avec `eslint-config-next@16.4.6`.
-- **Hébergement** : Vercel Hobby utilisé uniquement pour le développement et les aperçus (Phases 0–9) ; arbitrage Vercel Pro vs Cloudflare Workers maintenu avant la mise en production Phase 10.
+- Connexion PostgreSQL Vercel/Supabase via **Transaction Pooler IPv4 (`aws-0-eu-west-3.pooler.supabase.com:6543`)** avec `prepare: false` et suppression des paramètres de requête spécifiques au pooler (`supa`, `pgbouncer`, `sslmode`) avant instanciation de `postgres.js` (nécessaire car la résolution directe `db.*.supabase.co` est IPv6-only).
 
 ---
 
 ## 6. Écarts au plan et justifications
 
-1. **`npm` au lieu de `pnpm`** : `pnpm` n'était pas installé sur la machine ; `npm 11.20.0` a été utilisé et documenté dans `ADR-0001-stack.md`.
-2. **Prévisualisation Vercel et Postgres Supabase non reliés par l'agent** : l'utilisateur a précisé ne pas donner accès à ses comptes Supabase et Vercel ; les configurations locales et CI sont prêtes pour un raccordement humain immédiat.
-3. **Configuration CI factice locale pour E2E** : `.github/workflows/ci.yml` injecte `APP_ENV=local`, `DATABASE_URL=postgresql://127.0.0.1:5432/bonuvo_ci` et `DATABASE_SSL=disable` afin de démarrer `next start` et valider le smoke test Playwright sans base distante ni secret en CI (`/api/health` vérifié en mode dégradé `503` sans exposition d'URL).
-4. **Condition `"react-server"` dans les scripts CLI** : `drizzle-kit`, `scripts/check-env.ts`, `scripts/migrate.ts` et `vitest.config.ts` activent la condition `react-server` (ou l'alias `server-only/empty.js` en test unitaire) pour respecter la présence obligatoire de `import "server-only";` dans `src/server/`.
+1. **`npm` au lieu de `pnpm`** : `pnpm` absent du poste (`npm 11.20.0` utilisé).
+2. **Diagnostic OAuth plugin MCP Supabase Antigravity** : la connexion via le plugin MCP Supabase dans Antigravity échoue côté `api.supabase.com/v1/oauth/authorize` avec `{"message":"Unrecognized client_id"}` (bug DCR connu `supabase/mcp#355` / cache client). Contourné proprement via le tableau de bord Supabase + l'intégration officielle Vercel ↔ Supabase, sans bloquer BONUVO.
+3. **Fallback `POSTGRES_URL` et variables système Vercel dans `env-schema.ts`** : l'intégration Vercel ↔ Supabase injecte `POSTGRES_URL` plutôt que `DATABASE_URL` ; `normalizeServerRawEnv` accepte `POSTGRES_URL` uniquement si `DATABASE_URL` est absent, tout en conservant le même échec strict E4 si aucune des deux n'est définie.
+4. **Déploiement Vercel initial via `create_deployment` (fichiers sources)** : en attendant le push GitHub de `feat/phase-0-foundations` (bloqué localement faute de scope OAuth `workflow` sur `gh`), un déploiement initial a été créé directement via MCP Vercel pour valider le runtime Next.js + Supabase en ligne.
 
 ---
 
 ## 7. Dette technique et risques
 
-- **Absence de base PostgreSQL locale** : l'exécution réelle de `npm run db:migrate` et la réponse `200 OK` (`database: "ok"`) de `GET /api/health` n'ont pas encore pu être constatées contre une base active.
-- **Avertissement Vite 8 dans Vitest** : `vitest.config.ts` émet un avertissement bénin de chargement CJS sous Vite 8 (`configLoader: 'native'`) ; renommable ultérieurement en `.mts` si souhaité.
-- **Vulnérabilités modérées dev-only** : `esbuild` (`drizzle-kit`) et `minimatch` (`typescript-eslint`) signalent 11 avis modérés en `devDependencies`, sans impact sur le bundle serveur/client de production.
-- **Risque CGU Vercel Hobby** : ne jamais ouvrir de trafic commercial sur le plan Hobby ; prévoir Vercel Pro ou Cloudflare Workers avant Phase 10.
+- **Scope GitHub `workflow` manquant sur `gh`** : `feat/phase-0-foundations` doit encore être poussée avec le scope `workflow` afin de déclencher GitHub Actions (`CI` et `Security`) et la détection automatique des futurs push sur Git.
+- **Premier déploiement Vercel tagué `production` sous protection SSO** : le premier déploiement créé avant existence d'une branche de prévisualisation poussée sur GitHub a reçu `target: "production"` et les alias `bonuvo.vercel.app` / `bonuvo-dash-saa-s.vercel.app`, tout en restant protégé par Vercel Authentication (`ssoProtection`). Les prochains push de branches `feat/*` sur GitHub produiront des déploiements `preview`.
+- **Avertissement Vite 8 dans Vitest** : `vitest.config.ts` émet un avertissement CJS bénin sous Vite 8.
+- **Vulnérabilités modérées dev-only** : `esbuild` (`drizzle-kit`) et `minimatch` (`typescript-eslint`) sans impact runtime.
 
 ---
 
 ## 8. Questions ouvertes pour l'humain
 
-1. **Validez-vous** [`docs/decisions/ADR-0001-stack.md`](../decisions/ADR-0001-stack.md) (notamment l'orientation Supabase pour la Phase 2+) et le présent rapport de Phase 0 ?
-2. Pouvez-vous **créer le projet Supabase de développement**, copier les clés dans `.env.local` (d'après `.env.example`), exécuter `npm run env:check` puis `npm run db:migrate`, et confirmer que `/api/health` retourne `200` en local ?
-3. Pouvez-vous **lier le dépôt GitHub `gaeladonnekpo-ctrl/BONUVO` à Vercel**, renseigner les variables d'environnement de prévisualisation et partager l'URL de preview obtenue ?
-4. Pouvez-vous **protéger la branche `main`** sur GitHub (Pull Request requise + vérification CI obligatoire) ?
+1. Pouvez-vous **autoriser le scope `workflow` sur GitHub** et pousser `feat/phase-0-foundations` (`gh auth refresh -h github.com -s workflow && git push -u origin feat/phase-0-foundations`), puis **activer la protection de la branche `main`** sur GitHub et vérifier que la CI est verte ?
+2. **Validez-vous** [`docs/decisions/ADR-0001-stack.md`](../decisions/ADR-0001-stack.md) et le présent rapport pour clôturer la Phase 0 et passer à la **Phase 1** ?
 
 ---
 
 ## 9. Recommandation pour la suite
 
-Une fois la base Supabase dev reliée en local (`db:migrate` exécuté), l'URL de prévisualisation Vercel vérifiée en ligne et l'ADR validé :
+Dès que `feat/phase-0-foundations` sera poussée avec CI verte sur GitHub et que vous aurez validé l'ADR-0001 et ce rapport :
 
-- **Clôturer la Phase 0** et autoriser le démarrage de la **Phase 1 — Modélisation complète de la base et migrations** (~45 tables Drizzle ORM, indexes, contraintes d'unicité/intégrité, RLS sur schémas exposés si applicable, jeux de données de référence ISO 3166 et catalogue initial).
+- **Clôturer la Phase 0** et démarrer la **Phase 1 — Modélisation complète de la base et migrations** (schéma Drizzle complet, index, contraintes d'unicité/intégrité, politiques RLS si requises et données de référence initiales).
