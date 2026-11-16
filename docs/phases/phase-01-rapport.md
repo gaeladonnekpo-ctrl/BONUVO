@@ -74,22 +74,22 @@ Toutes les commandes ci-dessous ont été ré-exécutées après la dernière mo
 ## 6. Écarts
 
 - Aucun écart fonctionnel par rapport au périmètre Phase 1.
-- Le push vers GitHub (`feat/phase-0-foundations` et `feat/phase-1-design-system`) reste bloqué localement en raison du scope OAuth `workflow` absent de la session `gh` locale (`.github/workflows/*` inchangés).
+- Correction mineure apportée à `.github/workflows/security.yml` lors du premier push GitHub (`f36da51`) : suppression du drapeau `--fail` dans `extra_args` car l'action `trufflesecurity/trufflehog@main` injecte déjà `--fail` par défaut (ce qui provoquait l'erreur `flag 'fail' cannot be repeated`).
+- Suite à l'activation du scope `workflow` côté GitHub CLI, `feat/phase-0-foundations` (`e3c38eb`) et `feat/phase-1-design-system` (`f36da51`) ont été poussées sur `origin` ; les workflows `CI` (`1m18s`) et `Security` (`48s`) ont tous deux réussi sur `feat/phase-1-design-system`.
 
 ---
 
 ## 7. Dette et risques
 
 - **Dépendances `moderate` côté dev** : 11 alertes `moderate` (`esbuild <=0.24.2` via `drizzle-kit` et `minimatch` via `typescript-eslint`) à surveiller lors des prochaines montées de version majeures d'outillage dev (hors runtime de production).
-- **CSP en mode observation** : l'en-tête CSP est en mode `Report-Only` en Phase 1 et devra être durci puis basculé vers `Content-Security-Policy` avant la mise en production publique (Phase 7).
+- **CSP en mode observation** : l'en-tête CSP est en mode `Report-Only` en Phase 1 et devra être durci puis basculé vers `Content-Security-Policy` avec nonce avant la mise en production publique.
 - **Politiques de confidentialité / textes juridiques** : les textes des pages de confiance devront être relus et complétés avec les coordonnées légales définitives avant l'ouverture publique.
 
 ---
 
 ## 8. Questions ouvertes
 
-1. Validation explicite des choix visuels (thème sombre marine/orange issu de `Choix.dc.html`, thème clair pierre chaude, ergonomie mobile/tablette/bureau et 4 pages de confiance) pour autoriser le démarrage de la **Phase 2 — Schéma de base de données et couche d'accès**.
-2. Autorisation interactive du scope GitHub `workflow` via `gh auth refresh -h github.com -s workflow` dans le navigateur afin de débloquer le push des branches vers le dépôt GitHub `BONUVO`.
+1. Validation explicite des choix visuels (thème sombre marine/orange issu de `Choix.dc.html`, thème clair pierre chaude, ergonomie mobile/tablette/bureau et 4 pages de confiance) pour autoriser le démarrage de la **Phase 2 — Schéma de base de données et couche d'accès** (et la demande de fusion vers `main` si souhaité).
 
 ---
 
