@@ -3,6 +3,7 @@
 import { Globe } from "lucide-react";
 import { useTranslations } from "next-intl";
 import * as React from "react";
+import { usePathname, useRouter } from "@/i18n/navigation";
 import {
   Select,
   SelectContent,
@@ -44,6 +45,8 @@ export function CountrySwitcher({
   const tContinents = useTranslations("continents");
   const tCountries = useTranslations("countries");
   const { pushToast } = useToast();
+  const router = useRouter();
+  const pathname = usePathname();
   const [country, setCountry] = React.useState(() => normalizeCountryCode(initialCountry));
 
   function handleChange(nextCode: string) {
@@ -51,6 +54,16 @@ export function CountrySwitcher({
     setCountry(normalized);
     if (typeof document !== "undefined") {
       document.cookie = `${COUNTRY_COOKIE_NAME}=${normalized}; Path=/; Max-Age=31536000; SameSite=Lax`;
+      const params = new URLSearchParams(window.location.search);
+      if (params.has("pays")) {
+        params.delete("pays");
+        const qs = params.toString();
+        router.replace(qs ? `${pathname}?${qs}` : pathname);
+      } else {
+        router.refresh();
+      }
+    } else {
+      router.refresh();
     }
     pushToast({
       title: tControls("countryUpdated", { country: tCountries(normalized) }),

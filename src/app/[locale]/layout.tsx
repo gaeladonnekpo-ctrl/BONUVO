@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
 import { getMessages, setRequestLocale } from "next-intl/server";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 import type { ReactNode } from "react";
 import { ThemeProvider, type AppTheme } from "@/components/layout/ThemeProvider";
 import { ToastProvider } from "@/components/ui/toast";
@@ -43,11 +44,13 @@ export default async function LocaleLayout({
     >
       <body className="min-h-screen bg-bg text-fg antialiased">
         <NextIntlClientProvider locale={locale} messages={messages}>
-          <ThemeProvider initialTheme={initialTheme}>
-            <TooltipProvider>
-              <ToastProvider dismissLabel={dismissLabel}>{children}</ToastProvider>
-            </TooltipProvider>
-          </ThemeProvider>
+          <NuqsAdapter>
+            <ThemeProvider initialTheme={initialTheme}>
+              <TooltipProvider>
+                <ToastProvider dismissLabel={dismissLabel}>{children}</ToastProvider>
+              </TooltipProvider>
+            </ThemeProvider>
+          </NuqsAdapter>
         </NextIntlClientProvider>
       </body>
     </html>

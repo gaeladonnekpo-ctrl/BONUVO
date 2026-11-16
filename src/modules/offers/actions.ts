@@ -1,9 +1,10 @@
 "use server";
 
-import { revalidatePath, updateTag } from "next/cache";
+import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { ZodError } from "zod";
 import type { AdminActionResult } from "@/lib/admin/action-result";
+import { invalidatePublicCatalogTags } from "@/server/cache/catalog-tags";
 import { requireActionPermission } from "@/server/auth/guards";
 import { ForbiddenError, UnauthorizedError } from "@/server/auth/permissions";
 import type { PermissionKey } from "@/server/auth/rbac-catalog";
@@ -80,8 +81,20 @@ async function runCatalogAction<T>(
     const ipHash = hashIp(extractTrustedClientIp(reqHeaders, env.APP_ENV), env.IP_HASH_SECRET);
     const data = await executor(actor, ipHash);
 
-    for (const tag of tags) updateTag(tag);
-    for (const p of paths) revalidatePath(p);
+    invalidatePublicCatalogTags([...tags, "offers", "bookmakers", "promo-codes", "countries"]);
+    const publicPaths = [
+      "/fr",
+      "/en",
+      "/fr/offres",
+      "/en/offres",
+      "/fr/bookmakers",
+      "/en/bookmakers",
+      "/fr/codes-promo",
+      "/en/codes-promo",
+      "/fr/comparateur",
+      "/en/comparateur",
+    ];
+    for (const p of [...paths, ...publicPaths]) revalidatePath(p);
     return { ok: true, message: successMessage, data };
   } catch (error) {
     return formatActionError(error);

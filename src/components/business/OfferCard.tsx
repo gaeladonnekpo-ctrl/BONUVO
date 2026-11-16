@@ -1,11 +1,15 @@
 "use client";
 
 import { AlertCircle, CalendarCheck2, Check, ExternalLink, FileText, Shield } from "lucide-react";
+import Image from "next/image";
 import { useTranslations } from "next-intl";
+import type { ReactNode } from "react";
 import { Badge } from "@/components/business/Badge";
 import { PromoCodeBox } from "@/components/business/PromoCodeBox";
 import { RatingScore } from "@/components/business/RatingScore";
 import type { DataComponentState, OfferCardData } from "@/components/business/types";
+import { Link } from "@/i18n/navigation";
+import { trackPublicEvent } from "@/lib/events/track-public-event";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import {
@@ -28,6 +32,8 @@ export interface OfferCardProps {
   emptyTitle?: string;
   emptyDescription?: string;
   onRetry?: () => void;
+  countryCode?: string;
+  headerAction?: ReactNode;
   className?: string;
 }
 
@@ -49,12 +55,8 @@ function OfferCardSkeleton({ className }: { className?: string }) {
       </CardHeader>
       <CardContent className="space-y-3">
         <Skeleton className="h-16 w-full" />
-        <Skeleton className="h-14 w-full" />
         <Skeleton className="h-11 w-full" />
       </CardContent>
-      <CardFooter>
-        <Skeleton className="h-4 w-48" />
-      </CardFooter>
     </Card>
   );
 }
@@ -68,6 +70,8 @@ export function OfferCard({
   emptyTitle,
   emptyDescription,
   onRetry,
+  countryCode,
+  headerAction,
   className,
 }: OfferCardProps) {
   const t = useTranslations("offerCard");
@@ -104,6 +108,18 @@ export function OfferCard({
     Boolean(offer.ctaHref) &&
     (offer.ctaHref!.startsWith("/") || offer.ctaHref!.startsWith("https://"));
 
+  function handlePromoCopy() {
+    if (offer?.isDevExample || typeof window === "undefined" || !offer) return;
+    trackPublicEvent({
+      eventType: "promo_copy",
+      path: window.location.pathname,
+      offerId: offer.id,
+      bookmakerId: offer.bookmakerId ?? null,
+      promoCodeId: offer.promoCodeId ?? null,
+      countryCode,
+    });
+  }
+
   return (
     <Card className={cn("overflow-hidden", className)}>
       <CardHeader className="gap-3 border-b border-border bg-surface-subtle/60 pb-4">
@@ -121,21 +137,43 @@ export function OfferCard({
               <UiBadge tone="warning">{tShowcase("sampleBadge")}</UiBadge>
             ) : null}
           </div>
-          <RatingScore score={offer.ratingScore} max={offer.ratingMax ?? 5} />
+          <div className="flex items-center gap-2">
+            {headerAction}
+            <RatingScore score={offer.ratingScore} max={offer.ratingMax ?? 5} />
+          </div>
         </div>
 
         <div className="flex items-center gap-3.5">
-          <div
-            aria-hidden="true"
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-border-strong bg-surface-elevated font-display text-sm font-bold text-accent"
-          >
-            {offer.bookmakerShortName}
-          </div>
+          {offer.bookmakerLogoUrl ? (
+            <Image
+              src={offer.bookmakerLogoUrl}
+              alt={offer.bookmakerName}
+              width={48}
+              height={48}
+              className="h-12 w-12 shrink-0 rounded-full border border-border-strong bg-surface-elevated object-contain p-1"
+            />
+          ) : (
+            <div
+              aria-hidden="true"
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-border-strong bg-surface-elevated font-display text-sm font-bold text-accent"
+            >
+              {offer.bookmakerShortName}
+            </div>
+          )}
           <div className="min-w-0">
             <h3 className="truncate font-display text-lg font-bold text-fg">
               {offer.bookmakerName}
             </h3>
-            <p className="text-sm font-medium text-fg-muted">{offer.bonusHeadline}</p>
+            {offer.detailHref ? (
+              <Link
+                href={offer.detailHref}
+                className="text-sm font-medium text-fg-muted underline-offset-4 hover:text-accent hover:underline"
+              >
+                {offer.bonusHeadline}
+              </Link>
+            ) : (
+              <p className="text-sm font-medium text-fg-muted">{offer.bonusHeadline}</p>
+            )}
           </div>
         </div>
       </CardHeader>
@@ -184,7 +222,11 @@ export function OfferCard({
         ) : null}
 
         {offer.promoCode ? (
-          <PromoCodeBox code={offer.promoCode} validOn={offer.promoValidOn} />
+          <PromoCodeBox
+            code={offer.promoCode}
+            validOn={offer.promoValidOn}
+            onCopy={handlePromoCopy}
+          />
         ) : null}
 
         {isClickableCta && offer.ctaHref ? (

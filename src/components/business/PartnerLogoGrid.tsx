@@ -1,8 +1,10 @@
 import { Building2 } from "lucide-react";
+import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import type { DataComponentState, PartnerGridItem } from "./types";
 
@@ -65,25 +67,49 @@ export function PartnerLogoGrid({
 
   return (
     <ul className={cn("grid grid-cols-2 gap-3 sm:grid-cols-4", className)}>
-      {items.map((partner) => (
-        <li
-          key={partner.id}
-          className="flex items-center gap-3 rounded-card border border-border bg-surface p-3.5 shadow-[var(--shadow-card)]"
-        >
-          <span
-            aria-hidden="true"
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border-strong bg-surface-elevated font-display text-xs font-bold text-accent"
+      {items.map((partner) => {
+        const inner = (
+          <>
+            {partner.logoUrl ? (
+              <Image
+                src={partner.logoUrl}
+                alt={partner.name}
+                width={40}
+                height={40}
+                className="h-10 w-10 shrink-0 rounded-lg border border-border-strong bg-surface-elevated object-contain p-0.5"
+              />
+            ) : (
+              <span
+                aria-hidden="true"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border-strong bg-surface-elevated font-display text-xs font-bold text-accent"
+              >
+                {partner.shortCode}
+              </span>
+            )}
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-fg">{partner.name}</p>
+              <p className="truncate text-xs text-fg-muted">
+                {partner.isDevExample ? tShowcase("sampleBadge") : (partner.licenseSummary ?? "—")}
+              </p>
+            </div>
+          </>
+        );
+
+        return (
+          <li
+            key={partner.id}
+            className="rounded-card border border-border bg-surface shadow-[var(--shadow-card)] transition hover:border-border-strong"
           >
-            {partner.shortCode}
-          </span>
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-fg">{partner.name}</p>
-            <p className="truncate text-xs text-fg-muted">
-              {partner.isDevExample ? tShowcase("sampleBadge") : (partner.licenseSummary ?? "—")}
-            </p>
-          </div>
-        </li>
-      ))}
+            {partner.slug && !partner.isDevExample ? (
+              <Link href={`/bookmakers/${partner.slug}`} className="flex items-center gap-3 p-3.5">
+                {inner}
+              </Link>
+            ) : (
+              <div className="flex items-center gap-3 p-3.5">{inner}</div>
+            )}
+          </li>
+        );
+      })}
     </ul>
   );
 }

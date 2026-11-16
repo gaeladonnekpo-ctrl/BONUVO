@@ -3,7 +3,8 @@ import "server-only";
 import { sql } from "drizzle-orm";
 import { getDb, type AppDatabase } from "./client";
 
-export type DbExecutionScope = "user_session" | "auth_bootstrap" | "audit_writer";
+export type DbExecutionScope =
+  "user_session" | "auth_bootstrap" | "audit_writer" | "public_catalog" | "public_tracking";
 
 export type AppDbTransaction = Parameters<Parameters<AppDatabase["transaction"]>[0]>[0];
 

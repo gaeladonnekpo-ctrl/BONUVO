@@ -1,7 +1,7 @@
 export const PUBLIC_PRIMARY_LINKS = [
-  { key: "offers", href: "/#offres" },
-  { key: "bookmakers", href: "/#bookmakers" },
-  { key: "promoCodes", href: "/#codes-promo" },
+  { key: "offers", href: "/offres" },
+  { key: "bookmakers", href: "/bookmakers" },
+  { key: "promoCodes", href: "/codes-promo" },
   { key: "predictions", href: "/#pronostics" },
   { key: "community", href: "/#communaute" },
 ] as const;

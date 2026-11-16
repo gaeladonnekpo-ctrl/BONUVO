@@ -1,0 +1,89 @@
+import AxeBuilder from "@axe-core/playwright";
+import { expect, test } from "@playwright/test";
+
+test.describe("Phase 4 — Catalogue public, /go/[slug], /api/events et accessibilité", () => {
+  test("sert les routes publiques principales, sitemap.xml et robots.txt avec état honnête", async ({
+    page,
+    request,
+  }) => {
+    for (const path of [
+      "/fr",
+      "/fr/offres",
+      "/fr/bookmakers",
+      "/fr/codes-promo",
+      "/fr/comparateur",
+      "/en/offres",
+    ]) {
+      const response = await page.goto(path);
+      expect(response?.status(), `Route ${path}`).toBe(200);
+      await expect(page.locator("h1").first()).toBeVisible();
+    }
+
+    const sitemapRes = await request.get("/sitemap.xml");
+    expect(sitemapRes.status()).toBe(200);
+    const sitemapXml = await sitemapRes.text();
+    expect(sitemapXml).toContain("/fr/offres");
+    expect(sitemapXml).toContain("/en/offres");
+
+    const robotsRes = await request.get("/robots.txt");
+    expect(robotsRes.status()).toBe(200);
+    const robotsTxt = await robotsRes.text();
+    expect(robotsTxt).toContain("Disallow: /go/");
+    expect(robotsTxt).toContain("Disallow: /fr/admin/");
+  });
+
+  test("affiche CountryGate sur un pays sans couverture et état introuvable sur une offre absente", async ({
+    page,
+  }) => {
+    await page.goto("/fr/offres?pays=JP");
+    await expect(page.getByText(/Pays non couvert|aucune offre/i).first()).toBeVisible();
+
+    await page.goto("/fr/offres/offre-inexistante-xyz");
+    await expect(page.getByRole("heading", { name: /Page introuvable/i })).toBeVisible();
+    await expect(page.locator('meta[name="robots"][content*="noindex"]').first()).toBeAttached();
+  });
+
+  test("audit axe-core WCAG 2.1 AA sans défaut critique/sérieux sur /fr/offres et /fr/comparateur", async ({
+    page,
+  }) => {
+    for (const path of ["/fr/offres", "/fr/comparateur"]) {
+      await page.goto(path);
+      const axe = await new AxeBuilder({ page }).analyze();
+      const severe = axe.violations.filter(
+        (v) => v.impact === "critical" || v.impact === "serious",
+      );
+      expect(severe, `Violations axe sur ${path}`).toEqual([]);
+    }
+  });
+
+  test("bloque toute redirection ouverte et slug inconnu sur /go/[slug] (B2)", async ({
+    request,
+  }) => {
+    for (const target of [
+      "/go/slug-inconnu-test-404",
+      "/go/slug-inconnu-test-404?url=https://evil.example&next=https://evil.example",
+      "/go/..%2Fadmin",
+    ]) {
+      const res = await request.get(target, { maxRedirects: 0 });
+      expect(res.status()).toBe(404);
+      expect(res.headers()["location"]).toBeUndefined();
+    }
+  });
+
+  test("rejette les requêtes cross-origin (403) et payloads invalides (400) sur POST /api/events", async ({
+    request,
+    baseURL,
+  }) => {
+    const crossOrigin = await request.post("/api/events", {
+      headers: { origin: "https://evil.example" },
+      data: { eventType: "page_view", path: "/fr/offres" },
+    });
+    expect(crossOrigin.status()).toBe(403);
+
+    const invalidPath = await request.post("/api/events", {
+      headers: baseURL ? { origin: baseURL } : {},
+      data: { eventType: "page_view", path: "//evil.example/phish" },
+    });
+    expect(invalidPath.status()).toBe(400);
+  });
+});
