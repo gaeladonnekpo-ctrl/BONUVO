@@ -80,12 +80,17 @@ export default async function OffersCatalogPage({
         <p>{tHome("disclosureBanner")}</p>
       </div>
 
-      <OfferList
-        offers={offers}
-        countryCode={countryCode}
-        isCountryCovered={meta.isCountryCovered}
-        paymentMethods={meta.paymentMethods}
-      />
+      <section aria-labelledby="offers-list-sr-heading">
+        <h2 id="offers-list-sr-heading" className="sr-only">
+          {t("offersTitle")}
+        </h2>
+        <OfferList
+          offers={offers}
+          countryCode={countryCode}
+          isCountryCovered={meta.isCountryCovered}
+          paymentMethods={meta.paymentMethods}
+        />
+      </section>
     </div>
   );
 }
