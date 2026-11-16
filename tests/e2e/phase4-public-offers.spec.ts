@@ -111,5 +111,22 @@ test.describe("Phase 4 — Catalogue public, /go/[slug], /api/events et accessib
       await thirdBtn.click();
       await expect(page.locator("th.animate-bonuvo-col")).toHaveCount(3);
     }
+
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto("/fr/offres");
+    const filterIds = [
+      "#offers-search",
+      "#offers-type",
+      "#offers-payment",
+      "#offers-bookmaker",
+      "#offers-max-deposit",
+    ];
+    const boxes = await Promise.all(filterIds.map((id) => page.locator(id).boundingBox()));
+    for (const box of boxes) {
+      expect(box).not.toBeNull();
+      expect(box!.height).toBeCloseTo(40, 0);
+    }
+    const tops = boxes.map((b) => b!.y);
+    expect(Math.max(...tops) - Math.min(...tops)).toBeLessThanOrEqual(2);
   });
 });

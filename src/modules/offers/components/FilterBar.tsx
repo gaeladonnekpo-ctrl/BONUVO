@@ -61,11 +61,14 @@ export function FilterBar({
   return (
     <section
       aria-label={t("filterTypeLabel")}
-      className="rounded-card border border-border bg-surface p-4 shadow-[var(--shadow-card)]"
+      className="rounded-card border border-border bg-surface p-4 shadow-[var(--shadow-card)] sm:p-5"
     >
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        <div className="space-y-1">
-          <label htmlFor="offers-search" className="text-xs font-semibold text-fg-muted">
+      <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-[minmax(235px,1.35fr)_repeat(4,minmax(0,1fr))] lg:items-end">
+        <div className="flex min-w-0 flex-col gap-1.5">
+          <label
+            htmlFor="offers-search"
+            className="block truncate text-xs font-semibold tracking-wide text-fg-muted"
+          >
             {t("filterSearchLabel")}
           </label>
           <div className="relative">
@@ -83,10 +86,19 @@ export function FilterBar({
           </div>
         </div>
 
-        <div className="space-y-1">
-          <label className="text-xs font-semibold text-fg-muted">{t("filterTypeLabel")}</label>
+        <div className="flex min-w-0 flex-col gap-1.5">
+          <label
+            htmlFor="offers-type"
+            className="block truncate text-xs font-semibold tracking-wide text-fg-muted"
+          >
+            {t("filterTypeLabel")}
+          </label>
           <Select value={offerType} onValueChange={onTypeChange}>
-            <SelectTrigger aria-label={t("filterTypeLabel")}>
+            <SelectTrigger
+              id="offers-type"
+              aria-label={t("filterTypeLabel")}
+              className="flex w-full [&>span]:truncate"
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -99,13 +111,22 @@ export function FilterBar({
           </Select>
         </div>
 
-        <div className="space-y-1">
-          <label className="text-xs font-semibold text-fg-muted">{t("filterPaymentLabel")}</label>
+        <div className="flex min-w-0 flex-col gap-1.5">
+          <label
+            htmlFor="offers-payment"
+            className="block truncate text-xs font-semibold tracking-wide text-fg-muted"
+          >
+            {t("filterPaymentLabel")}
+          </label>
           <Select
             value={payment || "__all__"}
             onValueChange={(val) => onPaymentChange(val === "__all__" ? "" : val)}
           >
-            <SelectTrigger aria-label={t("filterPaymentLabel")}>
+            <SelectTrigger
+              id="offers-payment"
+              aria-label={t("filterPaymentLabel")}
+              className="flex w-full [&>span]:truncate"
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -119,17 +140,26 @@ export function FilterBar({
           </Select>
         </div>
 
-        <div className="space-y-1">
-          <label className="text-xs font-semibold text-fg-muted">{t("compareRowBookmaker")}</label>
+        <div className="flex min-w-0 flex-col gap-1.5">
+          <label
+            htmlFor="offers-bookmaker"
+            className="block truncate text-xs font-semibold tracking-wide text-fg-muted"
+          >
+            {t("compareRowBookmaker")}
+          </label>
           <Select
             value={bookmakerSlug || "__all__"}
             onValueChange={(val) => onBookmakerChange(val === "__all__" ? "" : val)}
           >
-            <SelectTrigger aria-label={t("compareRowBookmaker")}>
+            <SelectTrigger
+              id="offers-bookmaker"
+              aria-label={t("compareRowBookmaker")}
+              className="flex w-full [&>span]:truncate"
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="__all__">{t("filterTypeAll")}</SelectItem>
+              <SelectItem value="__all__">{t("filterBookmakerAll")}</SelectItem>
               {bookmakers.map((bm) => (
                 <SelectItem key={bm.slug} value={bm.slug}>
                   {bm.name}
@@ -139,8 +169,11 @@ export function FilterBar({
           </Select>
         </div>
 
-        <div className="space-y-1">
-          <label htmlFor="offers-max-deposit" className="text-xs font-semibold text-fg-muted">
+        <div className="flex min-w-0 flex-col gap-1.5">
+          <label
+            htmlFor="offers-max-deposit"
+            className="block truncate text-xs font-semibold tracking-wide text-fg-muted"
+          >
             {t("filterMaxDepositLabel")}
           </label>
           <Input
@@ -159,7 +192,7 @@ export function FilterBar({
         </div>
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3">
+      <div className="mt-3.5 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3.5">
         <label className="inline-flex items-center gap-2 text-xs font-medium text-fg cursor-pointer">
           <Switch checked={withCodeOnly} onCheckedChange={onWithCodeChange} />
           <span>{t("filterWithCodeLabel")}</span>

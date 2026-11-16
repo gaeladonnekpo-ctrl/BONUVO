@@ -355,6 +355,7 @@
     "filterTypeCashback": "Cashback",
     "filterPaymentLabel": "Payment",
     "filterPaymentAll": "All methods",
+    "filterBookmakerAll": "All operators",
     "filterMaxDepositLabel": "Max deposit",
     "filterMaxDepositPlaceholder": "e.g. 5000",
     "filterWithCodeLabel": "Promo code only",
