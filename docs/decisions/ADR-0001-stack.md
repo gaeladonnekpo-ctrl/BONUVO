@@ -1,6 +1,6 @@
 # ADR-0001 : Choix de la stack technique et versions figées (Phase 0)
 
-- **Statut** : Proposé (en attente de validation humaine de Phase 0)
+- **Statut** : Validé par l'utilisateur avant démarrage de la Phase 1 (2026-11-16)
 - **Date** : 2026-11-15
 - **Contexte** : Initialisation du projet BONUVO selon [Plan.md](../../Plan.md).
 
