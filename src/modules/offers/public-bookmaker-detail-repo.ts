@@ -73,6 +73,7 @@ export async function getPublicBookmakerBySlugRepo(params: {
           slug: paymentMethods.slug,
           name: paymentMethods.name,
           category: paymentMethods.category,
+          logoUrl: mediaAssets.publicUrl,
           minDepositAmount: bookmakerPaymentMethods.minDepositAmount,
           currencyCode: bookmakerPaymentMethods.currencyCode,
           supportsDeposit: bookmakerPaymentMethods.supportsDeposit,
@@ -80,6 +81,7 @@ export async function getPublicBookmakerBySlugRepo(params: {
         })
         .from(bookmakerPaymentMethods)
         .innerJoin(paymentMethods, eq(paymentMethods.id, bookmakerPaymentMethods.paymentMethodId))
+        .leftJoin(mediaAssets, eq(mediaAssets.id, paymentMethods.logoAssetId))
         .innerJoin(countries, eq(countries.id, bookmakerPaymentMethods.countryId))
         .where(
           and(
@@ -141,8 +143,9 @@ export async function getPublicBookmakerBySlugRepo(params: {
               slug: p.slug,
               name: p.name,
               category: p.category,
+              logoUrl: p.logoUrl ?? null,
               minDepositDisplay: p.minDepositAmount
-                ? `${p.minDepositAmount} ${p.currencyCode}`
+                ? `${String(p.minDepositAmount).replace(/\.00$/, "")} ${p.currencyCode}`
                 : null,
               supportsDeposit: p.supportsDeposit,
               supportsWithdrawal: p.supportsWithdrawal,

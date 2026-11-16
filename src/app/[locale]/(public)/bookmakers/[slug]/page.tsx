@@ -3,8 +3,8 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { OfferCard } from "@/components/business/OfferCard";
+import { PaymentMethodList } from "@/components/business/PaymentMethodList";
 import { RatingScore } from "@/components/business/RatingScore";
-import { UiBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -198,14 +198,9 @@ export default async function BookmakerDetailPage({
           <CardHeader>
             <CardTitle className="text-lg">{t("bookmakerPaymentsTitle")}</CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-wrap gap-2">
+          <CardContent>
             {detail.paymentMethods.length > 0 ? (
-              detail.paymentMethods.map((pm) => (
-                <UiBadge key={pm.slug} tone="neutral">
-                  {pm.name}
-                  {pm.minDepositDisplay ? ` (${pm.minDepositDisplay})` : ""}
-                </UiBadge>
-              ))
+              <PaymentMethodList items={detail.paymentMethods} showDeposit />
             ) : (
               <p className="text-sm text-fg-muted">—</p>
             )}

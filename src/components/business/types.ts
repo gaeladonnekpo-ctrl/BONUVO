@@ -3,6 +3,13 @@ export type DataComponentState = "loading" | "content" | "empty" | "error";
 export type BusinessBadgeTone =
   "recommended" | "exclusive" | "new" | "verified" | "warning" | "neutral";
 
+export interface PaymentMethodBadgeItem {
+  readonly slug: string;
+  readonly name: string;
+  readonly logoUrl?: string | null;
+  readonly minDepositDisplay?: string | null;
+}
+
 export interface OfferCardData {
   readonly id: string;
   readonly offerSlug?: string;
@@ -21,6 +28,7 @@ export interface OfferCardData {
   readonly weaknessNote?: string;
   readonly rolloverText?: string;
   readonly paymentMethods: readonly string[];
+  readonly paymentMethodItems?: readonly PaymentMethodBadgeItem[];
   readonly promoCode?: string;
   readonly promoValidOn?: string;
   readonly ctaHref?: string;

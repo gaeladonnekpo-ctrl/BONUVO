@@ -54,11 +54,13 @@ export const paymentMethods = pgTable(
     slug: text("slug").notNull().unique(),
     name: text("name").notNull().unique(),
     category: text("category").$type<PaymentMethodCategory>().notNull().default("mobile_money"),
+    logoAssetId: uuid("logo_asset_id").references(() => mediaAssets.id, { onDelete: "set null" }),
     active: boolean("active").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
   },
   (table) => [
+    index("payment_methods_logo_idx").on(table.logoAssetId),
     check(
       "payment_methods_category_check",
       sql`${table.category} IN ('mobile_money', 'card', 'bank_transfer', 'e_wallet', 'crypto', 'voucher')`,

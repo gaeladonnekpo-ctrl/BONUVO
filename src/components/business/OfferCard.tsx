@@ -5,6 +5,8 @@ import Image from "next/image";
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { Badge } from "@/components/business/Badge";
+import { OfferCardSkeleton } from "@/components/business/OfferCardSkeleton";
+import { PaymentMethodList } from "@/components/business/PaymentMethodList";
 import { PromoCodeBox } from "@/components/business/PromoCodeBox";
 import { RatingScore } from "@/components/business/RatingScore";
 import type { DataComponentState, OfferCardData } from "@/components/business/types";
@@ -22,7 +24,6 @@ import {
 } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
-import { Skeleton } from "@/components/ui/skeleton";
 import { UiBadge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
@@ -35,30 +36,6 @@ export interface OfferCardProps {
   countryCode?: string;
   headerAction?: ReactNode;
   className?: string;
-}
-
-function OfferCardSkeleton({ className }: { className?: string }) {
-  return (
-    <Card className={cn("overflow-hidden", className)} aria-busy="true">
-      <CardHeader className="gap-3">
-        <div className="flex items-center justify-between gap-2">
-          <Skeleton className="h-6 w-28 rounded-full" />
-          <Skeleton className="h-8 w-24 rounded-full" />
-        </div>
-        <div className="flex items-center gap-3">
-          <Skeleton className="h-12 w-12 rounded-full" />
-          <div className="flex-1 space-y-2">
-            <Skeleton className="h-5 w-40" />
-            <Skeleton className="h-4 w-56" />
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <Skeleton className="h-16 w-full" />
-        <Skeleton className="h-11 w-full" />
-      </CardContent>
-    </Card>
-  );
 }
 
 /**
@@ -206,17 +183,24 @@ export function OfferCard({
         ) : null}
 
         {offer.rolloverText || offer.paymentMethods.length > 0 ? (
-          <div className="flex flex-wrap gap-2 text-xs text-fg-muted">
+          <div className="space-y-2 text-xs text-fg-muted">
             {offer.rolloverText ? (
-              <span className="rounded-md border border-border bg-surface-subtle px-2.5 py-1">
+              <span className="inline-block rounded-md border border-border bg-surface-subtle px-2.5 py-1">
                 {t("rolloverLabel")}: <strong className="text-fg">{offer.rolloverText}</strong>
               </span>
             ) : null}
             {offer.paymentMethods.length > 0 ? (
-              <span className="rounded-md border border-border bg-surface-subtle px-2.5 py-1">
-                {t("paymentsLabel")}:{" "}
-                <strong className="text-fg">{offer.paymentMethods.join(", ")}</strong>
-              </span>
+              <div className="space-y-1">
+                <span className="block text-[11px] font-semibold uppercase tracking-wide text-fg-muted">
+                  {t("paymentsLabel")}
+                </span>
+                <PaymentMethodList
+                  items={offer.paymentMethodItems}
+                  fallbackNames={offer.paymentMethods}
+                  maxVisible={6}
+                  compact
+                />
+              </div>
             ) : null}
           </div>
         ) : null}

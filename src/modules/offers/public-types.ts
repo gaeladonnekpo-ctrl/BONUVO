@@ -13,6 +13,7 @@ export interface PublicPaymentMethodSummary {
   readonly slug: string;
   readonly name: string;
   readonly category: string;
+  readonly logoUrl?: string | null;
   readonly minDepositDisplay?: string | null;
   readonly supportsDeposit?: boolean;
   readonly supportsWithdrawal?: boolean;
@@ -85,6 +86,7 @@ export interface PublicBookmakerListItem {
   readonly finalScore: number | null;
   readonly activeOffersCount: number;
   readonly activePromoCount: number;
+  readonly primaryOfferSlug?: string | null;
   readonly licenseSummary: string | null;
   readonly paymentMethods: readonly PublicPaymentMethodSummary[];
 }

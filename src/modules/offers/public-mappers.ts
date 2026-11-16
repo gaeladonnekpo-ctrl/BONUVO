@@ -1,4 +1,4 @@
-import type { BusinessBadgeTone } from "@/components/business/types";
+import type { BusinessBadgeTone, PaymentMethodBadgeItem } from "@/components/business/types";
 import type { PublicOfferSort } from "@/modules/offers/public-schema";
 import type { PublicOfferListItem } from "@/modules/offers/public-types";
 
@@ -15,6 +15,22 @@ const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 export function buildShortCode(name: string): string {
   const letters = name.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
   return (letters.slice(0, 3) || "BNV").padEnd(2, "X");
+}
+
+export function dedupePaymentItems<
+  T extends { slug: string; name: string; logoUrl?: string | null },
+>(rows: readonly T[]): PaymentMethodBadgeItem[] {
+  const seen = new Map<string, PaymentMethodBadgeItem>();
+  for (const row of rows) {
+    if (!seen.has(row.slug)) {
+      seen.set(row.slug, {
+        slug: row.slug,
+        name: row.name,
+        logoUrl: row.logoUrl ?? null,
+      });
+    }
+  }
+  return Array.from(seen.values());
 }
 
 export function formatAmountDisplay(params: {

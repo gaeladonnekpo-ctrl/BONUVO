@@ -2,7 +2,7 @@ import "server-only";
 
 import { asc, eq } from "drizzle-orm";
 import { withAppDb, type AppDbTransaction } from "@/server/db/context";
-import { countries, paymentMethods } from "@/server/db/schema";
+import { countries, mediaAssets, paymentMethods } from "@/server/db/schema";
 import type { PublicCatalogMeta } from "@/modules/offers/public-types";
 
 export function selectBestAffiliateSlug(params: {
@@ -57,8 +57,10 @@ export async function loadCatalogMetaTx(
         slug: paymentMethods.slug,
         name: paymentMethods.name,
         category: paymentMethods.category,
+        logoUrl: mediaAssets.publicUrl,
       })
       .from(paymentMethods)
+      .leftJoin(mediaAssets, eq(mediaAssets.id, paymentMethods.logoAssetId))
       .where(eq(paymentMethods.active, true))
       .orderBy(asc(paymentMethods.name)),
   ]);

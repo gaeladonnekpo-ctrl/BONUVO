@@ -86,4 +86,30 @@ test.describe("Phase 4 — Catalogue public, /go/[slug], /api/events et accessib
     });
     expect(invalidPath.status()).toBe(400);
   });
+
+  test("affiche les logos officiels de paiement et permet la comparaison interactive animée", async ({
+    page,
+  }) => {
+    await page.goto("/fr/bookmakers/megapari");
+    const paymentCard = page
+      .locator("img[alt='Visa'], img[alt='Wave'], img[alt='Bitcoin (BTC)']")
+      .first();
+    await expect(paymentCard).toBeVisible();
+    const imgLoaded = await paymentCard.evaluate(
+      (el) => el instanceof HTMLImageElement && el.complete && el.naturalWidth > 0,
+    );
+    expect(imgLoaded).toBe(true);
+
+    await page.goto("/fr/comparateur");
+    await expect(page.locator("table")).toBeVisible();
+    const animatedCols = page.locator("th.animate-bonuvo-col");
+    await expect(animatedCols).toHaveCount(2);
+
+    const toggleButtons = page.locator("button:has-text('·')");
+    const thirdBtn = toggleButtons.nth(2);
+    if ((await toggleButtons.count()) >= 3) {
+      await thirdBtn.click();
+      await expect(page.locator("th.animate-bonuvo-col")).toHaveCount(3);
+    }
+  });
 });

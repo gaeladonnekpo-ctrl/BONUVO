@@ -2,7 +2,11 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
-import { filterAndRankOffers, resolveOfferBadges } from "@/modules/offers/public-mappers";
+import {
+  dedupePaymentItems,
+  filterAndRankOffers,
+  resolveOfferBadges,
+} from "@/modules/offers/public-mappers";
 import { goRedirectSlugSchema, publicEventInputSchema } from "@/modules/offers/public-schema";
 import type { PublicOfferListItem } from "@/modules/offers/public-types";
 import { detectVisitorCountryCode } from "@/server/geo/country-resolve";
@@ -197,5 +201,20 @@ describe("Phase 4 — Logique catalogue public, géolocalisation, bots et redire
       publicEventInputSchema.safeParse({ eventType: "promo_copy", path: "/fr/offres" }).success,
     ).toBe(true);
     expect(goRedirectSlugSchema.safeParse("../admin").success).toBe(false);
+  });
+
+  it("dedupePaymentItems déduplique par slug en conservant le logo officiel", () => {
+    const deduped = dedupePaymentItems([
+      { slug: "mtn-momo", name: "MTN MoMo", logoUrl: "https://cdn.example/mtn.png" },
+      { slug: "mtn-momo", name: "MTN MoMo", logoUrl: "https://cdn.example/mtn.png" },
+      { slug: "wave", name: "Wave", logoUrl: "https://cdn.example/wave.png" },
+      { slug: "visa", name: "Visa", logoUrl: null },
+    ]);
+
+    expect(deduped).toEqual([
+      { slug: "mtn-momo", name: "MTN MoMo", logoUrl: "https://cdn.example/mtn.png" },
+      { slug: "wave", name: "Wave", logoUrl: "https://cdn.example/wave.png" },
+      { slug: "visa", name: "Visa", logoUrl: null },
+    ]);
   });
 });

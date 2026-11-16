@@ -69,14 +69,21 @@ export async function listPublicBookmakersRepo(params: {
           slug: paymentMethods.slug,
           name: paymentMethods.name,
           category: paymentMethods.category,
+          logoUrl: mediaAssets.publicUrl,
         })
         .from(bookmakerPaymentMethods)
         .innerJoin(paymentMethods, eq(paymentMethods.id, bookmakerPaymentMethods.paymentMethodId))
+        .leftJoin(mediaAssets, eq(mediaAssets.id, paymentMethods.logoAssetId))
         .where(
           and(inArray(bookmakerPaymentMethods.bookmakerId, bmIds), eq(paymentMethods.active, true)),
         ),
       tx
-        .select({ id: offers.id, bookmakerId: offers.bookmakerId })
+        .select({
+          id: offers.id,
+          bookmakerId: offers.bookmakerId,
+          slug: offers.slug,
+          offerType: offers.offerType,
+        })
         .from(offers)
         .where(
           and(
@@ -86,7 +93,8 @@ export async function listPublicBookmakersRepo(params: {
             or(isNull(offers.validFrom), lte(offers.validFrom, now)),
             or(isNull(offers.validUntil), gt(offers.validUntil, now)),
           ),
-        ),
+        )
+        .orderBy(asc(offers.rankOrder)),
       tx
         .select({ id: promoCodes.id, bookmakerId: promoCodes.bookmakerId })
         .from(promoCodes)
@@ -117,14 +125,25 @@ export async function listPublicBookmakersRepo(params: {
           )
         : bmCountries.find((bc) => bc.bookmakerId === bookmaker.id && bc.localLicense);
 
-      const paymentsMap = new Map<string, { slug: string; name: string; category: string }>();
+      const paymentsMap = new Map<
+        string,
+        { slug: string; name: string; category: string; logoUrl: string | null }
+      >();
       for (const p of bmPayments) {
         if (p.bookmakerId !== bookmaker.id) continue;
         if (targetCountryId && p.countryId !== targetCountryId) continue;
         if (!paymentsMap.has(p.slug)) {
-          paymentsMap.set(p.slug, { slug: p.slug, name: p.name, category: p.category });
+          paymentsMap.set(p.slug, {
+            slug: p.slug,
+            name: p.name,
+            category: p.category,
+            logoUrl: p.logoUrl ?? null,
+          });
         }
       }
+
+      const bmOffers = activeOffers.filter((o) => o.bookmakerId === bookmaker.id);
+      const primaryOffer = bmOffers.find((o) => o.offerType === "welcome") ?? bmOffers[0];
 
       items.push({
         id: bookmaker.id,
@@ -135,8 +154,9 @@ export async function listPublicBookmakersRepo(params: {
         foundedYear: bookmaker.foundedYear,
         appPlatforms: bookmaker.appPlatforms,
         finalScore: rating ? Number(rating.finalScore) : null,
-        activeOffersCount: activeOffers.filter((o) => o.bookmakerId === bookmaker.id).length,
+        activeOffersCount: bmOffers.length,
         activePromoCount: activePromos.filter((p) => p.bookmakerId === bookmaker.id).length,
+        primaryOfferSlug: primaryOffer?.slug ?? null,
         licenseSummary: countryEntry?.localLicense || countryEntry?.authorityName || null,
         paymentMethods: Array.from(paymentsMap.values()),
       });

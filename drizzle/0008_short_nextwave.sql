@@ -1,0 +1,3 @@
+ALTER TABLE "payment_methods" ADD COLUMN "logo_asset_id" uuid;--> statement-breakpoint
+ALTER TABLE "payment_methods" ADD CONSTRAINT "payment_methods_logo_asset_id_media_assets_id_fk" FOREIGN KEY ("logo_asset_id") REFERENCES "public"."media_assets"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+CREATE INDEX "payment_methods_logo_idx" ON "payment_methods" USING btree ("logo_asset_id");

@@ -134,6 +134,11 @@ export function OfferList({
               <OfferCard
                 key={offer.id}
                 countryCode={countryCode}
+                className={
+                  isSelected
+                    ? "ring-1 ring-accent/55 transition-[transform,opacity] duration-200 hover:-translate-y-0.5"
+                    : "transition-[transform,opacity] duration-200 hover:-translate-y-0.5"
+                }
                 offer={{
                   ...offer,
                   detailHref: `/offres/${offer.offerSlug}`,
@@ -143,7 +148,7 @@ export function OfferList({
                     type="button"
                     size="sm"
                     variant={isSelected ? "primary" : "outline"}
-                    className="h-7 px-2.5 text-xs"
+                    className="h-7 px-2.5 text-xs transition-transform duration-150 active:scale-[0.96]"
                     onClick={() => handleToggleCompare(offer.offerSlug)}
                   >
                     {isSelected ? (

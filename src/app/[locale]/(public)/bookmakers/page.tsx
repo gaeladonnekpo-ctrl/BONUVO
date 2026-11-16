@@ -1,13 +1,8 @@
-import { ArrowRight, Building2, Shield } from "lucide-react";
-import Image from "next/image";
+import { Building2 } from "lucide-react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { RatingScore } from "@/components/business/RatingScore";
-import { UiBadge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Link } from "@/i18n/navigation";
 import type { AppLocale } from "@/lib/i18n/config";
 import { buildLocalizedMetadata } from "@/lib/i18n/metadata";
+import { BookmakerGrid } from "@/modules/offers/components/BookmakerGrid";
 import { CountryGate } from "@/modules/offers/components/CountryGate";
 import { PageViewTracker } from "@/modules/offers/components/PageViewTracker";
 import { listBookmakers } from "@/modules/offers/public-service";
@@ -61,68 +56,7 @@ export default async function BookmakersDirectoryPage({
       {bookmakers.length === 0 ? (
         <CountryGate countryCode={countryCode} isCovered={meta.isCountryCovered} />
       ) : (
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
-          {bookmakers.map((bm) => (
-            <Card key={bm.id} className="flex flex-col justify-between">
-              <CardHeader className="gap-3 border-b border-border bg-surface-subtle/60 pb-4">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex min-w-0 items-center gap-3">
-                    {bm.logoUrl ? (
-                      <Image
-                        src={bm.logoUrl}
-                        alt={bm.name}
-                        width={44}
-                        height={44}
-                        className="h-11 w-11 shrink-0 rounded-full border border-border-strong bg-surface-elevated object-contain p-1"
-                      />
-                    ) : (
-                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border-strong bg-surface-elevated font-display text-xs font-bold text-accent">
-                        {bm.shortCode}
-                      </span>
-                    )}
-                    <CardTitle className="truncate text-lg">{bm.name}</CardTitle>
-                  </div>
-                  <RatingScore score={bm.finalScore} max={10} />
-                </div>
-              </CardHeader>
-
-              <CardContent className="space-y-3 pt-4 text-sm">
-                <div className="flex flex-wrap gap-1.5">
-                  <UiBadge tone="neutral">
-                    {t("bookmakerOffersCount", { count: bm.activeOffersCount })}
-                  </UiBadge>
-                  {bm.appPlatforms.map((platform) => (
-                    <UiBadge key={platform} tone="outline" className="uppercase">
-                      {platform}
-                    </UiBadge>
-                  ))}
-                </div>
-
-                {bm.licenseSummary ? (
-                  <p className="flex items-center gap-1.5 text-xs text-fg-muted">
-                    <Shield className="h-3.5 w-3.5 shrink-0 text-trust" aria-hidden="true" />
-                    <span>{bm.licenseSummary}</span>
-                  </p>
-                ) : null}
-
-                {bm.paymentMethods.length > 0 ? (
-                  <p className="text-xs text-fg-muted">
-                    {bm.paymentMethods.map((p) => p.name).join(", ")}
-                  </p>
-                ) : null}
-              </CardContent>
-
-              <CardFooter>
-                <Button asChild variant="outline" size="sm" className="w-full justify-between">
-                  <Link href={`/bookmakers/${bm.slug}`}>
-                    <span>{t("bookmakerViewProfile")}</span>
-                    <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                  </Link>
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
+        <BookmakerGrid bookmakers={bookmakers} />
       )}
     </div>
   );

@@ -23,6 +23,7 @@ import {
 } from "@/modules/offers/public-catalog-meta-repo";
 import {
   buildShortCode,
+  dedupePaymentItems,
   formatAmountDisplay,
   formatVerifiedLabel,
   filterAndRankOffers,
@@ -121,9 +122,11 @@ export async function queryPublishedOffersTx(
         countryId: bookmakerPaymentMethods.countryId,
         slug: paymentMethods.slug,
         name: paymentMethods.name,
+        logoUrl: mediaAssets.publicUrl,
       })
       .from(bookmakerPaymentMethods)
       .innerJoin(paymentMethods, eq(paymentMethods.id, bookmakerPaymentMethods.paymentMethodId))
+      .leftJoin(mediaAssets, eq(mediaAssets.id, paymentMethods.logoAssetId))
       .where(
         and(inArray(bookmakerPaymentMethods.bookmakerId, bmIds), eq(paymentMethods.active, true)),
       ),
@@ -204,9 +207,11 @@ export async function queryPublishedOffersTx(
           (bc) => bc.bookmakerId === bookmaker.id && bc.countryId === targetCountryId,
         )
       : undefined;
-    const bmPayments = bmPaymentRows.filter(
-      (p) =>
-        p.bookmakerId === bookmaker.id && (!targetCountryId || p.countryId === targetCountryId),
+    const uniqueBmPayments = dedupePaymentItems(
+      bmPaymentRows.filter(
+        (p) =>
+          p.bookmakerId === bookmaker.id && (!targetCountryId || p.countryId === targetCountryId),
+      ),
     );
     const matchingPromo =
       promoRows.find(
@@ -264,8 +269,9 @@ export async function queryPublishedOffersTx(
       highlights: highlights.filter((h) => h.polarity === "positive").map((h) => h.label),
       weaknessNote: highlights.find((h) => h.polarity === "negative")?.label,
       rolloverText: offer.rolloverText || undefined,
-      paymentMethods: Array.from(new Set(bmPayments.map((p) => p.name))),
-      paymentMethodSlugs: Array.from(new Set(bmPayments.map((p) => p.slug))),
+      paymentMethods: uniqueBmPayments.map((p) => p.name),
+      paymentMethodItems: uniqueBmPayments,
+      paymentMethodSlugs: uniqueBmPayments.map((p) => p.slug),
       promoCode: matchingPromo?.code,
       promoCodeId: matchingPromo?.id ?? null,
       ctaHref: bestSlug ? `/go/${bestSlug}` : undefined,
