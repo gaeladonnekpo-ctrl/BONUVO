@@ -29,6 +29,20 @@
       "when": 1794793716184,
       "tag": "0003_fix_actor_id_helper",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794840515169,
+      "tag": "0004_slimy_black_bolt",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794840533255,
+      "tag": "0005_phase3_catalog_rls",
+      "breakpoints": true
     }
   ]
 }

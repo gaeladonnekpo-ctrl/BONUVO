@@ -11,7 +11,8 @@ export type RateLimitRuleKey =
   | "forgot_password"
   | "reset_password"
   | "otp_account"
-  | "resend_verification";
+  | "resend_verification"
+  | "media_upload";
 
 export interface RateLimitRuleSpec {
   limit: number;
@@ -27,6 +28,7 @@ export const AUTH_RATE_LIMIT_RULES: Record<RateLimitRuleKey, RateLimitRuleSpec> 
   reset_password: { limit: 5, windowSeconds: 3600, lockSeconds: 0 },
   otp_account: { limit: 5, windowSeconds: 600, lockSeconds: 900 },
   resend_verification: { limit: 3, windowSeconds: 3600, lockSeconds: 0 },
+  media_upload: { limit: 20, windowSeconds: 3600, lockSeconds: 0 },
 } as const;
 
 export interface RateLimitDecision {

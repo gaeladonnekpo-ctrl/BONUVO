@@ -1,9 +1,10 @@
 "use client";
 
 import {
-  BarChart3,
+  Award,
   BookOpen,
-  FileText,
+  Building2,
+  Globe2,
   Handshake,
   LayoutDashboard,
   PanelLeftClose,
@@ -11,7 +12,7 @@ import {
   ScrollText,
   Settings,
   Shapes,
-  Sparkles,
+  TicketPercent,
   Users,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -25,11 +26,12 @@ import { ADMIN_NAV_LINKS } from "./navigation-links";
 const ADMIN_ICONS = {
   dashboard: LayoutDashboard,
   catalog: BookOpen,
+  bookmakers: Building2,
+  offers: Award,
+  promoCodes: TicketPercent,
+  countries: Globe2,
   affiliation: Handshake,
-  predictions: Sparkles,
-  contents: FileText,
   users: Users,
-  stats: BarChart3,
   audit: ScrollText,
   settings: Settings,
 } as const;

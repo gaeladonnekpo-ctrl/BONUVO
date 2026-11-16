@@ -14,13 +14,14 @@ export const TRUST_PAGE_LINKS = [
 ] as const;
 
 export const ADMIN_NAV_LINKS = [
-  { key: "dashboard", href: "/admin/design#dashboard" },
-  { key: "catalog", href: "/admin/design#catalog" },
-  { key: "affiliation", href: "/admin/design#affiliation" },
-  { key: "predictions", href: "/admin/design#predictions" },
-  { key: "contents", href: "/admin/design#contents" },
-  { key: "users", href: "/admin/design#users" },
-  { key: "stats", href: "/admin/design#stats" },
-  { key: "audit", href: "/admin/design#audit" },
-  { key: "settings", href: "/admin/design#settings" },
+  { key: "dashboard", href: "/admin" },
+  { key: "catalog", href: "/admin/catalogue" },
+  { key: "bookmakers", href: "/admin/bookmakers" },
+  { key: "offers", href: "/admin/offres" },
+  { key: "promoCodes", href: "/admin/codes-promo" },
+  { key: "countries", href: "/admin/pays" },
+  { key: "affiliation", href: "/admin/affiliation" },
+  { key: "users", href: "/admin/utilisateurs" },
+  { key: "audit", href: "/admin/journal" },
+  { key: "settings", href: "/admin/parametres" },
 ] as const;
