@@ -1,6 +1,6 @@
 # ADR-0003 : Authentification côté serveur, RBAC, RLS et socle de sécurité (Phase 2)
 
-- **Statut** : Proposé pour validation humaine en fin de Phase 2
+- **Statut** : Validé par l'utilisateur pour clôture de Phase 2 (configuration d'un domaine/SMTP propre reportée en fin de projet avant mise en production publique)
 - **Date** : 2026-11-16
 - **Contexte** : Implémentation de la Phase 2 décrite dans [Plan.md](../../Plan.md) suite à la validation d'[ADR-0001](./ADR-0001-stack.md) et d'[ADR-0002](./ADR-0002-design-system-i18n.md).
 

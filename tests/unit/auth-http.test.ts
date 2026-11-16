@@ -2,8 +2,12 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { NextRequest } from "next/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { handleValidatedAuthPost } from "@/modules/auth/http";
-import { signInSchema } from "@/modules/auth/schema";
-import { signInWithRateLimit, type AuthServiceDeps } from "@/modules/auth/service";
+import { signInSchema, signUpSchema } from "@/modules/auth/schema";
+import {
+  signInWithRateLimit,
+  signUpWithRateLimit,
+  type AuthServiceDeps,
+} from "@/modules/auth/service";
 import { resetServerEnvCache } from "@/server/env";
 import { createTestRateLimitBackend } from "@/server/security/rate-limit";
 
@@ -146,6 +150,62 @@ describe("Phase 2 — Auth HTTP route validation, CSRF & 429", () => {
     expect(sixthRes.headers.get("Retry-After")).toBe("900");
     expect(logSecurityEventSpy).toHaveBeenLastCalledWith(
       expect.objectContaining({ eventType: "login_rate_limited" }),
+    );
+  });
+
+  it("retourne 503 et journalise signup_provider_error si Supabase/SMTP échoue en 500+", async () => {
+    logSecurityEventSpy.mockClear();
+    const deps: AuthServiceDeps = {
+      supabase: {
+        auth: {
+          signUp: vi.fn().mockResolvedValue({
+            data: { user: null, session: null },
+            error: { status: 500, code: "unexpected_failure", message: "SMTP 550 rejected" },
+          }),
+        },
+      } as unknown as SupabaseClient,
+      adminSupabase: null,
+      rateLimiter: createTestRateLimitBackend(),
+      emailService: {
+        isConfigured: () => true,
+        sendSecurityLockoutAlert: vi.fn().mockResolvedValue({ sent: true }),
+      },
+      siteUrl: "http://localhost:3000",
+      ipHashSecret: "0123456789abcdef0123456789abcdef",
+    };
+
+    const req = new NextRequest("http://localhost:3000/api/auth/sign-up", {
+      method: "POST",
+      headers: {
+        host: "localhost:3000",
+        origin: "http://localhost:3000",
+        "x-vercel-forwarded-for": "203.0.113.201",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        email: "autre@example.com",
+        password: "StrongPassword#2026!",
+        displayName: "Test User",
+        countryCode: "BJ",
+        locale: "fr",
+        acceptAnalytics: false,
+        acceptNotifications: false,
+        acceptMarketing: false,
+      }),
+    });
+
+    const res = await handleValidatedAuthPost(
+      req,
+      signUpSchema,
+      "/api/auth/sign-up",
+      signUpWithRateLimit,
+      deps,
+    );
+    expect(res.status).toBe(503);
+    const json = await res.json();
+    expect(json.error?.code).toBe("SIGNUP_DELIVERY_UNAVAILABLE");
+    expect(logSecurityEventSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ eventType: "signup_provider_error", severity: "high" }),
     );
   });
 });

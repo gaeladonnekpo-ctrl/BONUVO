@@ -1,7 +1,7 @@
 # Rapport de Phase 2 — Authentification, rôles et socle de sécurité (BONUVO)
 
 **Branche** : `feat/phase-2-auth-security` (basée sur `feat/phase-1-design-system`)  
-**Statut** : **Implémentation, tests locaux, intégration DB et vérifications live (`Vercel Preview` + `Supabase Auth` + `Upstash Redis` + `Resend`) complets — en attente de validation humaine d'ADR-0003 et du passage en Phase 3**
+**Statut** : **Validée par l'utilisateur — socle auth/sécurité complet et prouvé en live ; configuration SMTP/domaine propre reportée avant mise en production (Phase 8)**
 
 ---
 

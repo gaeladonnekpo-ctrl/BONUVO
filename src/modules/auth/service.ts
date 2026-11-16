@@ -218,6 +218,26 @@ export async function signUpWithRateLimit(
     },
   });
 
+  if (error && (error.status ?? 0) >= 500) {
+    await logSecurityEvent({
+      eventType: "signup_provider_error",
+      severity: "high",
+      ipHash,
+      identifierHash: hashIdentifier(input.email, deps.ipHashSecret),
+      route: "/api/auth/sign-up",
+      details: { status: error.status ?? 500, code: error.code ?? "unexpected_failure" },
+    });
+    return {
+      ok: false,
+      status: 503,
+      code: "SIGNUP_DELIVERY_UNAVAILABLE",
+      message:
+        input.locale === "en"
+          ? "Registration is temporarily unavailable (verification e-mail delivery failed). Please retry later."
+          : "L'inscription est temporairement indisponible (échec d'envoi de l'e-mail de confirmation). Veuillez réessayer ultérieurement.",
+    };
+  }
+
   if (data.user && !error) {
     await loadOrBootstrapProfileContext({
       userId: data.user.id,
