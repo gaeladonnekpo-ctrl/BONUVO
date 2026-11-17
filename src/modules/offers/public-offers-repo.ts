@@ -287,7 +287,6 @@ export async function queryPublishedOffersTx(
       eligibleCountryCodes: eligibleCountries.map((c) => c.code),
     });
   }
-
   return { offers: filterAndRankOffers(mapped, params.filter ?? {}), meta };
 }
 

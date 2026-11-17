@@ -11,3 +11,5 @@ export * from "./public-events";
 export * from "./intelligence";
 export * from "./ai-core";
 export * from "./ai-predictions";
+export * from "./community";
+export * from "./members";

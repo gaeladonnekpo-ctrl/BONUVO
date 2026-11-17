@@ -34,6 +34,7 @@ const ADMIN_ICONS = {
   promoCodes: TicketPercent,
   countries: Globe2,
   predictions: Sparkles,
+  contents: Shapes,
   affiliation: Handshake,
   stats: BarChart3,
   users: Users,
@@ -59,6 +60,7 @@ const AFFILIATION_PATHS = [
 ];
 
 const AI_PATHS = ["/admin/pronostics", "/admin/ingestion"];
+const COMMUNITY_PATHS = ["/admin/communaute", "/admin/contenus", "/admin/notifications"];
 
 function isAdminLinkActive(pathname: string, href: string, key: string): boolean {
   if (href === "/admin") return pathname === "/admin";
@@ -67,6 +69,9 @@ function isAdminLinkActive(pathname: string, href: string, key: string): boolean
   }
   if (key === "predictions") {
     return AI_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+  }
+  if (key === "contents") {
+    return COMMUNITY_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
   }
   return pathname === href || pathname.startsWith(`${href}/`);
 }

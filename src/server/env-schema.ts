@@ -62,6 +62,9 @@ export const serverOnlyEnvSchema = z.object({
   API_FOOTBALL_HOST: optionalTrimmed,
   AI_LLM_ENABLED: z.enum(["true", "false"]).optional(),
   GEMINI_API_KEY: optionalTrimmed,
+  TELEGRAM_BOT_TOKEN: optionalTrimmed,
+  TELEGRAM_DEFAULT_CHAT_ID: optionalTrimmed,
+  TELEGRAM_WEBHOOK_SECRET: optionalTrimmed,
 });
 
 const STRICT_EXTERNAL_ENV_KEYS = [

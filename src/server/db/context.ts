@@ -11,7 +11,9 @@ export type DbExecutionScope =
   | "public_tracking"
   | "postback_ingest"
   | "stats_aggregator"
-  | "ai_pipeline";
+  | "ai_pipeline"
+  | "purge_worker"
+  | "public_unsubscribe";
 
 export type AppDbTransaction = Parameters<Parameters<AppDatabase["transaction"]>[0]>[0];
 
