@@ -15,6 +15,7 @@ import { upsertAffiliateLink, upsertAffiliateNetwork } from "@/modules/offers/af
 import {
   addBookmakerRating,
   archiveBookmaker,
+  bulkUpdateCountriesActive,
   saveBookmaker,
   updateCountryConfig,
   upsertBookmakerCountry,
@@ -245,9 +246,21 @@ export async function upsertAffiliateLinkAction(input: unknown) {
 export async function updateCountryConfigAction(input: unknown) {
   return runCatalogAction(
     "offers.write",
-    ["/fr/admin/pays", "/en/admin/pays"],
+    ["/fr/admin", "/fr/admin/pays", "/en/admin/pays"],
     ["offers"],
     (actor, ipHash) => updateCountryConfig(actor, input, ipHash),
     "Configuration pays mise à jour.",
+  );
+}
+
+export async function bulkUpdateCountriesActiveAction(mode: "all" | "priority_only") {
+  return runCatalogAction(
+    "offers.write",
+    ["/fr/admin", "/fr/admin/pays", "/en/admin/pays"],
+    ["offers"],
+    (actor, ipHash) => bulkUpdateCountriesActive(actor, mode, ipHash),
+    mode === "all"
+      ? "Tous les 249 pays ISO 3166-1 ont été activés."
+      : "Seuls les marchés prioritaires paris sportifs & gaming restent actifs.",
   );
 }

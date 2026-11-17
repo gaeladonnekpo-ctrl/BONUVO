@@ -1,9 +1,11 @@
 import "server-only";
 
 import { asc, eq } from "drizzle-orm";
+import { compareByBettingPriority, getCountryContinent } from "@/lib/i18n/betting-priority";
+import { COUNTRY_OPTIONS, type CountryOption } from "@/lib/i18n/countries";
+import { PUBLIC_CATALOG_CACHE_TAGS, withCatalogCache } from "@/server/cache/catalog-tags";
 import { withAppDb, type AppDbTransaction } from "@/server/db/context";
 import { countries, mediaAssets, paymentMethods } from "@/server/db/schema";
-import { COUNTRY_OPTIONS } from "@/lib/i18n/countries";
 import type { PublicCatalogMeta } from "@/modules/offers/public-types";
 
 export function selectBestAffiliateSlug(params: {
@@ -86,4 +88,46 @@ export async function loadCatalogMetaTx(
 
 export async function getPublicCatalogMetaRepo(countryCode: string): Promise<PublicCatalogMeta> {
   return withAppDb({ scope: "public_catalog" }, (tx) => loadCatalogMetaTx(tx, countryCode));
+}
+
+const fetchActivePublicCountriesCached = withCatalogCache(
+  async (): Promise<CountryOption[]> => {
+    return withAppDb({ scope: "public_catalog" }, async (tx) => {
+      const rows = await tx
+        .select({
+          code: countries.code,
+          nameFr: countries.nameFr,
+          nameEn: countries.nameEn,
+          currencyCode: countries.currencyCode,
+          defaultLocale: countries.defaultLocale,
+        })
+        .from(countries)
+        .where(eq(countries.active, true));
+
+      const mapped: CountryOption[] = rows.sort(compareByBettingPriority).map((row) => ({
+        code: row.code,
+        continent: getCountryContinent(row.code),
+        currency: row.currencyCode,
+        defaultLocale: row.defaultLocale === "en" ? "en" : "fr",
+        nameFr: row.nameFr,
+        nameEn: row.nameEn,
+      }));
+
+      return [
+        { code: "GLOBAL", continent: "global", currency: "EUR", defaultLocale: "fr" },
+        ...mapped,
+      ];
+    });
+  },
+  ["public-active-countries"],
+  [PUBLIC_CATALOG_CACHE_TAGS.countries],
+  300,
+);
+
+export async function listActivePublicCountryOptionsRepo(): Promise<CountryOption[]> {
+  try {
+    return await fetchActivePublicCountriesCached();
+  } catch {
+    return [...COUNTRY_OPTIONS];
+  }
 }

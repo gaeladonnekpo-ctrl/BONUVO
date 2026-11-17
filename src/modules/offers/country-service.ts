@@ -1,11 +1,12 @@
 import "server-only";
 
-import { eq } from "drizzle-orm";
+import { eq, inArray, notInArray } from "drizzle-orm";
 import { logAudit } from "@/server/audit/log";
 import { requirePermission } from "@/server/auth/permissions";
 import type { AuthenticatedUser } from "@/server/auth/session";
 import { withAppDb } from "@/server/db/context";
 import { countries } from "@/server/db/schema";
+import { TOP_BETTING_TIER1_CODES, TOP_BETTING_TIER2_CODES } from "@/lib/i18n/betting-priority";
 import { listCountriesRepo, listPaymentMethodsRepo } from "@/modules/offers/bookmaker-repository";
 import { countryUpdateSchema } from "@/modules/offers/schema";
 
@@ -54,4 +55,39 @@ export async function updateCountryConfig(
   });
 
   return result.afterState;
+}
+
+export async function bulkUpdateCountriesActive(
+  actor: AuthenticatedUser,
+  mode: "all" | "priority_only",
+  ipHash: string | null,
+): Promise<{ activeCount: number }> {
+  requirePermission(actor, "offers.write");
+  const priorityCodes = [...TOP_BETTING_TIER1_CODES, ...TOP_BETTING_TIER2_CODES];
+
+  const activeRows = await withAppDb({ scope: "user_session", actorId: actor.id }, async (tx) => {
+    if (mode === "all") {
+      await tx.update(countries).set({ active: true });
+    } else {
+      await tx
+        .update(countries)
+        .set({ active: true })
+        .where(inArray(countries.code, priorityCodes));
+      await tx
+        .update(countries)
+        .set({ active: false })
+        .where(notInArray(countries.code, priorityCodes));
+    }
+    return tx.select({ id: countries.id }).from(countries).where(eq(countries.active, true));
+  });
+
+  await logAudit({
+    actorId: actor.id,
+    action: "country.bulk_updated",
+    entityType: "countries",
+    afterState: { mode, activeCount: activeRows.length },
+    ipHash,
+  });
+
+  return { activeCount: activeRows.length };
 }

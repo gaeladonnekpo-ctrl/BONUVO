@@ -24,6 +24,7 @@ import {
 } from "@/modules/offers/schema";
 
 export {
+  bulkUpdateCountriesActive,
   listCountriesForAdmin,
   listPaymentMethodsForAdmin,
   updateCountryConfig,
