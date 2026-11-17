@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { ArrowUpRight, Layers, ShieldAlert, Sparkles, Target } from "lucide-react";
+import { LeagueBadge, TeamCrest } from "@/components/ai/SportCrest";
 import { UiBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -146,7 +147,7 @@ export function CouponsSection({
                 </CardHeader>
                 <CardContent className="space-y-3 pt-4">
                   <ul className="space-y-2 text-sm">
-                    {coupon.legs.map((leg, idx) => (
+                    {coupon.legs.map((leg) => (
                       <li
                         key={`${coupon.id}-${leg.fixtureId}-${leg.marketLabel}`}
                         className="rounded-xl border border-border/70 bg-surface-subtle/70 p-2.5 transition-colors hover:border-border-strong"
@@ -154,11 +155,20 @@ export function CouponsSection({
                         <div className="flex items-center justify-between gap-2">
                           <Link
                             href={`/pronostics/${leg.fixtureId}`}
-                            className="inline-flex min-w-0 items-center gap-1.5 font-semibold text-fg hover:text-accent"
+                            className="inline-flex min-w-0 items-center gap-2 font-semibold text-fg hover:text-accent"
                           >
-                            <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-border bg-surface font-mono text-[11px] font-bold text-fg">
-                              {idx + 1}
-                            </span>
+                            <div className="flex shrink-0 items-center -space-x-1.5">
+                              <TeamCrest
+                                name={leg.homeTeamName}
+                                logoUrl={leg.homeTeamLogo}
+                                size="sm"
+                              />
+                              <TeamCrest
+                                name={leg.awayTeamName}
+                                logoUrl={leg.awayTeamLogo}
+                                size="sm"
+                              />
+                            </div>
                             <span className="truncate">{leg.matchLabel}</span>
                             <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-fg-muted" />
                           </Link>
@@ -166,8 +176,13 @@ export function CouponsSection({
                             {leg.probabilityPct}%
                           </span>
                         </div>
-                        <p className="mt-1 pl-6 text-xs text-fg-muted">
-                          {leg.leagueName} · {leg.marketLabel} :{" "}
+                        <p className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs text-fg-muted">
+                          <LeagueBadge
+                            name={leg.leagueName}
+                            logoUrl={leg.leagueLogo}
+                            className="py-0.5 px-2 text-[11px]"
+                          />
+                          <span>· {leg.marketLabel} :</span>
                           <strong className="text-fg">{leg.selectionLabel}</strong>
                         </p>
                       </li>
@@ -206,19 +221,43 @@ export function CouponsSection({
             {singles.slice(0, 6).map((s) => (
               <Card
                 key={`${s.predictionId}-${s.marketLabel}`}
-                className="transition-all duration-200 hover:-translate-y-0.5 hover:border-accent/60"
+                className="group transition-all duration-200 hover:-translate-y-0.5 hover:border-accent/60 hover:shadow-md"
               >
                 <CardContent className="space-y-3 p-4">
                   <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-                    <UiBadge tone="outline">{s.marketLabel}</UiBadge>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <LeagueBadge
+                        name={s.leagueName}
+                        logoUrl={s.leagueLogo}
+                        className="py-0.5 px-2 text-[11px]"
+                      />
+                      <UiBadge tone="outline">{s.marketLabel}</UiBadge>
+                    </div>
                     <RiskBadge riskLevel={s.riskLevel} isEn={isEn} />
                   </div>
+
+                  {/* Mobile-First Club Crests Matchup Row */}
                   <Link
                     href={`/pronostics/${s.fixtureId}`}
-                    className="block font-display text-sm font-bold text-fg hover:text-accent"
+                    className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-xl border border-border/70 bg-surface-subtle/60 p-2.5 transition-colors group-hover:border-border-strong"
                   >
-                    {s.matchLabel}
+                    <div className="flex items-center gap-2 min-w-0">
+                      <TeamCrest name={s.homeTeamName} logoUrl={s.homeTeamLogo} size="sm" />
+                      <span className="truncate font-display text-xs font-bold text-fg">
+                        {s.homeTeamName}
+                      </span>
+                    </div>
+                    <span className="rounded-md border border-border bg-surface px-1.5 py-0.5 font-mono text-[10px] font-bold text-fg-muted">
+                      VS
+                    </span>
+                    <div className="flex items-center justify-end gap-2 min-w-0 text-right">
+                      <span className="truncate font-display text-xs font-bold text-fg">
+                        {s.awayTeamName}
+                      </span>
+                      <TeamCrest name={s.awayTeamName} logoUrl={s.awayTeamLogo} size="sm" />
+                    </div>
                   </Link>
+
                   <div className="flex items-center justify-between rounded-xl bg-trust-soft/60 px-3 py-2">
                     <span className="text-xs font-bold text-trust">{s.selectionLabel}</span>
                     <span className="font-mono text-sm font-extrabold text-trust">

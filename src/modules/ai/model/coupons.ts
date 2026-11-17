@@ -4,7 +4,12 @@ export interface SingleBetSuggestion {
   fixtureId: string;
   predictionId: string;
   matchLabel: string;
+  homeTeamName: string;
+  homeTeamLogo: string;
+  awayTeamName: string;
+  awayTeamLogo: string;
   leagueName: string;
+  leagueLogo: string;
   kickoffAt: string;
   marketLabel: string;
   selectionLabel: string;
@@ -17,7 +22,12 @@ export interface SingleBetSuggestion {
 export interface CombinedCouponLeg {
   fixtureId: string;
   matchLabel: string;
+  homeTeamName: string;
+  homeTeamLogo: string;
+  awayTeamName: string;
+  awayTeamLogo: string;
   leagueName: string;
+  leagueLogo: string;
   marketLabel: string;
   selectionLabel: string;
   probabilityPct: number;
@@ -68,7 +78,12 @@ function deriveDoubleChanceCandidate(fix: PublicFixtureDto): SingleBetSuggestion
     fixtureId: fix.id,
     predictionId: pred.id,
     matchLabel: `${fix.homeTeamName} vs ${fix.awayTeamName}`,
+    homeTeamName: fix.homeTeamName,
+    homeTeamLogo: fix.homeTeamLogo,
+    awayTeamName: fix.awayTeamName,
+    awayTeamLogo: fix.awayTeamLogo,
     leagueName: fix.leagueName,
+    leagueLogo: fix.leagueLogo,
     kickoffAt: fix.kickoffAt,
     marketLabel: "Double Chance",
     selectionLabel: pickLabel,
@@ -117,7 +132,12 @@ export function buildSinglePicks(fixtures: PublicFixtureDto[]): SingleBetSuggest
         fixtureId: fix.id,
         predictionId: pred.id,
         matchLabel: `${fix.homeTeamName} vs ${fix.awayTeamName}`,
+        homeTeamName: fix.homeTeamName,
+        homeTeamLogo: fix.homeTeamLogo,
+        awayTeamName: fix.awayTeamName,
+        awayTeamLogo: fix.awayTeamLogo,
         leagueName: fix.leagueName,
+        leagueLogo: fix.leagueLogo,
         kickoffAt: fix.kickoffAt,
         marketLabel: labels.marketLabel,
         selectionLabel: labels.selectionLabel,
@@ -131,6 +151,22 @@ export function buildSinglePicks(fixtures: PublicFixtureDto[]): SingleBetSuggest
     if (dc) candidates.push(dc);
   }
   return candidates.sort((a, b) => b.probabilityPct - a.probabilityPct).slice(0, 12);
+}
+
+function toCouponLeg(l: SingleBetSuggestion): CombinedCouponLeg {
+  return {
+    fixtureId: l.fixtureId,
+    matchLabel: l.matchLabel,
+    homeTeamName: l.homeTeamName,
+    homeTeamLogo: l.homeTeamLogo,
+    awayTeamName: l.awayTeamName,
+    awayTeamLogo: l.awayTeamLogo,
+    leagueName: l.leagueName,
+    leagueLogo: l.leagueLogo,
+    marketLabel: l.marketLabel,
+    selectionLabel: l.selectionLabel,
+    probabilityPct: l.probabilityPct,
+  };
 }
 
 export function buildCombinedCoupons(fixtures: PublicFixtureDto[]): CombinedCouponDto[] {
@@ -158,14 +194,7 @@ export function buildCombinedCoupons(fixtures: PublicFixtureDto[]): CombinedCoup
       riskLevel: joint >= 0.55 ? "low" : "medium",
       combinedProbabilityPct: Math.round(joint * 1000) / 10,
       combinedFairOdds: round2(1 / Math.max(0.02, joint)),
-      legs: safeSelection.map((l) => ({
-        fixtureId: l.fixtureId,
-        matchLabel: l.matchLabel,
-        leagueName: l.leagueName,
-        marketLabel: l.marketLabel,
-        selectionLabel: l.selectionLabel,
-        probabilityPct: l.probabilityPct,
-      })),
+      legs: safeSelection.map(toCouponLeg),
       rationaleFr:
         "Association des deux chances doubles affichant les probabilités conjointes les plus élevées du programme réel.",
       rationaleEn:
@@ -192,14 +221,7 @@ export function buildCombinedCoupons(fixtures: PublicFixtureDto[]): CombinedCoup
       riskLevel: joint >= 0.35 ? "medium" : "high",
       combinedProbabilityPct: Math.round(joint * 1000) / 10,
       combinedFairOdds: round2(1 / Math.max(0.01, joint)),
-      legs: uniqueFixtureBalanced.map((l) => ({
-        fixtureId: l.fixtureId,
-        matchLabel: l.matchLabel,
-        leagueName: l.leagueName,
-        marketLabel: l.marketLabel,
-        selectionLabel: l.selectionLabel,
-        probabilityPct: l.probabilityPct,
-      })),
+      legs: uniqueFixtureBalanced.map(toCouponLeg),
       rationaleFr:
         "Une sélection distincte par rencontre (1X2, +2.5 ou BTTS) sélectionnée selon les différentiels statistiques récents.",
       rationaleEn:
