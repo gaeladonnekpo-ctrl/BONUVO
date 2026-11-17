@@ -54,6 +54,10 @@ export const serverOnlyEnvSchema = z.object({
     (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
     z.string().trim().min(32, "IP_HASH_SECRET doit contenir au moins 32 caractères.").optional(),
   ),
+  CRON_SECRET: z.preprocess(
+    (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+    z.string().trim().min(32, "CRON_SECRET doit contenir au moins 32 caractères.").optional(),
+  ),
 });
 
 const STRICT_EXTERNAL_ENV_KEYS = [

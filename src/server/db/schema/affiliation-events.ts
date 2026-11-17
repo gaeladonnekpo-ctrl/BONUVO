@@ -172,6 +172,8 @@ export const conversions = pgTable(
       .where(sql`${table.postbackEventId} IS NOT NULL`),
     index("conversions_occurred_idx").on(table.occurredAt),
     index("conversions_bm_type_idx").on(table.bookmakerId, table.conversionType, table.occurredAt),
+    index("conversions_country_occurred_idx").on(table.countryId, table.occurredAt),
+    index("conversions_offer_occurred_idx").on(table.offerId, table.occurredAt),
     index("conversions_click_idx").on(table.clickId),
     check(
       "conversions_source_ref_check",

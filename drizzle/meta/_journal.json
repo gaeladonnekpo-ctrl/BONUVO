@@ -78,6 +78,20 @@
       "when": 1794874040300,
       "tag": "0010_phase5_affiliation_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1794879221773,
+      "tag": "0011_wise_the_watchers",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1794879230000,
+      "tag": "0012_phase6_intelligence_rls",
+      "breakpoints": true
     }
   ]
 }

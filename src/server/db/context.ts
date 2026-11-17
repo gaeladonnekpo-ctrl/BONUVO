@@ -9,7 +9,8 @@ export type DbExecutionScope =
   | "audit_writer"
   | "public_catalog"
   | "public_tracking"
-  | "postback_ingest";
+  | "postback_ingest"
+  | "stats_aggregator";
 
 export type AppDbTransaction = Parameters<Parameters<AppDatabase["transaction"]>[0]>[0];
 

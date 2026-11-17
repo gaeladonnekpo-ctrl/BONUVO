@@ -21,6 +21,7 @@ export const ADMIN_NAV_LINKS = [
   { key: "promoCodes", href: "/admin/codes-promo" },
   { key: "countries", href: "/admin/pays" },
   { key: "affiliation", href: "/admin/affiliation" },
+  { key: "stats", href: "/admin/statistiques" },
   { key: "users", href: "/admin/utilisateurs" },
   { key: "audit", href: "/admin/journal" },
   { key: "settings", href: "/admin/parametres" },

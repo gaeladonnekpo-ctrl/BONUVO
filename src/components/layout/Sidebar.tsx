@@ -2,6 +2,7 @@
 
 import {
   Award,
+  BarChart3,
   BookOpen,
   Building2,
   Globe2,
@@ -31,6 +32,7 @@ const ADMIN_ICONS = {
   promoCodes: TicketPercent,
   countries: Globe2,
   affiliation: Handshake,
+  stats: BarChart3,
   users: Users,
   audit: ScrollText,
   settings: Settings,

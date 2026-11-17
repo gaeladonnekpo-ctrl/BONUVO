@@ -82,6 +82,8 @@ export const clicks = pgTable(
     index("clicks_created_at_idx").on(table.createdAt),
     index("clicks_link_created_idx").on(table.affiliateLinkId, table.createdAt),
     index("clicks_bookmaker_created_idx").on(table.bookmakerId, table.createdAt),
+    index("clicks_country_created_idx").on(table.countryCode, table.createdAt),
+    index("clicks_campaign_created_idx").on(table.campaignId, table.createdAt),
     index("clicks_bot_suspect_idx").on(table.isBot, table.isSuspect),
     check(
       "clicks_device_check",
@@ -109,6 +111,7 @@ export const visitEvents = pgTable(
   (table) => [
     index("visit_events_created_at_idx").on(table.createdAt),
     index("visit_events_type_created_idx").on(table.eventType, table.createdAt),
+    index("visit_events_country_created_idx").on(table.countryCode, table.createdAt),
     index("visit_events_offer_idx").on(table.offerId),
     check(
       "visit_events_type_check",
