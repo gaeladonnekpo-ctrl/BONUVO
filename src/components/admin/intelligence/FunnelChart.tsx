@@ -16,12 +16,24 @@ const STEP_LABELS: Record<FunnelStageItem["step"], { fr: string; en: string }> =
 export function FunnelChart({
   stages,
   locale,
-  buildDrillHref,
+  baseQueryString,
+  drillDimension,
+  drillId,
 }: {
   stages: readonly FunnelStageItem[];
   locale: "fr" | "en";
-  buildDrillHref: (step: NonNullable<FunnelStageItem["drillStep"]>) => string;
+  baseQueryString: string;
+  drillDimension: "bookmaker" | "country";
+  drillId: string;
 }) {
+  function buildDrillHref(step: NonNullable<FunnelStageItem["drillStep"]>): string {
+    const sp = new URLSearchParams(baseQueryString);
+    sp.set("drillDimension", drillDimension);
+    sp.set("drillId", drillId);
+    sp.set("drillStep", step);
+    return `/admin/statistiques?${sp.toString()}#drilldown-panel`;
+  }
+
   const maxVal = Math.max(
     1,
     ...stages.map((s) => (typeof s.count === "number" && s.count > 0 ? s.count : 0)),

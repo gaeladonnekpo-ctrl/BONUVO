@@ -180,7 +180,9 @@ export default async function AdminStatisticsPage({
           <FunnelChart
             stages={data.funnel}
             locale={resolvedLocale}
-            buildDrillHref={buildFunnelDrillHref}
+            baseQueryString={baseQs}
+            drillDimension={data.filters.bookmakerId ? "bookmaker" : "country"}
+            drillId={data.filters.bookmakerId || data.filters.country}
           />
         </div>
         <div className="lg:col-span-3">
@@ -200,7 +202,6 @@ export default async function AdminStatisticsPage({
         topOffers={data.topOffers}
         canExport={data.canExport}
         exportQueryString={baseQs}
-        buildDrillHref={buildDrillHref}
         locale={resolvedLocale}
       />
 

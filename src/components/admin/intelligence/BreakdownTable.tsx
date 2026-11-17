@@ -32,7 +32,6 @@ export function BreakdownTable({
   topOffers,
   canExport,
   exportQueryString,
-  buildDrillHref,
   locale,
 }: {
   byBookmaker: readonly BreakdownRow[];
@@ -42,10 +41,17 @@ export function BreakdownTable({
   topOffers: readonly BreakdownRow[];
   canExport: boolean;
   exportQueryString: string;
-  buildDrillHref: (dimension: DrillDimension, id: string, step: DrillStep) => string;
   locale: "fr" | "en";
 }) {
   const [tab, setTab] = React.useState<TabKey>("bookmakers");
+
+  function buildDrillHref(dimension: DrillDimension, id: string, step: DrillStep): string {
+    const sp = new URLSearchParams(exportQueryString);
+    sp.set("drillDimension", dimension);
+    sp.set("drillId", id);
+    sp.set("drillStep", step);
+    return `/admin/statistiques?${sp.toString()}#drilldown-panel`;
+  }
 
   const tabs: Array<{ key: TabKey; label: string }> = [
     { key: "bookmakers", label: "Bookmakers" },
