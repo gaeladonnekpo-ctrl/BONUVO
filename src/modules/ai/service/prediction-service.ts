@@ -73,7 +73,7 @@ export async function runComputePredictionsJob(options?: {
 
   try {
     const now = new Date();
-    const horizon = new Date(now.getTime() + 72 * 3600_000);
+    const horizon = new Date(now.getTime() + 10 * 24 * 3600_000);
 
     const summary = await withAppDb({ scope }, async (db) => {
       const model = await ensureActiveModelVersion(db);
@@ -189,11 +189,18 @@ export async function runComputePredictionsJob(options?: {
           continue;
         }
 
+        const topHome = homeStat.keyPlayersJson[0];
+        const topAway = awayStat.keyPlayersJson[0];
+        const playerNote =
+          topHome || topAway
+            ? ` Joueurs clés : ${topHome ? `${topHome.name} (${topHome.goals} buts/${topHome.appearances} m.)` : "—"} vs ${topAway ? `${topAway.name} (${topAway.goals} buts/${topAway.appearances} m.)` : "—"}.`
+            : "";
+
         const lockTime = new Date();
         for (const m of computed.markets) {
           if (existingKeys.has(`${fix.id}:${m.market}`)) continue;
           const narrative = await generateVerifiedAnalysisText({
-            fallbackText: m.analysisText,
+            fallbackText: `${m.analysisText}${playerNote}`,
             facts: {
               homeMatches: homeInput.matchesPlayed,
               homeGoalsFor: homeInput.goalsFor,

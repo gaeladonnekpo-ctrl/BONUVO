@@ -113,11 +113,15 @@ export function IngestionAdminView({
       <div className="grid gap-4 sm:grid-cols-3">
         <Card>
           <CardHeader className="pb-1">
-            <CardTitle className="text-xs uppercase text-fg-muted">Clé API-Football</CardTitle>
+            <CardTitle className="text-xs uppercase text-fg-muted">
+              Source sportive temps réel
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <UiBadge tone={providerConfigured ? "trust" : "warning"}>
-              {providerConfigured ? "Configurée" : "Non configurée (zéro donnée inventée)"}
+              {providerConfigured
+                ? "Active · Flux temps réel"
+                : "Non configurée (zéro donnée inventée)"}
             </UiBadge>
           </CardContent>
         </Card>

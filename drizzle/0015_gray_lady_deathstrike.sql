@@ -1,0 +1,2 @@
+ALTER TABLE "team_stats_snapshots" ADD COLUMN "key_players_json" jsonb DEFAULT '[]'::jsonb NOT NULL;--> statement-breakpoint
+ALTER TABLE "team_stats_snapshots" ADD COLUMN "recent_matches_json" jsonb DEFAULT '[]'::jsonb NOT NULL;

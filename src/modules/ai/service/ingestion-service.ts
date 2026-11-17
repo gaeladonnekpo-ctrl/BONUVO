@@ -1,9 +1,10 @@
 import { and, desc, eq } from "drizzle-orm";
-import { createSportsDataProvider } from "@/modules/ai/providers/api-football";
+import { createActiveSportsDataProvider } from "@/modules/ai/providers/registry";
 import type { SportsDataProvider } from "@/modules/ai/providers/types";
 import {
   currentFootballSeasonYear,
   ensureDefaultProviderAndLeagues,
+  ensureProviderAndLeagues,
   upsertNormalizedFixtures,
 } from "@/modules/ai/service/ingestion-helpers";
 import { runIngestStatsJob } from "@/modules/ai/service/ingestion-stats-service";
@@ -19,12 +20,30 @@ export {
   upsertNormalizedFixtures,
 };
 
+export function resolveProviderMeta(provider: SportsDataProvider) {
+  return provider.code === "espn-soccer"
+    ? {
+        slug: "espn-soccer",
+        name: provider.name,
+        baseUrl: "https://site.api.espn.com",
+        dailyQuotaLimit: 5000,
+        quotaReserve: 50,
+      }
+    : {
+        slug: "api-football",
+        name: provider.name,
+        baseUrl: "https://v3.football.api-sports.io",
+        dailyQuotaLimit: 100,
+        quotaReserve: 10,
+      };
+}
+
 export async function runIngestFixturesJob(options?: {
   provider?: SportsDataProvider;
   dbScope?: DbExecutionScope;
   invalidateCache?: boolean;
 }) {
-  const provider = options?.provider ?? createSportsDataProvider();
+  const provider = options?.provider ?? createActiveSportsDataProvider();
   const scope = options?.dbScope ?? "ai_pipeline";
   const lock = resolveJobLockBackend();
   if (!lock) {
@@ -46,9 +65,10 @@ export async function runIngestFixturesJob(options?: {
   }
 
   try {
+    const providerMeta = resolveProviderMeta(provider);
     if (!provider.isConfigured()) {
       await withAppDb({ scope }, async (db) => {
-        await ensureDefaultProviderAndLeagues(db);
+        await ensureProviderAndLeagues(db, providerMeta);
       });
       return {
         ok: true as const,
@@ -61,10 +81,10 @@ export async function runIngestFixturesJob(options?: {
 
     const now = new Date();
     const fromIso = new Date(now.getTime() - 24 * 3600_000).toISOString();
-    const toIso = new Date(now.getTime() + 7 * 24 * 3600_000).toISOString();
+    const toIso = new Date(now.getTime() + 10 * 24 * 3600_000).toISOString();
 
     const summary = await withAppDb({ scope }, async (db) => {
-      const providerRow = await ensureDefaultProviderAndLeagues(db);
+      const providerRow = await ensureProviderAndLeagues(db, providerMeta);
       const [run] = await db
         .insert(ingestionRuns)
         .values({ providerId: providerRow.id, jobName: "ingest-fixtures", status: "running" })
@@ -172,9 +192,14 @@ export async function runIngestFixturesJob(options?: {
 
 export async function getRecentIngestionOverview(dbScope: DbExecutionScope = "ai_pipeline") {
   return withAppDb({ scope: dbScope }, async (db) => {
-    const providerRow = await ensureDefaultProviderAndLeagues(db);
+    const provider = createActiveSportsDataProvider();
+    const providerRow = await ensureProviderAndLeagues(db, resolveProviderMeta(provider));
     const [trackedLeagues, recentRuns] = await Promise.all([
-      db.select().from(leagues).orderBy(leagues.priorityOrder),
+      db
+        .select()
+        .from(leagues)
+        .where(eq(leagues.providerId, providerRow.id))
+        .orderBy(leagues.priorityOrder),
       db.select().from(ingestionRuns).orderBy(desc(ingestionRuns.startedAt)).limit(25),
     ]);
     return { provider: providerRow, leagues: trackedLeagues, runs: recentRuns };

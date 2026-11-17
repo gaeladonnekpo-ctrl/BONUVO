@@ -13,13 +13,20 @@ const DEFAULT_LEAGUE_CONFIGS = [
     tracked: true,
   },
   { externalId: "140", name: "La Liga", countryName: "Spain", priorityOrder: 3, tracked: true },
-  { externalId: "135", name: "Serie A", countryName: "Italy", priorityOrder: 4, tracked: false },
+  { externalId: "135", name: "Serie A", countryName: "Italy", priorityOrder: 4, tracked: true },
+  {
+    externalId: "78",
+    name: "Bundesliga",
+    countryName: "Germany",
+    priorityOrder: 5,
+    tracked: false,
+  },
   {
     externalId: "2",
     name: "UEFA Champions League",
     countryName: "Europe",
-    priorityOrder: 5,
-    tracked: false,
+    priorityOrder: 6,
+    tracked: true,
   },
 ] as const;
 
@@ -51,21 +58,38 @@ export function summarizeRecentForm(formText: string | null | undefined): {
   return { matches, points };
 }
 
-export async function ensureDefaultProviderAndLeagues(db: AppDbTransaction) {
+export async function ensureProviderAndLeagues(
+  db: AppDbTransaction,
+  providerMeta?: {
+    slug: string;
+    name: string;
+    baseUrl: string;
+    dailyQuotaLimit: number;
+    quotaReserve: number;
+  },
+) {
+  const meta = providerMeta ?? {
+    slug: "espn-soccer",
+    name: "ESPN Live Soccer Feeds",
+    baseUrl: "https://site.api.espn.com",
+    dailyQuotaLimit: 5000,
+    quotaReserve: 50,
+  };
+
   const [provider] = await db
     .insert(sportsProviders)
     .values({
-      slug: "api-football",
-      name: "API-Football v3",
-      baseUrl: "https://v3.football.api-sports.io",
-      dailyQuotaLimit: 100,
-      quotaReserve: 10,
+      slug: meta.slug,
+      name: meta.name,
+      baseUrl: meta.baseUrl,
+      dailyQuotaLimit: meta.dailyQuotaLimit,
+      quotaReserve: meta.quotaReserve,
       active: true,
       status: "active",
     })
     .onConflictDoUpdate({
       target: sportsProviders.slug,
-      set: { updatedAt: new Date() },
+      set: { name: meta.name, baseUrl: meta.baseUrl, active: true, updatedAt: new Date() },
     })
     .returning();
 
@@ -111,6 +135,10 @@ export async function ensureDefaultProviderAndLeagues(db: AppDbTransaction) {
   }
 
   return provider;
+}
+
+export async function ensureDefaultProviderAndLeagues(db: AppDbTransaction) {
+  return ensureProviderAndLeagues(db);
 }
 
 export async function upsertNormalizedFixtures(params: {

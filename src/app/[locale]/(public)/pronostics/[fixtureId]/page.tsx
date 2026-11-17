@@ -83,9 +83,12 @@ export default async function PublicFixtureDetailPage({
       </header>
 
       <section aria-labelledby="markets-heading" className="space-y-4">
-        <h2 id="markets-heading" className="font-display text-xl font-bold text-fg">
-          {isEn ? "Poisson Market Probabilities" : "Marchés calculés (Poisson v1.0)"}
-        </h2>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 id="markets-heading" className="font-display text-xl font-bold text-fg">
+            {isEn ? "BONUVO AI Market Analysis" : "Analyses & Marchés BONUVO AI"}
+          </h2>
+          <UiBadge tone="accent">BONUVO AI</UiBadge>
+        </div>
 
         {fixture.predictions.length === 0 ? (
           <Card>

@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { CheckCircle2, Lock, Play, RefreshCw } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { CheckCircle2, Lock, Play, RefreshCw, Sparkles } from "lucide-react";
 import { UiBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,17 +26,33 @@ export interface AdminPredictionItem {
 }
 
 export function PredictionsAdminView({ initialItems }: { initialItems: AdminPredictionItem[] }) {
-  const [items, setItems] = React.useState(initialItems);
+  const router = useRouter();
+  const [validatedIds, setValidatedIds] = React.useState<string[]>([]);
   const [statusMsg, setStatusMsg] = React.useState<string | null>(null);
   const [isPending, startTransition] = React.useTransition();
 
-  function handleTrigger(jobName: "compute-predictions" | "settle-predictions") {
+  const items = React.useMemo(
+    () =>
+      initialItems.map((row) =>
+        validatedIds.includes(row.id) ? { ...row, couponValidated: true } : row,
+      ),
+    [initialItems, validatedIds],
+  );
+
+  function handleTrigger(jobName: "full-sync" | "compute-predictions" | "settle-predictions") {
     setStatusMsg(null);
     startTransition(async () => {
       const res = await triggerAiJobAction({ jobName });
-      setStatusMsg(
-        res.ok ? `Tâche ${jobName} exécutée.` : (res.error ?? "Erreur lors de l'exécution."),
-      );
+      if (res.ok) {
+        setStatusMsg(
+          jobName === "full-sync"
+            ? "Synchronisation temps réel BONUVO AI terminée (matchs, statistiques, pronostics et règlements)."
+            : `Tâche ${jobName} exécutée.`,
+        );
+        router.refresh();
+      } else {
+        setStatusMsg(res.error ?? "Erreur lors de l'exécution.");
+      }
     });
   }
 
@@ -44,10 +61,9 @@ export function PredictionsAdminView({ initialItems }: { initialItems: AdminPred
     startTransition(async () => {
       const res = await validatePredictionCouponAction({ predictionId });
       if (res.ok) {
-        setItems((prev) =>
-          prev.map((row) => (row.id === predictionId ? { ...row, couponValidated: true } : row)),
-        );
+        setValidatedIds((prev) => (prev.includes(predictionId) ? prev : [...prev, predictionId]));
         setStatusMsg("Coupon validé et journalisé.");
+        router.refresh();
       } else {
         setStatusMsg(res.error);
       }
@@ -58,12 +74,24 @@ export function PredictionsAdminView({ initialItems }: { initialItems: AdminPred
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl font-bold text-fg">Pronostics IA (Poisson v1.0)</h1>
+          <h1 className="font-display text-2xl font-bold text-fg">
+            BONUVO AI — Pronostics & Coupons
+          </h1>
           <p className="text-sm text-fg-muted">
-            Validation humaine avant coup d&apos;envoi et suivi d&apos;immutabilité en base.
+            Analyse probabiliste en temps réel, validation avant coup d&apos;envoi et suivi
+            d&apos;immutabilité en base.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            variant="primary"
+            disabled={isPending}
+            onClick={() => handleTrigger("full-sync")}
+          >
+            <Sparkles className="mr-1.5 h-4 w-4" aria-hidden="true" />
+            Synchroniser BONUVO AI (Temps réel)
+          </Button>
           <Button
             type="button"
             variant="outline"
@@ -71,7 +99,7 @@ export function PredictionsAdminView({ initialItems }: { initialItems: AdminPred
             onClick={() => handleTrigger("compute-predictions")}
           >
             <Play className="mr-1.5 h-4 w-4" aria-hidden="true" />
-            Calculer Poisson
+            Calculer analyses
           </Button>
           <Button
             type="button"
@@ -138,8 +166,9 @@ export function PredictionsAdminView({ initialItems }: { initialItems: AdminPred
         <CardContent className="overflow-x-auto">
           {items.length === 0 ? (
             <p className="py-8 text-center text-sm text-fg-muted">
-              Aucun pronostic généré pour le moment. Configurez <code>API_FOOTBALL_KEY</code> et
-              lancez l&apos;ingestion depuis l&apos;onglet Ingestion & Ligues.
+              Aucun pronostic généré pour le moment. Cliquez sur{" "}
+              <strong>Synchroniser BONUVO AI (Temps réel)</strong> pour récupérer les matchs réels
+              du jour.
             </p>
           ) : (
             <table className="w-full text-left text-sm">

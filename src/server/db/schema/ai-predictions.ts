@@ -5,6 +5,7 @@ import {
   boolean,
   check,
   index,
+  integer,
   jsonb,
   numeric,
   pgTable,
@@ -13,7 +14,7 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
-import { fixtures, ingestionRuns, teamStatsSnapshots } from "./ai-core";
+import { fixtures, ingestionRuns, leagues, seasons, teamStatsSnapshots, teams } from "./ai-core";
 import { profiles } from "./auth";
 
 export const PREDICTION_MARKETS = ["1x2", "over_under_25", "btts"] as const;
@@ -143,5 +144,44 @@ export const predictionResults = pgTable(
       "prediction_results_brier_check",
       sql`${table.brierScore} IS NULL OR (${table.brierScore} >= 0 AND ${table.brierScore} <= 2)`,
     ),
+  ],
+);
+
+export const standings = pgTable(
+  "standings",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    leagueId: uuid("league_id")
+      .notNull()
+      .references(() => leagues.id, { onDelete: "cascade" }),
+    seasonId: uuid("season_id")
+      .notNull()
+      .references(() => seasons.id, { onDelete: "cascade" }),
+    teamId: uuid("team_id")
+      .notNull()
+      .references(() => teams.id, { onDelete: "cascade" }),
+    ingestionRunId: uuid("ingestion_run_id")
+      .notNull()
+      .references(() => ingestionRuns.id, { onDelete: "restrict" }),
+    rank: integer("rank").notNull(),
+    points: integer("points").notNull().default(0),
+    played: integer("played").notNull().default(0),
+    wins: integer("wins").notNull().default(0),
+    draws: integer("draws").notNull().default(0),
+    losses: integer("losses").notNull().default(0),
+    goalsFor: integer("goals_for").notNull().default(0),
+    goalsAgainst: integer("goals_against").notNull().default(0),
+    goalDiff: integer("goal_diff").notNull().default(0),
+    formText: text("form_text").notNull().default(""),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("standings_league_season_team_uidx").on(
+      table.leagueId,
+      table.seasonId,
+      table.teamId,
+    ),
+    index("standings_rank_idx").on(table.leagueId, table.seasonId, table.rank),
   ],
 );

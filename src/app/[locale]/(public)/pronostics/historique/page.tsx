@@ -62,12 +62,12 @@ export default async function PublicPredictionHistoryPage({
             {isEn ? "Upcoming forecasts" : "Pronostics à venir"}
           </Link>
         </Button>
-        <UiBadge tone="outline">{stats.modelVersion}</UiBadge>
+        <UiBadge tone="outline">BONUVO AI</UiBadge>
       </div>
 
       <header className="space-y-2">
         <h1 className="font-display text-3xl font-bold tracking-tight text-fg">
-          {isEn ? "Transparent Track Record" : "Historique & Calibration du Modèle"}
+          {isEn ? "BONUVO AI Track Record" : "Historique & Précision BONUVO AI"}
         </h1>
         <p className="max-w-2xl text-sm text-fg-muted">
           {isEn

@@ -75,6 +75,30 @@ export interface ProviderFetchResult<T> {
   requestsMade: number;
 }
 
+export interface TeamKeyPlayerStat {
+  name: string;
+  position: string;
+  appearances: number;
+  goals: number;
+  assists: number;
+}
+
+export interface TeamRecentMatchStat {
+  date: string;
+  opponent: string;
+  score: string;
+  homeAway: "home" | "away";
+  result: "W" | "D" | "L";
+}
+
+export interface MatchIntelligenceDto {
+  homeKeyPlayers: TeamKeyPlayerStat[];
+  awayKeyPlayers: TeamKeyPlayerStat[];
+  homeRecentMatches: TeamRecentMatchStat[];
+  awayRecentMatches: TeamRecentMatchStat[];
+  headToHeadFixtures: ExternalFixtureDto[];
+}
+
 export interface SportsDataProvider {
   readonly code: string;
   readonly name: string;
@@ -105,4 +129,11 @@ export interface SportsDataProvider {
     leagueExternalId: string;
     seasonYear: number;
   }): Promise<ProviderFetchResult<ExternalStandingRowDto>>;
+  fetchMatchIntelligence?(params: {
+    leagueExternalId: string;
+    fixtureExternalId: string;
+    seasonYear: number;
+    homeTeamExternalId: string;
+    awayTeamExternalId: string;
+  }): Promise<MatchIntelligenceDto | null>;
 }

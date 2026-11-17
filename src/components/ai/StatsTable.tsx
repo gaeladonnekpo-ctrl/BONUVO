@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { TeamKeyPlayerStat, TeamRecentMatchStat } from "@/modules/ai/providers/types";
 
 export interface TeamStatsSummary {
   matchesPlayed: number;
@@ -12,6 +13,8 @@ export interface TeamStatsSummary {
   awayGoalsAgainst: number;
   recentFormMatches: number;
   recentFormPoints: number;
+  keyPlayersJson?: TeamKeyPlayerStat[];
+  recentMatchesJson?: TeamRecentMatchStat[];
 }
 
 export interface StatsTableProps {
@@ -68,14 +71,19 @@ export function StatsTable({
     },
   ];
 
+  const homePlayers = homeStats?.keyPlayersJson ?? [];
+  const awayPlayers = awayStats?.keyPlayersJson ?? [];
+  const homeRecent = homeStats?.recentMatchesJson ?? [];
+  const awayRecent = awayStats?.recentMatchesJson ?? [];
+
   return (
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="text-base">
-          {isEn ? "Statistical Snapshot" : "Instantané statistique de saison"}
+          {isEn ? "Teams & Key Players Snapshot" : "Statistiques équipes & joueurs clés"}
         </CardTitle>
       </CardHeader>
-      <CardContent className="overflow-x-auto">
+      <CardContent className="space-y-5 overflow-x-auto">
         <table className="w-full text-left text-sm">
           <thead>
             <tr className="border-b border-border text-xs uppercase tracking-wide text-fg-muted">
@@ -94,6 +102,69 @@ export function StatsTable({
             ))}
           </tbody>
         </table>
+
+        {homePlayers.length > 0 || awayPlayers.length > 0 ? (
+          <div className="grid gap-4 border-t border-border pt-4 sm:grid-cols-2">
+            {[
+              { team: homeTeamName, players: homePlayers },
+              { team: awayTeamName, players: awayPlayers },
+            ].map((side) => (
+              <div key={side.team} className="space-y-1.5">
+                <p className="text-xs font-semibold uppercase text-fg-muted">
+                  {isEn ? `Key players · ${side.team}` : `Joueurs clés · ${side.team}`}
+                </p>
+                {side.players.length === 0 ? (
+                  <p className="text-xs text-fg-muted">—</p>
+                ) : (
+                  <ul className="space-y-1 text-xs">
+                    {side.players.map((p) => (
+                      <li key={p.name} className="flex items-center justify-between gap-2">
+                        <span className="font-medium text-fg">
+                          {p.name} {p.position ? `(${p.position})` : ""}
+                        </span>
+                        <span className="font-mono text-fg-muted">
+                          {p.goals}G · {p.appearances}M
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : null}
+
+        {homeRecent.length > 0 || awayRecent.length > 0 ? (
+          <div className="grid gap-4 border-t border-border pt-4 sm:grid-cols-2">
+            {[
+              { team: homeTeamName, matches: homeRecent },
+              { team: awayTeamName, matches: awayRecent },
+            ].map((side) => (
+              <div key={`${side.team}-recent`} className="space-y-1.5">
+                <p className="text-xs font-semibold uppercase text-fg-muted">
+                  {isEn ? `Last matches · ${side.team}` : `Forme récente · ${side.team}`}
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {side.matches.map((m, idx) => (
+                    <span
+                      key={`${m.date}-${idx}`}
+                      title={`${m.date} ${m.opponent} (${m.score})`}
+                      className={`inline-flex items-center rounded px-2 py-0.5 text-[11px] font-bold ${
+                        m.result === "W"
+                          ? "bg-trust-soft text-trust"
+                          : m.result === "L"
+                            ? "bg-danger-soft text-danger"
+                            : "bg-surface-elevated text-fg-muted"
+                      }`}
+                    >
+                      {m.result} {m.score}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : null}
       </CardContent>
     </Card>
   );

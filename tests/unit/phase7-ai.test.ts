@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  PLATFORM_GAMING_GUIDES,
+  buildCombinedCoupons,
+  buildSinglePicks,
+} from "@/modules/ai/model/coupons";
+import {
   assertNoForbiddenTerms,
   findForbiddenTerms,
   verifyNarrativeNumbersInFacts,
@@ -17,6 +22,8 @@ import {
   settlePrediction,
 } from "@/modules/ai/model/settle";
 import { ApiFootballProvider } from "@/modules/ai/providers/api-football";
+import { EspnSoccerProvider } from "@/modules/ai/providers/espn-soccer";
+import type { PublicFixtureDto } from "@/modules/ai/service/public-ai-types";
 
 function buildTeam(overrides?: Partial<TeamModelInput>): TeamModelInput {
   return {
@@ -210,5 +217,209 @@ describe("Phase 7 — Modèle Poisson v1.0, garde-fous et règlement", () => {
     expect(res.rejectedCount).toBe(1);
     expect(res.quota).toEqual({ limit: 100, remaining: 12 });
     expect(res.items[0]?.externalId).toBe("9001");
+  });
+
+  it("génère des paris simples, coupons combinés et parse les flux temps réel ESPN", async () => {
+    const sampleFixture = (id: string, home: string, away: string): PublicFixtureDto => ({
+      id,
+      leagueId: "l-1",
+      leagueName: "Premier League",
+      countryName: "England",
+      kickoffAt: "2026-11-21T15:00:00.000Z",
+      venueName: "Stadium",
+      roundLabel: "J12",
+      fixtureStatus: "scheduled",
+      homeTeamId: `${id}-h`,
+      homeTeamName: home,
+      homeTeamLogo: "",
+      awayTeamId: `${id}-a`,
+      awayTeamName: away,
+      awayTeamLogo: "",
+      homeGoals: null,
+      awayGoals: null,
+      predictions: [
+        {
+          id: `${id}-p1`,
+          market: "1x2",
+          pickedSelection: "home",
+          confidenceLevel: "high",
+          confidenceScore: 0.72,
+          probabilities: { home: 0.65, draw: 0.2, away: 0.15 },
+          expectedHomeGoals: 2.1,
+          expectedAwayGoals: 0.8,
+          analysisText: "Analyse statistique réelle.",
+          analysisStatus: "template",
+          couponValidated: false,
+          publishedAt: "2026-11-17T10:00:00.000Z",
+          lockedAt: "2026-11-17T10:00:00.000Z",
+          verdict: null,
+          brierScore: null,
+          actualOutcome: null,
+          settledAt: null,
+        },
+      ],
+    });
+
+    const slate = [
+      sampleFixture("f1", "Arsenal", "Everton"),
+      sampleFixture("f2", "Man City", "Fulham"),
+    ];
+    const singles = buildSinglePicks(slate);
+    const coupons = buildCombinedCoupons(slate);
+
+    expect(singles.length).toBeGreaterThanOrEqual(2);
+    expect(coupons.length).toBeGreaterThanOrEqual(2);
+    expect(PLATFORM_GAMING_GUIDES.length).toBe(3);
+
+    for (const c of coupons) {
+      expect(c.legs.length).toBeGreaterThanOrEqual(2);
+      expect(c.combinedProbabilityPct).toBeGreaterThan(0);
+      expect(c.combinedProbabilityPct).toBeLessThanOrEqual(100);
+    }
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            events: [
+              {
+                id: "401999",
+                date: "2026-11-21T15:00Z",
+                competitions: [
+                  {
+                    venue: { fullName: "Emirates Stadium" },
+                    status: { type: { state: "pre", name: "STATUS_SCHEDULED", completed: false } },
+                    competitors: [
+                      {
+                        homeAway: "home",
+                        team: { id: "359", displayName: "Arsenal", abbreviation: "ARS" },
+                      },
+                      {
+                        homeAway: "away",
+                        team: { id: "368", displayName: "Everton", abbreviation: "EVE" },
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        ),
+      ),
+    );
+
+    const espn = new EspnSoccerProvider();
+    const upcoming = await espn.fetchUpcomingFixtures({
+      leagueExternalId: "39",
+      seasonYear: 2026,
+      fromDateIso: "2026-11-20",
+      toDateIso: "2026-11-25",
+    });
+    expect(upcoming.items).toHaveLength(1);
+    expect(upcoming.items[0]?.homeTeam.name).toBe("Arsenal");
+  });
+
+  it("génère des paris simples, coupons combinés et parse les flux temps réel ESPN", async () => {
+    const sampleFixture = (id: string, home: string, away: string): PublicFixtureDto => ({
+      id,
+      leagueId: "l-1",
+      leagueName: "Premier League",
+      countryName: "England",
+      kickoffAt: "2026-11-21T15:00:00.000Z",
+      venueName: "Stadium",
+      roundLabel: "J12",
+      fixtureStatus: "scheduled",
+      homeTeamId: `${id}-h`,
+      homeTeamName: home,
+      homeTeamLogo: "",
+      awayTeamId: `${id}-a`,
+      awayTeamName: away,
+      awayTeamLogo: "",
+      homeGoals: null,
+      awayGoals: null,
+      predictions: [
+        {
+          id: `${id}-p1`,
+          market: "1x2",
+          pickedSelection: "home",
+          confidenceLevel: "high",
+          confidenceScore: 0.72,
+          probabilities: { home: 0.65, draw: 0.2, away: 0.15 },
+          expectedHomeGoals: 2.1,
+          expectedAwayGoals: 0.8,
+          analysisText: "Analyse statistique réelle.",
+          analysisStatus: "template",
+          couponValidated: false,
+          publishedAt: "2026-11-17T10:00:00.000Z",
+          lockedAt: "2026-11-17T10:00:00.000Z",
+          verdict: null,
+          brierScore: null,
+          actualOutcome: null,
+          settledAt: null,
+        },
+      ],
+    });
+
+    const slate = [
+      sampleFixture("f1", "Arsenal", "Everton"),
+      sampleFixture("f2", "Man City", "Fulham"),
+    ];
+    const singles = buildSinglePicks(slate);
+    const coupons = buildCombinedCoupons(slate);
+
+    expect(singles.length).toBeGreaterThanOrEqual(2);
+    expect(coupons.length).toBeGreaterThanOrEqual(2);
+    expect(PLATFORM_GAMING_GUIDES.length).toBe(3);
+
+    for (const c of coupons) {
+      expect(c.legs.length).toBeGreaterThanOrEqual(2);
+      expect(c.combinedProbabilityPct).toBeGreaterThan(0);
+      expect(c.combinedProbabilityPct).toBeLessThanOrEqual(100);
+    }
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            events: [
+              {
+                id: "401999",
+                date: "2026-11-21T15:00Z",
+                competitions: [
+                  {
+                    venue: { fullName: "Emirates Stadium" },
+                    status: { type: { state: "pre", name: "STATUS_SCHEDULED", completed: false } },
+                    competitors: [
+                      {
+                        homeAway: "home",
+                        team: { id: "359", displayName: "Arsenal", abbreviation: "ARS" },
+                      },
+                      {
+                        homeAway: "away",
+                        team: { id: "368", displayName: "Everton", abbreviation: "EVE" },
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        ),
+      ),
+    );
+
+    const espn = new EspnSoccerProvider();
+    const upcoming = await espn.fetchUpcomingFixtures({
+      leagueExternalId: "39",
+      seasonYear: 2026,
+      fromDateIso: "2026-11-20",
+      toDateIso: "2026-11-25",
+    });
+    expect(upcoming.items).toHaveLength(1);
+    expect(upcoming.items[0]?.homeTeam.name).toBe("Arsenal");
   });
 });

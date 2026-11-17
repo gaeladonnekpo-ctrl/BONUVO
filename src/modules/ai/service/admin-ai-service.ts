@@ -1,5 +1,7 @@
 import { desc, eq, inArray } from "drizzle-orm";
-import { ensureDefaultProviderAndLeagues } from "@/modules/ai/service/ingestion-helpers";
+import { createActiveSportsDataProvider } from "@/modules/ai/providers/registry";
+import { ensureProviderAndLeagues } from "@/modules/ai/service/ingestion-helpers";
+import { resolveProviderMeta } from "@/modules/ai/service/ingestion-service";
 import { withAppDb } from "@/server/db/context";
 import { getServerEnv } from "@/server/env";
 import {
@@ -69,11 +71,12 @@ export async function getAdminPredictionsOverview(actorId: string) {
 
 export async function getAdminIngestionOverview(actorId: string) {
   const env = getServerEnv();
-  const providerConfigured = Boolean(env.API_FOOTBALL_KEY?.trim());
+  const activeProvider = createActiveSportsDataProvider();
+  const providerConfigured = activeProvider.isConfigured();
   const llmEnabled = Boolean(env.AI_LLM_ENABLED && env.GEMINI_API_KEY?.trim());
 
   return withAppDb({ scope: "user_session", actorId }, async (db) => {
-    const providerRow = await ensureDefaultProviderAndLeagues(db);
+    const providerRow = await ensureProviderAndLeagues(db, resolveProviderMeta(activeProvider));
     const [leagueRows, runRows] = await Promise.all([
       db
         .select()

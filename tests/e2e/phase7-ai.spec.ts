@@ -10,6 +10,8 @@ test.describe("Phase 7 — BONUVO AI (pages publiques, a11y, /admin et crons)", 
       expect(response?.status(), `Statut attendu 200 sur ${url}`).toBe(200);
       await expect(page.getByRole("note")).toHaveCount(0);
       await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+      await expect(page.getByText("BONUVO AI", { exact: true }).first()).toBeVisible();
+      await expect(page.getByText("poisson-v1.0")).toHaveCount(0);
 
       const axeResults = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
       const blocking = axeResults.violations.filter(

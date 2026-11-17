@@ -28,6 +28,7 @@ const couponValidateSchema = z.object({
 });
 
 const jobNameSchema = z.enum([
+  "full-sync",
   "ingest-fixtures",
   "ingest-stats",
   "compute-predictions",
@@ -136,7 +137,13 @@ export async function triggerAiJobAction(input: { jobName: string }) {
   const ipHash = await resolveActionIpHash();
   let result: unknown;
 
-  if (parsed.data === "ingest-fixtures") {
+  if (parsed.data === "full-sync") {
+    const fixturesRes = await runIngestFixturesJob({ dbScope: "ai_pipeline" });
+    const statsRes = await runIngestStatsJob({ dbScope: "ai_pipeline" });
+    const computeRes = await runComputePredictionsJob({ dbScope: "ai_pipeline" });
+    const settleRes = await runSettlePredictionsJob({ dbScope: "ai_pipeline" });
+    result = { fixturesRes, statsRes, computeRes, settleRes };
+  } else if (parsed.data === "ingest-fixtures") {
     result = await runIngestFixturesJob({ dbScope: "ai_pipeline" });
   } else if (parsed.data === "ingest-stats") {
     result = await runIngestStatsJob({ dbScope: "ai_pipeline" });

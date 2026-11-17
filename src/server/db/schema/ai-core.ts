@@ -7,12 +7,14 @@ import {
   date,
   index,
   integer,
+  jsonb,
   pgTable,
   text,
   timestamp,
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
+import type { TeamKeyPlayerStat, TeamRecentMatchStat } from "@/modules/ai/providers/types";
 
 export const SPORTS_PROVIDER_STATUSES = ["active", "inactive"] as const;
 export type SportsProviderStatus = (typeof SPORTS_PROVIDER_STATUSES)[number];
@@ -240,6 +242,14 @@ export const teamStatsSnapshots = pgTable(
     recentFormPoints: integer("recent_form_points").notNull().default(0),
     recentGoalsFor: integer("recent_goals_for").notNull().default(0),
     recentGoalsAgainst: integer("recent_goals_against").notNull().default(0),
+    keyPlayersJson: jsonb("key_players_json")
+      .$type<TeamKeyPlayerStat[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
+    recentMatchesJson: jsonb("recent_matches_json")
+      .$type<TeamRecentMatchStat[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
     sourceTimestamp: timestamp("source_timestamp", { withTimezone: true, mode: "date" })
       .notNull()
       .defaultNow(),
@@ -257,44 +267,5 @@ export const teamStatsSnapshots = pgTable(
       "team_stats_nonneg_check",
       sql`${table.matchesPlayed} >= 0 AND ${table.homeMatchesPlayed} >= 0 AND ${table.awayMatchesPlayed} >= 0 AND ${table.goalsForTotal} >= 0 AND ${table.goalsAgainstTotal} >= 0`,
     ),
-  ],
-);
-
-export const standings = pgTable(
-  "standings",
-  {
-    id: uuid("id").defaultRandom().primaryKey(),
-    leagueId: uuid("league_id")
-      .notNull()
-      .references(() => leagues.id, { onDelete: "cascade" }),
-    seasonId: uuid("season_id")
-      .notNull()
-      .references(() => seasons.id, { onDelete: "cascade" }),
-    teamId: uuid("team_id")
-      .notNull()
-      .references(() => teams.id, { onDelete: "cascade" }),
-    ingestionRunId: uuid("ingestion_run_id")
-      .notNull()
-      .references(() => ingestionRuns.id, { onDelete: "restrict" }),
-    rank: integer("rank").notNull(),
-    points: integer("points").notNull().default(0),
-    played: integer("played").notNull().default(0),
-    wins: integer("wins").notNull().default(0),
-    draws: integer("draws").notNull().default(0),
-    losses: integer("losses").notNull().default(0),
-    goalsFor: integer("goals_for").notNull().default(0),
-    goalsAgainst: integer("goals_against").notNull().default(0),
-    goalDiff: integer("goal_diff").notNull().default(0),
-    formText: text("form_text").notNull().default(""),
-    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
-  },
-  (table) => [
-    uniqueIndex("standings_league_season_team_uidx").on(
-      table.leagueId,
-      table.seasonId,
-      table.teamId,
-    ),
-    index("standings_rank_idx").on(table.leagueId, table.seasonId, table.rank),
   ],
 );

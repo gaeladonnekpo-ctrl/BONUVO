@@ -1,10 +1,10 @@
 import { and, eq, inArray, isNull, lte } from "drizzle-orm";
 import { settlePrediction } from "@/modules/ai/model/settle";
-import { createSportsDataProvider } from "@/modules/ai/providers/api-football";
+import { createActiveSportsDataProvider } from "@/modules/ai/providers/registry";
 import type { SportsDataProvider } from "@/modules/ai/providers/types";
 import {
   currentFootballSeasonYear,
-  ensureDefaultProviderAndLeagues,
+  ensureProviderAndLeagues,
   upsertNormalizedFixtures,
 } from "@/modules/ai/service/ingestion-helpers";
 import { resolveJobLockBackend } from "@/modules/intelligence/lock";
@@ -24,7 +24,7 @@ export async function runSettlePredictionsJob(options?: {
   dbScope?: DbExecutionScope;
   invalidateCache?: boolean;
 }) {
-  const provider = options?.provider ?? createSportsDataProvider();
+  const provider = options?.provider ?? createActiveSportsDataProvider();
   const scope = options?.dbScope ?? "ai_pipeline";
   const lock = resolveJobLockBackend();
   if (!lock) {
@@ -48,7 +48,16 @@ export async function runSettlePredictionsJob(options?: {
   try {
     const now = new Date();
     const summary = await withAppDb({ scope }, async (db) => {
-      const providerRow = await ensureDefaultProviderAndLeagues(db);
+      const providerRow = await ensureProviderAndLeagues(db, {
+        slug: provider.code,
+        name: provider.name,
+        baseUrl:
+          provider.code === "espn-soccer"
+            ? "https://site.api.espn.com"
+            : "https://v3.football.api-sports.io",
+        dailyQuotaLimit: provider.code === "espn-soccer" ? 5000 : 100,
+        quotaReserve: provider.code === "espn-soccer" ? 50 : 10,
+      });
       let refreshRunId: string | null = null;
 
       if (provider.isConfigured()) {

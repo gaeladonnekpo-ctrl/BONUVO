@@ -1,29 +1,23 @@
 import { and, eq, gte, inArray, lte } from "drizzle-orm";
-import { createSportsDataProvider } from "@/modules/ai/providers/api-football";
+import { createActiveSportsDataProvider } from "@/modules/ai/providers/registry";
 import type { SportsDataProvider } from "@/modules/ai/providers/types";
+import { ensureProviderAndLeagues } from "@/modules/ai/service/ingestion-helpers";
 import {
-  ensureDefaultProviderAndLeagues,
-  summarizeRecentForm,
-} from "@/modules/ai/service/ingestion-helpers";
+  collectMatchIntelligenceForUpcoming,
+  upsertLeagueStandingsRows,
+  upsertTeamSnapshotRow,
+} from "@/modules/ai/service/match-intel-helper";
 import { resolveJobLockBackend } from "@/modules/intelligence/lock";
 import { invalidatePublicCatalogTags } from "@/server/cache/catalog-tags";
 import { withAppDb, type DbExecutionScope } from "@/server/db/context";
-import {
-  fixtures,
-  ingestionRuns,
-  leagues,
-  seasons,
-  standings,
-  teamStatsSnapshots,
-  teams,
-} from "@/server/db/schema";
+import { fixtures, ingestionRuns, leagues, seasons, teams } from "@/server/db/schema";
 
 export async function runIngestStatsJob(options?: {
   provider?: SportsDataProvider;
   dbScope?: DbExecutionScope;
   invalidateCache?: boolean;
 }) {
-  const provider = options?.provider ?? createSportsDataProvider();
+  const provider = options?.provider ?? createActiveSportsDataProvider();
   const scope = options?.dbScope ?? "ai_pipeline";
   const lock = resolveJobLockBackend();
   if (!lock) {
@@ -56,11 +50,20 @@ export async function runIngestStatsJob(options?: {
     }
 
     const now = new Date();
-    const horizon = new Date(now.getTime() + 72 * 3600_000);
+    const horizon = new Date(now.getTime() + 10 * 24 * 3600_000);
     const todayDate = now.toISOString().slice(0, 10);
 
     const summary = await withAppDb({ scope }, async (db) => {
-      const providerRow = await ensureDefaultProviderAndLeagues(db);
+      const providerRow = await ensureProviderAndLeagues(db, {
+        slug: provider.code,
+        name: provider.name,
+        baseUrl:
+          provider.code === "espn-soccer"
+            ? "https://site.api.espn.com"
+            : "https://v3.football.api-sports.io",
+        dailyQuotaLimit: provider.code === "espn-soccer" ? 5000 : 100,
+        quotaReserve: provider.code === "espn-soccer" ? 50 : 10,
+      });
       const [run] = await db
         .insert(ingestionRuns)
         .values({ providerId: providerRow.id, jobName: "ingest-stats", status: "running" })
@@ -74,15 +77,11 @@ export async function runIngestStatsJob(options?: {
 
       try {
         const upcoming = await db
-          .select({
-            leagueId: fixtures.leagueId,
-            seasonId: fixtures.seasonId,
-            homeTeamId: fixtures.homeTeamId,
-            awayTeamId: fixtures.awayTeamId,
-          })
+          .select()
           .from(fixtures)
           .where(
             and(
+              eq(fixtures.providerId, providerRow.id),
               eq(fixtures.fixtureStatus, "scheduled"),
               gte(fixtures.kickoffAt, now),
               lte(fixtures.kickoffAt, horizon),
@@ -117,6 +116,19 @@ export async function runIngestStatsJob(options?: {
         const teamById = new Map(teamRows.map((t) => [t.id, t]));
         const extTeamMap = new Map(teamRows.map((t) => [t.externalId, t.id]));
 
+        const intel = await collectMatchIntelligenceForUpcoming({
+          db,
+          provider,
+          providerId: providerRow.id,
+          runId: run.id,
+          upcoming,
+          leagueById,
+          seasonById,
+          teamById,
+        });
+        requestsMade += intel.requestsMade;
+        itemsUpserted += intel.itemsUpserted;
+
         const seenLeagueSeasons = new Set<string>();
         for (const f of upcoming) {
           const lsKey = `${f.leagueId}:${f.seasonId}`;
@@ -137,54 +149,16 @@ export async function runIngestStatsJob(options?: {
           requestsMade += standingRes.requestsMade;
           if (standingRes.quota.remaining !== null) quotaRemaining = standingRes.quota.remaining;
 
-          for (const row of standingRes.items) {
-            const tid = extTeamMap.get(row.teamExternalId);
-            if (!tid) continue;
-            await db
-              .insert(standings)
-              .values({
-                leagueId: lRow.id,
-                seasonId: sRow.id,
-                teamId: tid,
-                ingestionRunId: run.id,
-                rank: row.rank,
-                points: row.points,
-                played: row.played,
-                wins: row.won,
-                draws: row.drawn,
-                losses: row.lost,
-                goalDiff: row.goalsDiff,
-                formText: row.form ?? "",
-              })
-              .onConflictDoUpdate({
-                target: [standings.leagueId, standings.seasonId, standings.teamId],
-                set: {
-                  ingestionRunId: run.id,
-                  rank: row.rank,
-                  points: row.points,
-                  played: row.played,
-                  wins: row.won,
-                  draws: row.drawn,
-                  losses: row.lost,
-                  goalDiff: row.goalsDiff,
-                  formText: row.form ?? "",
-                  updatedAt: new Date(),
-                },
-              });
-            itemsUpserted += 1;
-          }
+          itemsUpserted += await upsertLeagueStandingsRows({
+            db,
+            leagueId: lRow.id,
+            seasonId: sRow.id,
+            runId: run.id,
+            items: standingRes.items,
+            extTeamMap,
+            teamRecentMap: intel.teamRecentMap,
+          });
         }
-
-        const existingToday = await db
-          .select({ teamId: teamStatsSnapshots.teamId, seasonId: teamStatsSnapshots.seasonId })
-          .from(teamStatsSnapshots)
-          .where(
-            and(
-              eq(teamStatsSnapshots.asOfDate, todayDate),
-              inArray(teamStatsSnapshots.teamId, teamIds),
-            ),
-          );
-        const existingSet = new Set(existingToday.map((r) => `${r.teamId}:${r.seasonId}`));
 
         const pairs = new Map<string, { leagueId: string; seasonId: string; teamId: string }>();
         for (const f of upcoming) {
@@ -201,7 +175,6 @@ export async function runIngestStatsJob(options?: {
         }
 
         for (const pair of pairs.values()) {
-          if (existingSet.has(`${pair.teamId}:${pair.seasonId}`)) continue;
           if (quotaRemaining !== null && quotaRemaining <= providerRow.quotaReserve) {
             stoppedByQuota = true;
             break;
@@ -220,44 +193,17 @@ export async function runIngestStatsJob(options?: {
           if (statRes.quota.remaining !== null) quotaRemaining = statRes.quota.remaining;
           if (!statRes.stats) continue;
 
-          const formSum = summarizeRecentForm(statRes.stats.recentForm);
-          await db
-            .insert(teamStatsSnapshots)
-            .values({
-              teamId: tRow.id,
-              leagueId: lRow.id,
-              seasonId: sRow.id,
-              ingestionRunId: run.id,
-              asOfDate: todayDate,
-              matchesPlayed: statRes.stats.matchesPlayed,
-              homeMatchesPlayed: statRes.stats.homeMatches,
-              awayMatchesPlayed: statRes.stats.awayMatches,
-              goalsForTotal: statRes.stats.goalsFor,
-              goalsAgainstTotal: statRes.stats.goalsAgainst,
-              homeGoalsFor: statRes.stats.homeGoalsFor,
-              homeGoalsAgainst: statRes.stats.homeGoalsAgainst,
-              awayGoalsFor: statRes.stats.awayGoalsFor,
-              awayGoalsAgainst: statRes.stats.awayGoalsAgainst,
-              recentFormMatches: formSum.matches,
-              recentFormPoints: formSum.points,
-              sourceTimestamp: new Date(),
-            })
-            .onConflictDoUpdate({
-              target: [
-                teamStatsSnapshots.teamId,
-                teamStatsSnapshots.seasonId,
-                teamStatsSnapshots.asOfDate,
-              ],
-              set: {
-                ingestionRunId: run.id,
-                matchesPlayed: statRes.stats.matchesPlayed,
-                goalsForTotal: statRes.stats.goalsFor,
-                goalsAgainstTotal: statRes.stats.goalsAgainst,
-                recentFormMatches: formSum.matches,
-                recentFormPoints: formSum.points,
-                updatedAt: new Date(),
-              },
-            });
+          await upsertTeamSnapshotRow({
+            db,
+            teamId: tRow.id,
+            leagueId: lRow.id,
+            seasonId: sRow.id,
+            runId: run.id,
+            todayDate,
+            stats: statRes.stats,
+            keyPlayers: intel.teamPlayersMap.get(tRow.id) ?? [],
+            recentMatches: intel.teamRecentMap.get(tRow.id) ?? [],
+          });
           itemsUpserted += 1;
         }
 

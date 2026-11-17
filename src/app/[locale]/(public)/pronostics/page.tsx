@@ -1,5 +1,6 @@
 import { BarChart2, CalendarRange } from "lucide-react";
 import { setRequestLocale } from "next-intl/server";
+import { CouponsSection } from "@/components/ai/CouponsSection";
 import { FixtureRow } from "@/components/ai/FixtureRow";
 import { UiBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,11 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Link } from "@/i18n/navigation";
 import type { AppLocale } from "@/lib/i18n/config";
 import { buildLocalizedMetadata } from "@/lib/i18n/metadata";
+import {
+  PLATFORM_GAMING_GUIDES,
+  buildCombinedCoupons,
+  buildSinglePicks,
+} from "@/modules/ai/model/coupons";
 import {
   getPublicPredictionStats,
   listPublicFixtures,
@@ -48,21 +54,24 @@ export default async function PublicPredictionsPage({
     getPublicPredictionStats(),
   ]);
 
+  const singles = buildSinglePicks(fixturesData.fixtures);
+  const coupons = buildCombinedCoupons(fixturesData.fixtures);
+
   return (
     <div className="space-y-8 py-4">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="space-y-2">
           <div className="flex flex-wrap items-center gap-2">
-            <UiBadge tone="accent">BONUVO AI · {statsData.modelVersion}</UiBadge>
-            <UiBadge tone="outline">1X2 · +2.5 · BTTS</UiBadge>
+            <UiBadge tone="accent">BONUVO AI</UiBadge>
+            <UiBadge tone="outline">1X2 · +2.5 · BTTS · Combinés</UiBadge>
           </div>
           <h1 className="font-display text-3xl font-bold tracking-tight text-fg">
-            {isEn ? "Football Match Forecasts" : "Pronostics Football & Modèle Poisson"}
+            {isEn ? "BONUVO AI Sports Forecasts" : "Pronostics Sportifs BONUVO AI"}
           </h1>
           <p className="max-w-2xl text-sm text-fg-muted">
             {isEn
-              ? "Probabilities are locked strictly before kickoff. Matches without at least 6 played games are excluded."
-              : "Probabilités verrouillées avant le coup d'envoi. Les rencontres comptant moins de 6 matchs joués sont exclues par précaution statistique."}
+              ? "Real-time statistical probabilities and combined coupons locked strictly before kickoff — without guaranteed winnings."
+              : "Estimations probabilistes en temps réel, analyses détaillées et coupons combinés verrouillés avant le coup d'envoi — sans garantie de gain."}
           </p>
         </div>
 
@@ -156,6 +165,13 @@ export default async function PublicPredictionsPage({
           ))}
         </div>
       )}
+
+      <CouponsSection
+        coupons={coupons}
+        singles={singles}
+        guides={PLATFORM_GAMING_GUIDES}
+        locale={resolvedLocale}
+      />
     </div>
   );
 }

@@ -224,8 +224,8 @@ export default async function PublicHomePage({
             <CardContent className="flex flex-wrap items-center justify-between gap-4 pt-5">
               <p className="text-sm text-fg-muted">
                 {resolvedLocale === "en"
-                  ? "Probabilistic Poisson v1.0 football forecasts and settled track record."
-                  : "Estimations probabilistes football (Poisson v1.0) et historique vérifié."}
+                  ? "Real-time probabilistic football forecasts and verified track record by BONUVO AI."
+                  : "Estimations probabilistes en temps réel et historique vérifié par BONUVO AI."}
               </p>
               <Button asChild variant="outline" size="sm">
                 <Link href="/pronostics/historique">
