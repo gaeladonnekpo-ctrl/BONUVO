@@ -5,6 +5,7 @@ import {
   BarChart3,
   BookOpen,
   Building2,
+  ExternalLink,
   Globe2,
   Handshake,
   LayoutDashboard,
@@ -20,7 +21,7 @@ import { useTranslations } from "next-intl";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { BrandMark } from "@/components/brand/BrandMark";
 import { Button } from "@/components/ui/button";
-import { Link } from "@/i18n/navigation";
+import { Link, usePathname } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { ADMIN_NAV_LINKS } from "./navigation-links";
 
@@ -46,6 +47,23 @@ export interface SidebarProps {
   className?: string;
 }
 
+const AFFILIATION_PATHS = [
+  "/admin/affiliation",
+  "/admin/campagnes",
+  "/admin/postbacks",
+  "/admin/conversions",
+  "/admin/commissions",
+  "/admin/imports",
+];
+
+function isAdminLinkActive(pathname: string, href: string, key: string): boolean {
+  if (href === "/admin") return pathname === "/admin";
+  if (key === "affiliation") {
+    return AFFILIATION_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+  }
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
 export function Sidebar({
   collapsed = false,
   onToggleCollapse,
@@ -55,6 +73,7 @@ export function Sidebar({
 }: SidebarProps) {
   const tAdmin = useTranslations("admin");
   const tBrand = useTranslations("brand");
+  const pathname = usePathname();
 
   return (
     <aside
@@ -91,14 +110,19 @@ export function Sidebar({
       <nav className="flex-1 space-y-1 overflow-y-auto p-2.5">
         {ADMIN_NAV_LINKS.map((item) => {
           const Icon = ADMIN_ICONS[item.key];
+          const active = isAdminLinkActive(pathname, item.href, item.key);
           return (
             <Link
               key={item.key}
               href={item.href}
               onClick={onNavigate}
+              aria-current={active ? "page" : undefined}
               title={collapsed ? tAdmin(`nav.${item.key}`) : undefined}
               className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-fg-muted transition-colors hover:bg-surface-elevated hover:text-fg",
+                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                active
+                  ? "bg-accent/15 font-semibold text-accent"
+                  : "text-fg-muted hover:bg-surface-elevated hover:text-fg",
                 collapsed ? "justify-center px-2" : "",
               )}
             >
@@ -107,6 +131,21 @@ export function Sidebar({
             </Link>
           );
         })}
+
+        <div className="mt-3 border-t border-border pt-3">
+          <Link
+            href="/offres"
+            onClick={onNavigate}
+            title={collapsed ? "Site public" : undefined}
+            className={cn(
+              "flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium text-fg-muted transition-colors hover:bg-surface-elevated hover:text-fg",
+              collapsed ? "justify-center px-2" : "",
+            )}
+          >
+            <ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            {!collapsed ? <span className="truncate">Site public</span> : null}
+          </Link>
+        </div>
 
         {showDevDesignLink ? (
           <div className="mt-3 border-t border-border pt-3">

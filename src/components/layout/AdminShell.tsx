@@ -3,6 +3,7 @@
 import { Menu, Search } from "lucide-react";
 import { useTranslations } from "next-intl";
 import * as React from "react";
+import { useRouter } from "@/i18n/navigation";
 import { UiBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,11 +27,38 @@ export interface AdminShellProps {
 /**
  * Administration back-office shell with collapsible sidebar, utility topbar, and mobile drawer.
  */
+const QUICK_JUMP_RULES: ReadonlyArray<{ keywords: readonly string[]; href: string }> = [
+  { keywords: ["stat", "kpi", "entonnoir", "export", "csv"], href: "/admin/statistiques" },
+  { keywords: ["campagne", "utm"], href: "/admin/campagnes" },
+  { keywords: ["postback", "webhook"], href: "/admin/postbacks" },
+  { keywords: ["conversion", "ftd"], href: "/admin/conversions" },
+  { keywords: ["commission"], href: "/admin/commissions" },
+  { keywords: ["import"], href: "/admin/imports" },
+  { keywords: ["affil", "lien"], href: "/admin/affiliation" },
+  { keywords: ["bookmaker"], href: "/admin/bookmakers" },
+  { keywords: ["offre", "offer", "bonus"], href: "/admin/offres" },
+  { keywords: ["code", "promo"], href: "/admin/codes-promo" },
+  { keywords: ["pays", "country", "devise"], href: "/admin/pays" },
+  { keywords: ["util", "user", "role"], href: "/admin/utilisateurs" },
+  { keywords: ["journal", "audit"], href: "/admin/journal" },
+  { keywords: ["param", "setting"], href: "/admin/parametres" },
+];
+
 export function AdminShell({ children, showDevDesignLink = false }: AdminShellProps) {
   const tAdmin = useTranslations("admin");
   const tNav = useTranslations("nav");
+  const router = useRouter();
   const [collapsed, setCollapsed] = React.useState(false);
   const [mobileOpen, setMobileOpen] = React.useState(false);
+  const [searchQuery, setSearchQuery] = React.useState("");
+
+  function handleQuickSearch(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return;
+    const match = QUICK_JUMP_RULES.find((rule) => rule.keywords.some((kw) => q.includes(kw)));
+    router.push(match ? match.href : "/admin/catalogue");
+  }
 
   return (
     <div className="flex min-h-screen bg-bg text-fg">
@@ -73,18 +101,20 @@ export function AdminShell({ children, showDevDesignLink = false }: AdminShellPr
 
             <UiBadge tone="neutral">{tAdmin("badge")}</UiBadge>
 
-            <div className="relative hidden w-64 sm:block">
+            <form onSubmit={handleQuickSearch} className="relative hidden w-64 sm:block">
               <Search
                 className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-fg-muted"
                 aria-hidden="true"
               />
               <Input
                 type="search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 aria-label={tAdmin("searchLabel")}
                 placeholder={tAdmin("searchPlaceholder")}
                 className="h-9 pl-9"
               />
-            </div>
+            </form>
           </div>
 
           <div className="flex items-center gap-2">
