@@ -64,6 +64,20 @@
       "when": 1794866520469,
       "tag": "0008_short_nextwave",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1794874030985,
+      "tag": "0009_slim_thaddeus_ross",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1794874040300,
+      "tag": "0010_phase5_affiliation_rls",
+      "breakpoints": true
     }
   ]
 }

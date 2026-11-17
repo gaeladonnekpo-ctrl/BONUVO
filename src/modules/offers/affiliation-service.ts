@@ -29,6 +29,12 @@ export async function upsertAffiliateNetwork(
 ) {
   requirePermission(actor, "links.manage");
   const parsed = affiliateNetworkSchema.parse(rawInput);
+  const resolvedSlug =
+    parsed.slug ||
+    parsed.name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
 
   const result = await withAppDb({ scope: "user_session", actorId: actor.id }, async (tx) => {
     if (parsed.id) {
@@ -40,10 +46,17 @@ export async function upsertAffiliateNetwork(
       const [updated] = await tx
         .update(affiliateNetworks)
         .set({
+          slug: resolvedSlug,
           name: parsed.name,
+          bookmakerId: parsed.bookmakerId,
+          adapterKey: parsed.adapterKey,
           trackingMode: parsed.trackingMode,
           subIdParamName: parsed.subIdParamName,
           secretEnvRef: parsed.secretEnvRef,
+          signatureMode: parsed.signatureMode,
+          signatureHeader: parsed.signatureHeader,
+          allowedIps: parsed.allowedIps,
+          timestampToleranceSeconds: parsed.timestampToleranceSeconds,
           status: parsed.status,
         })
         .where(eq(affiliateNetworks.id, parsed.id))
@@ -55,10 +68,17 @@ export async function upsertAffiliateNetwork(
     const [created] = await tx
       .insert(affiliateNetworks)
       .values({
+        slug: resolvedSlug,
         name: parsed.name,
+        bookmakerId: parsed.bookmakerId,
+        adapterKey: parsed.adapterKey,
         trackingMode: parsed.trackingMode,
         subIdParamName: parsed.subIdParamName,
         secretEnvRef: parsed.secretEnvRef,
+        signatureMode: parsed.signatureMode,
+        signatureHeader: parsed.signatureHeader,
+        allowedIps: parsed.allowedIps,
+        timestampToleranceSeconds: parsed.timestampToleranceSeconds,
         status: parsed.status,
       })
       .returning();

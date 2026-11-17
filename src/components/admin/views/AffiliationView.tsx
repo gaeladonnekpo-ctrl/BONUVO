@@ -4,10 +4,11 @@ import { useRouter } from "next/navigation";
 import * as React from "react";
 import { DataTable, type AdminTableColumn } from "@/components/admin/DataTable";
 import { EntityForm } from "@/components/admin/EntityForm";
+import { NetworkFormSection } from "@/components/admin/affiliation/NetworkFormSection";
 import { UiBadge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import type { AdminActionResult } from "@/lib/admin/action-result";
-import { upsertAffiliateLinkAction, upsertAffiliateNetworkAction } from "@/modules/offers/actions";
+import { upsertAffiliateLinkAction } from "@/modules/offers/actions";
 
 export interface AffiliateNetworkRow {
   id: string;
@@ -45,14 +46,6 @@ export function AffiliationView({
   canManageLinks: boolean;
 }) {
   const router = useRouter();
-  const [netName, setNetName] = React.useState("");
-  const [trackingMode, setTrackingMode] = React.useState<
-    "postback" | "webhook" | "import" | "none"
-  >("postback");
-  const [subIdParam, setSubIdParam] = React.useState("subid");
-  const [secretEnvRef, setSecretEnvRef] = React.useState("");
-  const [netResult, setNetResult] = React.useState<AdminActionResult<unknown> | null>(null);
-
   const [slug, setSlug] = React.useState("");
   const [bookmakerId, setBookmakerId] = React.useState(bookmakers[0]?.id ?? "");
   const [countryId, setCountryId] = React.useState("");
@@ -217,60 +210,7 @@ export function AffiliationView({
             </div>
           </EntityForm>
 
-          <EntityForm
-            title={`Réseaux d'affiliation (${networks.length})`}
-            description="Référence de variable d'environnement uniquement (jamais de secret brut en base)."
-            submitLabel="Ajouter le réseau"
-            result={netResult}
-            onSubmit={async (e) => {
-              e.preventDefault();
-              const res = await upsertAffiliateNetworkAction({
-                name: netName,
-                trackingMode,
-                subIdParamName: subIdParam,
-                secretEnvRef,
-                status: "active",
-              });
-              setNetResult(res);
-              if (res.ok) {
-                setNetName("");
-                setSecretEnvRef("");
-                router.refresh();
-              }
-            }}
-          >
-            <div className="grid gap-3">
-              <Input
-                placeholder="Nom du réseau"
-                required
-                value={netName}
-                onChange={(e) => setNetName(e.target.value)}
-              />
-              <div className="grid grid-cols-2 gap-2">
-                <select
-                  aria-label="Mode de suivi"
-                  value={trackingMode}
-                  onChange={(e) => setTrackingMode(e.target.value as typeof trackingMode)}
-                  className="h-10 rounded-input border border-border bg-surface px-2 text-sm text-fg"
-                >
-                  <option value="postback">postback</option>
-                  <option value="webhook">webhook</option>
-                  <option value="import">import</option>
-                  <option value="none">none</option>
-                </select>
-                <Input
-                  placeholder="Paramètre subid"
-                  value={subIdParam}
-                  onChange={(e) => setSubIdParam(e.target.value)}
-                />
-              </div>
-              <Input
-                placeholder="Nom variable secret (ex. PARTNER_SECRET)"
-                value={secretEnvRef}
-                onChange={(e) => setSecretEnvRef(e.target.value)}
-              />
-            </div>
-          </EntityForm>
+          <NetworkFormSection networksCount={networks.length} />
         </div>
       ) : null}
     </div>

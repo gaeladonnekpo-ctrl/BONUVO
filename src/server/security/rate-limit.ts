@@ -14,7 +14,9 @@ export type RateLimitRuleKey =
   | "resend_verification"
   | "media_upload"
   | "go_redirect"
-  | "public_events";
+  | "public_events"
+  | "postback_ingest"
+  | "webhook_provider";
 
 export interface RateLimitRuleSpec {
   limit: number;
@@ -33,6 +35,8 @@ export const AUTH_RATE_LIMIT_RULES: Record<RateLimitRuleKey, RateLimitRuleSpec> 
   media_upload: { limit: 20, windowSeconds: 3600, lockSeconds: 0 },
   go_redirect: { limit: 30, windowSeconds: 60, lockSeconds: 0 },
   public_events: { limit: 60, windowSeconds: 60, lockSeconds: 0 },
+  postback_ingest: { limit: 120, windowSeconds: 60, lockSeconds: 0 },
+  webhook_provider: { limit: 120, windowSeconds: 60, lockSeconds: 0 },
 } as const;
 
 export interface RateLimitDecision {

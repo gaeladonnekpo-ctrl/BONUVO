@@ -6,4 +6,5 @@ export * from "./catalog-reference";
 export * from "./bookmakers";
 export * from "./offers";
 export * from "./affiliation-core";
+export * from "./affiliation-events";
 export * from "./public-events";

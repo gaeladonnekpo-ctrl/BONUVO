@@ -33,6 +33,10 @@ export const campaigns = pgTable(
     name: text("name").notNull(),
     source: text("source").notNull().default("direct"),
     medium: text("medium").notNull().default("organic"),
+    bookmakerId: uuid("bookmaker_id").references(() => bookmakers.id, { onDelete: "set null" }),
+    offerId: uuid("offer_id").references(() => offers.id, { onDelete: "set null" }),
+    countryId: uuid("country_id").references(() => countries.id, { onDelete: "set null" }),
+    description: text("description").notNull().default(""),
     startsAt: timestamp("starts_at", { withTimezone: true, mode: "date" }),
     endsAt: timestamp("ends_at", { withTimezone: true, mode: "date" }),
     status: text("status").$type<CampaignStatus>().notNull().default("active"),
@@ -42,6 +46,7 @@ export const campaigns = pgTable(
   },
   (table) => [
     index("campaigns_status_idx").on(table.status),
+    index("campaigns_bm_idx").on(table.bookmakerId),
     check("campaigns_status_check", sql`${table.status} IN ('active', 'inactive', 'archived')`),
   ],
 );

@@ -1,5 +1,6 @@
 import { setRequestLocale } from "next-intl/server";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import { AffiliationSubNav } from "@/components/admin/affiliation/AffiliationSubNav";
 import { AffiliationView } from "@/components/admin/views/AffiliationView";
 import { listAffiliateDataForAdmin } from "@/modules/offers/affiliation-service";
 import { listBookmakersForAdmin, listCountriesForAdmin } from "@/modules/offers/bookmaker-service";
@@ -31,6 +32,7 @@ export default async function AdminAffiliationPage({
         title="Affiliation et liens sortants"
         description="Chaque lien HTTPS est contrôlé contre la liste allowed_hosts du bookmaker (contrôle B1)."
       />
+      <AffiliationSubNav />
       <AffiliationView
         networks={networks}
         links={links}

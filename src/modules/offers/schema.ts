@@ -164,10 +164,31 @@ export const promoCodeSchema = z
 
 export const affiliateNetworkSchema = z.object({
   id: z.string().uuid().optional(),
+  slug: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .regex(SLUG_REGEX, "Slug réseau invalide.")
+    .max(80)
+    .optional(),
   name: z.string().trim().min(2).max(100),
+  bookmakerId: z.string().uuid().nullable().optional().default(null),
+  adapterKey: z.enum(["1xpartners", "1win", "generic"]).default("generic"),
   trackingMode: z.enum(["postback", "webhook", "import", "none"]).default("none"),
   subIdParamName: z.string().trim().min(1).max(40).default("subid"),
-  secretEnvRef: z.string().trim().max(80).default(""),
+  secretEnvRef: z
+    .string()
+    .trim()
+    .max(80)
+    .default("")
+    .refine(
+      (val) => val === "" || /^AFFILIATE_[A-Z0-9_]{2,64}$/.test(val),
+      "La référence doit suivre le format AFFILIATE_<NOM>.",
+    ),
+  signatureMode: z.enum(["token", "hmac_sha256", "none"]).default("token"),
+  signatureHeader: z.string().trim().max(80).default(""),
+  allowedIps: z.array(z.string().trim().min(3).max(64)).max(50).default([]),
+  timestampToleranceSeconds: z.number().int().min(30).max(3600).default(300),
   status: z.enum(["active", "inactive"]).default("active"),
 });
 
