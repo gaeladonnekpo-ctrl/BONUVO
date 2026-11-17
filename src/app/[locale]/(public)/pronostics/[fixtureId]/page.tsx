@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 import { setRequestLocale } from "next-intl/server";
 import { z } from "zod";
 import { ConfidenceBadge } from "@/components/ai/ConfidenceBadge";
-import { Disclaimer } from "@/components/ai/Disclaimer";
 import { HeadToHead } from "@/components/ai/HeadToHead";
 import { ProbabilityBar } from "@/components/ai/ProbabilityBar";
 import { StatsTable } from "@/components/ai/StatsTable";
@@ -82,8 +81,6 @@ export default async function PublicFixtureDetailPage({
           {fixture.venueName ? ` · ${fixture.venueName}` : ""}
         </p>
       </header>
-
-      <Disclaimer locale={resolvedLocale} />
 
       <section aria-labelledby="markets-heading" className="space-y-4">
         <h2 id="markets-heading" className="font-display text-xl font-bold text-fg">

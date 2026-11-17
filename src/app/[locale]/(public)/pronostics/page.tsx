@@ -1,6 +1,5 @@
 import { BarChart2, CalendarRange } from "lucide-react";
 import { setRequestLocale } from "next-intl/server";
-import { Disclaimer } from "@/components/ai/Disclaimer";
 import { FixtureRow } from "@/components/ai/FixtureRow";
 import { UiBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -74,8 +73,6 @@ export default async function PublicPredictionsPage({
           </Link>
         </Button>
       </header>
-
-      <Disclaimer locale={resolvedLocale} />
 
       <div className="grid gap-4 sm:grid-cols-3">
         <Card>

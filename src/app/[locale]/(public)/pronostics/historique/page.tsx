@@ -1,7 +1,6 @@
 import { ArrowLeft } from "lucide-react";
 import { setRequestLocale } from "next-intl/server";
 import { AccuracyChart } from "@/components/ai/AccuracyChart";
-import { Disclaimer } from "@/components/ai/Disclaimer";
 import { FixtureRow } from "@/components/ai/FixtureRow";
 import { UiBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -76,8 +75,6 @@ export default async function PublicPredictionHistoryPage({
             : "Chaque pronostic est verrouillé avant le coup d'envoi puis réglé automatiquement après le score final. Les matchs reportés ou annulés sont marqués void."}
         </p>
       </header>
-
-      <Disclaimer locale={resolvedLocale} />
 
       <div className="grid gap-4 sm:grid-cols-4">
         <Card>

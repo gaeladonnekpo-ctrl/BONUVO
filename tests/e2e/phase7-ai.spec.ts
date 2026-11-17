@@ -2,14 +2,14 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
 test.describe("Phase 7 — BONUVO AI (pages publiques, a11y, /admin et crons)", () => {
-  test("affiche /fr/pronostics, /en/pronostics et /fr/pronostics/historique avec Disclaimer 18+ et a11y AA", async ({
+  test("affiche /fr/pronostics, /en/pronostics et /fr/pronostics/historique sans bandeau d'avertissement et a11y AA", async ({
     page,
   }) => {
     for (const url of ["/fr/pronostics", "/en/pronostics", "/fr/pronostics/historique"]) {
       const response = await page.goto(url, { waitUntil: "domcontentloaded" });
       expect(response?.status(), `Statut attendu 200 sur ${url}`).toBe(200);
-      await expect(page.getByRole("note")).toBeVisible();
-      await expect(page.getByRole("note").getByText("18+", { exact: true })).toBeVisible();
+      await expect(page.getByRole("note")).toHaveCount(0);
+      await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 
       const axeResults = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
       const blocking = axeResults.violations.filter(
