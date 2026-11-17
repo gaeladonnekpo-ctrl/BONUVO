@@ -140,12 +140,19 @@ test.describe("Phase 4 — Catalogue public, /go/[slug], /api/events et accessib
     await ngPage.goto("/en/offres");
     await expect(ngPage.locator("label[for='offers-max-deposit']")).toContainText("NGN");
     await expect(ngPage.getByRole("heading", { name: "1xBet" }).first()).toBeVisible();
+    await expect(ngPage.locator("img[alt='OPay']").first()).toBeVisible();
     const ngMainText = await ngPage.locator("main").innerText();
     expect(ngMainText).toContain("NGN");
     expect(ngMainText).not.toContain("XOF");
+    expect(ngMainText).not.toContain("130,0 NGN");
+    expect(ngMainText).not.toContain("562,1");
+
+    await ngPage.goto("/en/offres?pays=NG");
+    await expect(ngPage.locator("header").getByRole("combobox")).toContainText("Nigeria (NGN)");
 
     await ngPage.goto("/en/bookmakers/1xbet");
-    await expect(ngPage.locator("img[alt='OPay']")).toBeVisible();
+    await expect(ngPage.locator("img[alt='OPay']").first()).toBeVisible();
+    await expect(ngPage.getByRole("listitem", { name: /OPay/i }).first()).toContainText("NGN");
     await ngContext.close();
 
     const bjContext = await browser.newContext({

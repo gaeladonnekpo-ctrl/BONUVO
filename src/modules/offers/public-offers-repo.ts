@@ -122,6 +122,7 @@ export async function queryPublishedOffersTx(
         countryId: bookmakerPaymentMethods.countryId,
         slug: paymentMethods.slug,
         name: paymentMethods.name,
+        category: paymentMethods.category,
         logoUrl: mediaAssets.publicUrl,
       })
       .from(bookmakerPaymentMethods)

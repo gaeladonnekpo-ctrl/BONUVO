@@ -14,7 +14,7 @@ import {
   promoCodes,
 } from "@/server/db/schema";
 import { loadCatalogMetaTx } from "@/modules/offers/public-catalog-meta-repo";
-import { buildShortCode } from "@/modules/offers/public-mappers";
+import { buildShortCode, getPaymentSortPriority } from "@/modules/offers/public-mappers";
 import type { PublicBookmakerListItem, PublicCatalogMeta } from "@/modules/offers/public-types";
 
 export async function listPublicBookmakersRepo(params: {
@@ -158,7 +158,10 @@ export async function listPublicBookmakersRepo(params: {
         activePromoCount: activePromos.filter((p) => p.bookmakerId === bookmaker.id).length,
         primaryOfferSlug: primaryOffer?.slug ?? null,
         licenseSummary: countryEntry?.localLicense || countryEntry?.authorityName || null,
-        paymentMethods: Array.from(paymentsMap.values()),
+        paymentMethods: Array.from(paymentsMap.values()).sort(
+          (a, b) =>
+            getPaymentSortPriority(a) - getPaymentSortPriority(b) || a.name.localeCompare(b.name),
+        ),
       });
     }
 

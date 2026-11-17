@@ -17,20 +17,36 @@ export function buildShortCode(name: string): string {
   return (letters.slice(0, 3) || "BNV").padEnd(2, "X");
 }
 
+const PAYMENT_CATEGORY_PRIORITY: Record<string, number> = {
+  mobile_money: 0,
+  card: 1,
+  bank_transfer: 2,
+  voucher: 2,
+  e_wallet: 3,
+  crypto: 4,
+};
+
+export function getPaymentSortPriority(item: { category?: string | null; slug: string }): number {
+  if (item.slug === "verve") return 0;
+  return PAYMENT_CATEGORY_PRIORITY[item.category ?? ""] ?? 5;
+}
+
 export function dedupePaymentItems<
-  T extends { slug: string; name: string; logoUrl?: string | null },
+  T extends { slug: string; name: string; category?: string | null; logoUrl?: string | null },
 >(rows: readonly T[]): PaymentMethodBadgeItem[] {
-  const seen = new Map<string, PaymentMethodBadgeItem>();
+  const seen = new Map<string, T>();
   for (const row of rows) {
     if (!seen.has(row.slug)) {
-      seen.set(row.slug, {
-        slug: row.slug,
-        name: row.name,
-        logoUrl: row.logoUrl ?? null,
-      });
+      seen.set(row.slug, row);
     }
   }
-  return Array.from(seen.values());
+  return Array.from(seen.values())
+    .sort((a, b) => getPaymentSortPriority(a) - getPaymentSortPriority(b))
+    .map((row) => ({
+      slug: row.slug,
+      name: row.name,
+      logoUrl: row.logoUrl ?? null,
+    }));
 }
 
 export function formatAmountDisplay(params: {

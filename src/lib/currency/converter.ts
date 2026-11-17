@@ -19,7 +19,7 @@ export const DEFAULT_EUR_EXCHANGE_RATES: Readonly<Record<string, number>> = {
 const HIGH_DENOMINATION_CURRENCIES = new Set(["XOF", "XAF", "NGN", "CDF", "INR", "MXN"]);
 
 const CURRENCY_TEXT_PATTERN =
-  /(\d+(?:[\s\u00A0\u202F]\d{3})*(?:[.,]\d{1,2})?)(?:\s*([–-])\s*(\d+(?:[\s\u00A0\u202F]\d{3})*(?:[.,]\d{1,2})?))?\s*(XOF|FCFA|XAF|NGN|CDF|MAD|EUR|USD|GBP|CAD|CHF|BRL|MXN|INR|ZAR|AUD)\b/gi;
+  /((?:\d{1,3}(?:[\s\u00A0\u202F,]\d{3})+|\d+)(?:[.,]\d{1,2})?)(?:\s*([–-])\s*((?:\d{1,3}(?:[\s\u00A0\u202F,]\d{3})+|\d+)(?:[.,]\d{1,2})?))?\s*(XOF|FCFA|XAF|NGN|CDF|MAD|EUR|USD|GBP|CAD|CHF|BRL|MXN|INR|ZAR|AUD)\b/gi;
 
 export function normalizeCurrencyAlias(code: string): string {
   const upper = code.trim().toUpperCase();

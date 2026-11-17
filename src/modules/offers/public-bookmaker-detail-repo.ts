@@ -18,7 +18,7 @@ import {
   selectBestAffiliateSlug,
 } from "@/modules/offers/public-catalog-meta-repo";
 import { localizePaymentMinDeposit } from "@/modules/offers/public-currency-localize";
-import { buildShortCode } from "@/modules/offers/public-mappers";
+import { buildShortCode, getPaymentSortPriority } from "@/modules/offers/public-mappers";
 import { queryPublishedOffersTx } from "@/modules/offers/public-offers-repo";
 import type { PublicBookmakerDetailData } from "@/modules/offers/public-types";
 
@@ -160,6 +160,9 @@ export async function getPublicBookmakerBySlugRepo(params: {
             },
           ]),
       ).values(),
+    ).sort(
+      (a, b) =>
+        getPaymentSortPriority(a) - getPaymentSortPriority(b) || a.name.localeCompare(b.name),
     );
 
     const bestSlug = eligibleInCountry

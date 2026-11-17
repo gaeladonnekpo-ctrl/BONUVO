@@ -1,6 +1,7 @@
 "use client";
 
 import { Globe } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import * as React from "react";
 import { usePathname, useRouter } from "@/i18n/navigation";
@@ -37,42 +38,21 @@ export interface CountrySwitcherProps {
   className?: string;
 }
 
-export function CountrySwitcher({
-  initialCountry = DEFAULT_COUNTRY_CODE,
+function CountrySwitcherView({
+  country,
+  onChange,
   className,
-}: CountrySwitcherProps) {
+}: {
+  country: string;
+  onChange: (nextCode: string) => void;
+  className?: string;
+}) {
   const tControls = useTranslations("controls");
   const tContinents = useTranslations("continents");
   const tCountries = useTranslations("countries");
-  const { pushToast } = useToast();
-  const router = useRouter();
-  const pathname = usePathname();
-  const [country, setCountry] = React.useState(() => normalizeCountryCode(initialCountry));
-
-  function handleChange(nextCode: string) {
-    const normalized = normalizeCountryCode(nextCode);
-    setCountry(normalized);
-    if (typeof document !== "undefined") {
-      document.cookie = `${COUNTRY_COOKIE_NAME}=${normalized}; Path=/; Max-Age=31536000; SameSite=Lax`;
-      const params = new URLSearchParams(window.location.search);
-      if (params.has("pays")) {
-        params.delete("pays");
-        const qs = params.toString();
-        router.replace(qs ? `${pathname}?${qs}` : pathname);
-      } else {
-        router.refresh();
-      }
-    } else {
-      router.refresh();
-    }
-    pushToast({
-      title: tControls("countryUpdated", { country: tCountries(normalized) }),
-      tone: "info",
-    });
-  }
 
   return (
-    <Select value={country} onValueChange={handleChange}>
+    <Select value={country} onValueChange={onChange}>
       <SelectTrigger
         aria-label={tControls("countryLabel")}
         className={cn("h-9 min-w-[10rem] max-w-[14.5rem] whitespace-nowrap", className)}
@@ -103,5 +83,62 @@ export function CountrySwitcher({
         })}
       </SelectContent>
     </Select>
+  );
+}
+
+function CountrySwitcherWithQuery({
+  initialCountry = DEFAULT_COUNTRY_CODE,
+  className,
+}: CountrySwitcherProps) {
+  const tControls = useTranslations("controls");
+  const tCountries = useTranslations("countries");
+  const { pushToast } = useToast();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [country, setCountry] = React.useState(() => normalizeCountryCode(initialCountry));
+  const paysParam = searchParams?.get("pays");
+  const activeCountry = paysParam ? normalizeCountryCode(paysParam) : country;
+
+  function handleChange(nextCode: string) {
+    const normalized = normalizeCountryCode(nextCode);
+    setCountry(normalized);
+    if (typeof document !== "undefined") {
+      document.cookie = `${COUNTRY_COOKIE_NAME}=${normalized}; Path=/; Max-Age=31536000; SameSite=Lax`;
+      const params = new URLSearchParams(window.location.search);
+      if (params.has("pays")) {
+        params.delete("pays");
+        const qs = params.toString();
+        router.replace(qs ? `${pathname}?${qs}` : pathname);
+      } else {
+        router.refresh();
+      }
+    } else {
+      router.refresh();
+    }
+    pushToast({
+      title: tControls("countryUpdated", { country: tCountries(normalized) }),
+      tone: "info",
+    });
+  }
+
+  return (
+    <CountrySwitcherView country={activeCountry} onChange={handleChange} className={className} />
+  );
+}
+
+export function CountrySwitcher({
+  initialCountry = DEFAULT_COUNTRY_CODE,
+  className,
+}: CountrySwitcherProps) {
+  const fallbackCountry = normalizeCountryCode(initialCountry);
+  return (
+    <React.Suspense
+      fallback={
+        <CountrySwitcherView country={fallbackCountry} onChange={() => {}} className={className} />
+      }
+    >
+      <CountrySwitcherWithQuery initialCountry={initialCountry} className={className} />
+    </React.Suspense>
   );
 }

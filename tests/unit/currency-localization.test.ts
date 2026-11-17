@@ -59,10 +59,11 @@ describe("Système de conversion et localisation des devises par pays", () => {
       bonusAmount: "130000.00",
       bonusPercentage: 200,
       minDeposit: "600.00",
-      headline: "200% welcome bonus up to 130,000 XOF",
-      positiveHighlights: ["Mobile Money deposits from 600 XOF"],
+      headline: "500% Welcome Pack up to 562,500 XOF · 200% up to 130,000 XOF",
+      positiveHighlights: ["Mobile Money deposits from 600 XOF", "Activation from 13,120 XOF"],
       negativeHighlight: "Higher minimum deposit (3,300 XOF) compared to 500–600 XOF peers.",
-      rolloverText: "5x accumulator from 500 XOF",
+      rolloverText:
+        "5x en paris combinés (min. 3 sélections, cote min. 1.40, 30 jours) dès 500 XOF",
       termsSummary: "Applies from 600 XOF up to 130,000 XOF.",
     });
 
@@ -71,11 +72,18 @@ describe("Système de conversion et localisation des devises par pays", () => {
     expect(localized.bonusAmountDisplay).not.toContain("XOF");
     expect(localized.bonusHeadline).toContain("NGN");
     expect(localized.bonusHeadline).not.toContain("XOF");
+    expect(localized.bonusHeadline).not.toContain("562,");
+    expect(localized.bonusHeadline).not.toContain("130,0");
     expect(localized.highlights[0]).toContain("NGN");
+    expect(localized.highlights[1]).not.toContain("13,");
     expect(localized.highlights[0]).not.toContain("XOF");
     expect(localized.weaknessNote).not.toContain("XOF");
     expect(localized.weaknessNote).toMatch(/\d[\d,]+–\d[\d,]+\s+NGN/);
     expect(localized.rolloverText).not.toContain("XOF");
+    expect(localized.rolloverText).toContain("in accumulator bets");
+    expect(localized.rolloverText).toContain("selections");
+    expect(localized.rolloverText).toContain("min. odds");
+    expect(localized.rolloverText).toContain("days");
     expect(localized.termsSummary).not.toContain("XOF");
 
     const minDepNgn = localizePaymentMinDeposit({
