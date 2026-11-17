@@ -2,7 +2,7 @@ export const PUBLIC_PRIMARY_LINKS = [
   { key: "offers", href: "/offres" },
   { key: "bookmakers", href: "/bookmakers" },
   { key: "promoCodes", href: "/codes-promo" },
-  { key: "predictions", href: "/#pronostics" },
+  { key: "predictions", href: "/pronostics" },
   { key: "community", href: "/#communaute" },
 ] as const;
 
@@ -20,6 +20,7 @@ export const ADMIN_NAV_LINKS = [
   { key: "offers", href: "/admin/offres" },
   { key: "promoCodes", href: "/admin/codes-promo" },
   { key: "countries", href: "/admin/pays" },
+  { key: "predictions", href: "/admin/pronostics" },
   { key: "affiliation", href: "/admin/affiliation" },
   { key: "stats", href: "/admin/statistiques" },
   { key: "users", href: "/admin/utilisateurs" },

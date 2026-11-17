@@ -10,7 +10,8 @@ export type DbExecutionScope =
   | "public_catalog"
   | "public_tracking"
   | "postback_ingest"
-  | "stats_aggregator";
+  | "stats_aggregator"
+  | "ai_pipeline";
 
 export type AppDbTransaction = Parameters<Parameters<AppDatabase["transaction"]>[0]>[0];
 

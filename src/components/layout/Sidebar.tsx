@@ -14,6 +14,7 @@ import {
   ScrollText,
   Settings,
   Shapes,
+  Sparkles,
   TicketPercent,
   Users,
 } from "lucide-react";
@@ -32,6 +33,7 @@ const ADMIN_ICONS = {
   offers: Award,
   promoCodes: TicketPercent,
   countries: Globe2,
+  predictions: Sparkles,
   affiliation: Handshake,
   stats: BarChart3,
   users: Users,
@@ -56,10 +58,15 @@ const AFFILIATION_PATHS = [
   "/admin/imports",
 ];
 
+const AI_PATHS = ["/admin/pronostics", "/admin/ingestion"];
+
 function isAdminLinkActive(pathname: string, href: string, key: string): boolean {
   if (href === "/admin") return pathname === "/admin";
   if (key === "affiliation") {
     return AFFILIATION_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+  }
+  if (key === "predictions") {
+    return AI_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
   }
   return pathname === href || pathname.startsWith(`${href}/`);
 }

@@ -9,3 +9,5 @@ export * from "./affiliation-core";
 export * from "./affiliation-events";
 export * from "./public-events";
 export * from "./intelligence";
+export * from "./ai-core";
+export * from "./ai-predictions";

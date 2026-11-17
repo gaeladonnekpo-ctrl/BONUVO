@@ -7,6 +7,7 @@ export const PUBLIC_CATALOG_CACHE_TAGS = {
   bookmakers: "bookmakers",
   promoCodes: "promo-codes",
   countries: "countries",
+  predictions: "predictions",
 } as const;
 
 export function withCatalogCache<TArgs extends unknown[], TResult>(

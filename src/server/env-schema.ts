@@ -58,6 +58,10 @@ export const serverOnlyEnvSchema = z.object({
     (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
     z.string().trim().min(32, "CRON_SECRET doit contenir au moins 32 caractères.").optional(),
   ),
+  API_FOOTBALL_KEY: optionalTrimmed,
+  API_FOOTBALL_HOST: optionalTrimmed,
+  AI_LLM_ENABLED: z.enum(["true", "false"]).optional(),
+  GEMINI_API_KEY: optionalTrimmed,
 });
 
 const STRICT_EXTERNAL_ENV_KEYS = [
