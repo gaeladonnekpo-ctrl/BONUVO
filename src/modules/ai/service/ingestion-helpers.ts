@@ -4,20 +4,43 @@ import type { AppDbTransaction } from "@/server/db/context";
 import { fixtures, leagues, seasons, sportsProviders, teams } from "@/server/db/schema";
 
 const DEFAULT_LEAGUE_CONFIGS = [
-  { externalId: "61", name: "Ligue 1", countryName: "France", priorityOrder: 1, tracked: true },
+  {
+    externalId: "61",
+    name: "Ligue 1",
+    countryName: "France",
+    logoUrl: "https://a.espncdn.com/i/leaguelogos/soccer/500/9.png",
+    priorityOrder: 1,
+    tracked: true,
+  },
   {
     externalId: "39",
     name: "Premier League",
     countryName: "England",
+    logoUrl: "https://a.espncdn.com/i/leaguelogos/soccer/500/23.png",
     priorityOrder: 2,
     tracked: true,
   },
-  { externalId: "140", name: "La Liga", countryName: "Spain", priorityOrder: 3, tracked: true },
-  { externalId: "135", name: "Serie A", countryName: "Italy", priorityOrder: 4, tracked: true },
+  {
+    externalId: "140",
+    name: "La Liga",
+    countryName: "Spain",
+    logoUrl: "https://a.espncdn.com/i/leaguelogos/soccer/500/15.png",
+    priorityOrder: 3,
+    tracked: true,
+  },
+  {
+    externalId: "135",
+    name: "Serie A",
+    countryName: "Italy",
+    logoUrl: "https://a.espncdn.com/i/leaguelogos/soccer/500/12.png",
+    priorityOrder: 4,
+    tracked: true,
+  },
   {
     externalId: "78",
     name: "Bundesliga",
     countryName: "Germany",
+    logoUrl: "https://a.espncdn.com/i/leaguelogos/soccer/500/10.png",
     priorityOrder: 5,
     tracked: false,
   },
@@ -25,10 +48,20 @@ const DEFAULT_LEAGUE_CONFIGS = [
     externalId: "2",
     name: "UEFA Champions League",
     countryName: "Europe",
+    logoUrl: "https://a.espncdn.com/i/leaguelogos/soccer/500/2.png",
     priorityOrder: 6,
     tracked: true,
   },
 ] as const;
+
+export function resolveDefaultLeagueLogo(externalId: string, name?: string): string {
+  const byId = DEFAULT_LEAGUE_CONFIGS.find((c) => c.externalId === externalId);
+  if (byId) return byId.logoUrl;
+  const byName = DEFAULT_LEAGUE_CONFIGS.find(
+    (c) => name && c.name.toLowerCase() === name.toLowerCase(),
+  );
+  return byName?.logoUrl ?? "";
+}
 
 export function currentFootballSeasonYear(now = new Date()): number {
   const month = now.getUTCMonth() + 1;
@@ -103,34 +136,41 @@ export async function ensureProviderAndLeagues(
     .where(eq(leagues.providerId, provider.id))
     .limit(1);
 
-  if (existingLeagues.length === 0) {
-    const seasonYear = currentFootballSeasonYear();
-    for (const cfg of DEFAULT_LEAGUE_CONFIGS) {
-      const [league] = await db
-        .insert(leagues)
-        .values({
-          providerId: provider.id,
-          externalId: cfg.externalId,
-          name: cfg.name,
+  const seasonYear = currentFootballSeasonYear();
+  for (const cfg of DEFAULT_LEAGUE_CONFIGS) {
+    const [league] = await db
+      .insert(leagues)
+      .values({
+        providerId: provider.id,
+        externalId: cfg.externalId,
+        name: cfg.name,
+        countryName: cfg.countryName,
+        logoUrl: cfg.logoUrl,
+        priorityOrder: cfg.priorityOrder,
+        tracked: cfg.tracked,
+        active: true,
+      })
+      .onConflictDoUpdate({
+        target: [leagues.providerId, leagues.externalId],
+        set: {
+          logoUrl: cfg.logoUrl,
           countryName: cfg.countryName,
           priorityOrder: cfg.priorityOrder,
-          tracked: cfg.tracked,
-          active: true,
-        })
-        .onConflictDoNothing()
-        .returning();
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
 
-      if (league) {
-        await db
-          .insert(seasons)
-          .values({
-            providerId: provider.id,
-            leagueId: league.id,
-            year: seasonYear,
-            isCurrent: true,
-          })
-          .onConflictDoNothing();
-      }
+    if (league && existingLeagues.length === 0) {
+      await db
+        .insert(seasons)
+        .values({
+          providerId: provider.id,
+          leagueId: league.id,
+          year: seasonYear,
+          isCurrent: true,
+        })
+        .onConflictDoNothing();
     }
   }
 

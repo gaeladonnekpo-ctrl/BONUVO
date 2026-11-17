@@ -1,4 +1,5 @@
 import { and, desc, eq, gte, inArray, lte } from "drizzle-orm";
+import { resolveDefaultLeagueLogo } from "@/modules/ai/service/ingestion-helpers";
 import { getPublicPredictionStats } from "@/modules/ai/service/public-ai-stats";
 import type {
   LeagueFilterOption,
@@ -56,8 +57,15 @@ async function queryPublicFixturesUncached(filter?: {
     const minKickoff = new Date(now.getTime() - 45 * 24 * 3600_000);
     const maxKickoff = new Date(now.getTime() + 14 * 24 * 3600_000);
 
-    const trackedLeagues = await db
-      .select({ id: leagues.id, name: leagues.name, countryName: leagues.countryName })
+    const rawLeagues = await db
+      .select({
+        id: leagues.id,
+        externalId: leagues.externalId,
+        name: leagues.name,
+        countryName: leagues.countryName,
+        logoUrl: leagues.logoUrl,
+        priorityOrder: leagues.priorityOrder,
+      })
       .from(leagues)
       .where(and(eq(leagues.active, true), eq(leagues.tracked, true)))
       .orderBy(leagues.priorityOrder);
@@ -80,6 +88,23 @@ async function queryPublicFixturesUncached(filter?: {
       .where(and(...conditions))
       .orderBy(filter?.settledOnly ? desc(fixtures.kickoffAt) : fixtures.kickoffAt)
       .limit(filter?.limit ?? 40);
+
+    const activeLeagueIds = new Set(fixRows.map((f) => f.leagueId));
+    const dedupedLeaguesMap = new Map<string, LeagueFilterOption>();
+    for (const l of rawLeagues) {
+      const key = l.name.toLowerCase();
+      const existing = dedupedLeaguesMap.get(key);
+      if (!existing || activeLeagueIds.has(l.id)) {
+        dedupedLeaguesMap.set(key, {
+          id: l.id,
+          externalId: l.externalId,
+          name: l.name,
+          countryName: l.countryName,
+          logoUrl: l.logoUrl || resolveDefaultLeagueLogo(l.externalId, l.name),
+        });
+      }
+    }
+    const trackedLeagues = Array.from(dedupedLeaguesMap.values());
 
     if (fixRows.length === 0) return { fixtures: [], leagues: trackedLeagues };
 
@@ -113,25 +138,30 @@ async function queryPublicFixturesUncached(filter?: {
       predsByFixture.set(p.fixtureId, list);
     }
 
-    const mapped = fixRows.map((f): PublicFixtureDto => ({
-      id: f.id,
-      leagueId: f.leagueId,
-      leagueName: leagueMap.get(f.leagueId)?.name ?? "Football",
-      countryName: leagueMap.get(f.leagueId)?.countryName ?? "",
-      kickoffAt: f.kickoffAt.toISOString(),
-      venueName: f.venueName,
-      roundLabel: f.roundLabel,
-      fixtureStatus: f.fixtureStatus,
-      homeTeamId: f.homeTeamId,
-      homeTeamName: teamMap.get(f.homeTeamId)?.name ?? "Home",
-      homeTeamLogo: teamMap.get(f.homeTeamId)?.logoUrl ?? "",
-      awayTeamId: f.awayTeamId,
-      awayTeamName: teamMap.get(f.awayTeamId)?.name ?? "Away",
-      awayTeamLogo: teamMap.get(f.awayTeamId)?.logoUrl ?? "",
-      homeGoals: f.homeGoals,
-      awayGoals: f.awayGoals,
-      predictions: predsByFixture.get(f.id) ?? [],
-    }));
+    const mapped = fixRows.map((f): PublicFixtureDto => {
+      const l = leagueMap.get(f.leagueId);
+      const lName = l?.name ?? "Football";
+      return {
+        id: f.id,
+        leagueId: f.leagueId,
+        leagueName: lName,
+        leagueLogo: l?.logoUrl || resolveDefaultLeagueLogo(l?.externalId ?? "", lName),
+        countryName: l?.countryName ?? "",
+        kickoffAt: f.kickoffAt.toISOString(),
+        venueName: f.venueName,
+        roundLabel: f.roundLabel,
+        fixtureStatus: f.fixtureStatus,
+        homeTeamId: f.homeTeamId,
+        homeTeamName: teamMap.get(f.homeTeamId)?.name ?? "Home",
+        homeTeamLogo: teamMap.get(f.homeTeamId)?.logoUrl ?? "",
+        awayTeamId: f.awayTeamId,
+        awayTeamName: teamMap.get(f.awayTeamId)?.name ?? "Away",
+        awayTeamLogo: teamMap.get(f.awayTeamId)?.logoUrl ?? "",
+        homeGoals: f.homeGoals,
+        awayGoals: f.awayGoals,
+        predictions: predsByFixture.get(f.id) ?? [],
+      };
+    });
 
     return { fixtures: mapped, leagues: trackedLeagues };
   });
@@ -217,13 +247,16 @@ export async function getPublicFixtureDetail(fixtureId: string) {
         const latestStats = new Map<string, (typeof statsRows)[number]>();
         for (const s of statsRows) if (!latestStats.has(s.teamId)) latestStats.set(s.teamId, s);
         const standingMap = new Map(standingRows.map((st) => [st.teamId, st]));
+        const lRow = leagueRows[0];
+        const lName = lRow?.name ?? "Football";
 
         return {
           fixture: {
             id: fix.id,
             leagueId: fix.leagueId,
-            leagueName: leagueRows[0]?.name ?? "Football",
-            countryName: leagueRows[0]?.countryName ?? "",
+            leagueName: lName,
+            leagueLogo: lRow?.logoUrl || resolveDefaultLeagueLogo(lRow?.externalId ?? "", lName),
+            countryName: lRow?.countryName ?? "",
             kickoffAt: fix.kickoffAt.toISOString(),
             venueName: fix.venueName,
             roundLabel: fix.roundLabel,
@@ -233,9 +266,9 @@ export async function getPublicFixtureDetail(fixtureId: string) {
             homeTeamLogo: teamMap.get(fix.homeTeamId)?.logoUrl ?? "",
             awayTeamId: fix.awayTeamId,
             awayTeamName: teamMap.get(fix.awayTeamId)?.name ?? "Away",
-            awayGoals: fix.awayGoals,
             awayTeamLogo: teamMap.get(fix.awayTeamId)?.logoUrl ?? "",
             homeGoals: fix.homeGoals,
+            awayGoals: fix.awayGoals,
             predictions: predRows.map((p) => mapPredictionCard(p, resByPred.get(p.id))),
           },
           homeStats: latestStats.get(fix.homeTeamId) ?? null,
@@ -246,7 +279,9 @@ export async function getPublicFixtureDetail(fixtureId: string) {
             id: h.id,
             kickoffAt: h.kickoffAt.toISOString(),
             homeTeamName: teamMap.get(h.homeTeamId)?.name ?? "Home",
+            homeTeamLogo: teamMap.get(h.homeTeamId)?.logoUrl ?? "",
             awayTeamName: teamMap.get(h.awayTeamId)?.name ?? "Away",
+            awayTeamLogo: teamMap.get(h.awayTeamId)?.logoUrl ?? "",
             homeGoals: h.homeGoals,
             awayGoals: h.awayGoals,
           })),

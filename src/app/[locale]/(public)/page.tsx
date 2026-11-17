@@ -1,6 +1,5 @@
 import { ArrowRight, BookOpenCheck, ShieldCheck } from "lucide-react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { FixtureRow } from "@/components/ai/FixtureRow";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { OfferCard } from "@/components/business/OfferCard";
 import { PartnerLogoGrid } from "@/components/business/PartnerLogoGrid";
@@ -14,7 +13,6 @@ import { Link } from "@/i18n/navigation";
 import type { AppLocale } from "@/lib/i18n/config";
 import { buildLocalizedMetadata } from "@/lib/i18n/metadata";
 import { serializeSafeJsonLd } from "@/lib/seo/json-ld";
-import { listPublicFixtures } from "@/modules/ai/service/public-ai-service";
 import { CountryGate } from "@/modules/offers/components/CountryGate";
 import { PageViewTracker } from "@/modules/offers/components/PageViewTracker";
 import { listBookmakers, listOffers, listPromoCodes } from "@/modules/offers/public-service";
@@ -48,7 +46,7 @@ export default async function PublicHomePage({
   const queryCountry = typeof sp.pays === "string" ? sp.pays : undefined;
   const countryCode = await resolvePublicRequestCountry(queryCountry);
 
-  const [tBrand, tHome, tTrust, tCatalog, offersData, bookmakersData, promosData, aiPreviewData] =
+  const [tBrand, tHome, tTrust, tCatalog, offersData, bookmakersData, promosData] =
     await Promise.all([
       getTranslations("brand"),
       getTranslations("home"),
@@ -57,12 +55,10 @@ export default async function PublicHomePage({
       listOffers({ countryCode, locale: resolvedLocale }),
       listBookmakers(countryCode),
       listPromoCodes({ countryCode, locale: resolvedLocale }),
-      listPublicFixtures({ upcomingOnly: true, limit: 3 }),
     ]);
 
   const topOffers = offersData.offers.slice(0, 4);
   const featuredPromo = promosData.codes[0] ?? null;
-  const previewFixtures = aiPreviewData.fixtures.slice(0, 3);
   const partnerItems = bookmakersData.bookmakers.slice(0, 8).map((bm) => ({
     id: bm.id,
     name: bm.name,
@@ -213,28 +209,27 @@ export default async function PublicHomePage({
             </Link>
           </Button>
         </div>
-        {previewFixtures.length > 0 ? (
-          <div className="grid gap-4 md:grid-cols-3">
-            {previewFixtures.map((fix) => (
-              <FixtureRow key={fix.id} fixture={fix} locale={resolvedLocale} />
-            ))}
-          </div>
-        ) : (
-          <Card>
-            <CardContent className="flex flex-wrap items-center justify-between gap-4 pt-5">
-              <p className="text-sm text-fg-muted">
-                {resolvedLocale === "en"
-                  ? "Real-time probabilistic football forecasts and verified track record by BONUVO AI."
-                  : "Estimations probabilistes en temps réel et historique vérifié par BONUVO AI."}
-              </p>
-              <Button asChild variant="outline" size="sm">
-                <Link href="/pronostics/historique">
-                  {resolvedLocale === "en" ? "View track record" : "Voir l'historique"}
+        <Card>
+          <CardContent className="flex flex-wrap items-center justify-between gap-4 pt-5">
+            <p className="text-sm text-fg-muted">
+              {resolvedLocale === "en"
+                ? "Real-time probabilistic football forecasts, official club crests, combined coupons and verified track record."
+                : "Pronostics football en temps réel, logos officiels, coupons combinés et historique vérifié."}
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button asChild variant="primary" size="sm">
+                <Link href="/pronostics">
+                  {resolvedLocale === "en" ? "Explore forecasts" : "Découvrir les pronostics"}
                 </Link>
               </Button>
-            </CardContent>
-          </Card>
-        )}
+              <Button asChild variant="outline" size="sm">
+                <Link href="/pronostics/historique">
+                  {resolvedLocale === "en" ? "Track record" : "Voir l'historique"}
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </section>
 
       <section id="bookmakers" aria-labelledby="partners-section-heading" className="space-y-4">

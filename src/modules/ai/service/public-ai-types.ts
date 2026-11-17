@@ -22,6 +22,7 @@ export interface PublicFixtureDto {
   id: string;
   leagueId: string;
   leagueName: string;
+  leagueLogo: string;
   countryName: string;
   kickoffAt: string;
   venueName: string;
@@ -40,6 +41,8 @@ export interface PublicFixtureDto {
 
 export interface LeagueFilterOption {
   id: string;
+  externalId?: string;
   name: string;
   countryName: string;
+  logoUrl: string;
 }
