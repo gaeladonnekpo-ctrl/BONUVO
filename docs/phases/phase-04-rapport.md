@@ -1,7 +1,7 @@
 # Rapport de phase — Phase 4 : BONUVO OFFERS public, redirection et clics
 
-- **Statut** : Implémentée et vérifiée automatiquement — en attente des données réelles Phase 3 et de validation humaine (`ADR-0005` + essai manuel 10 clics réels une fois les premiers liens d'affiliation saisis)
-- **Date** : 2026-11-16
+- **Statut** : Implémentée, peuplée avec les données réelles (7 bookmakers, offres, codes promo et liens `/go/[slug]`) et vérifiée de bout en bout (y compris 10/10 essais réels de redirection `/go/[slug]`)
+- **Date** : 2026-11-17
 - **Branche** : `feat/phase-4-public-offers`
 
 ## 1. Livrables réalisés
@@ -30,6 +30,8 @@
   - `/fr` : LCP `248 ms`, CLS `0`
   - `/fr/offres` : LCP `272 ms`, CLS `0`
 
-## 3. Point ouvert pour acceptation humaine
+## 3. Données réelles, ergonomie & acceptation Phase 4
 
-L'acceptation finale de la Phase 4 (affichage de données réelles saisies en Phase 3 et contrôle manuel de 10 clics réels via `/go/[slug]`) sera vérifiée dès réception des premiers codes promo et liens d'affiliation réels de l'équipe, sans aucune donnée fictive injectée.
+- **Catalogue réel publié** : `1xBet`, `Melbet`, `Megapari`, `Linebet`, `Paripesa`, `1win` et `Winwinbet` avec leurs logos officiels, offres de bienvenue en XOF, codes promo vérifiés (`GAEL229`, `GAEL228`), licences locales et **14 logos officiels de moyens de paiement** reliés par bookmaker et par pays (`BJ`, `CI`, `SN`), ainsi que la comparaison interactive animée et la barre de filtres `FilterBar` alignée.
+- **Vérification 10 clics `/go/[slug]`** : `10 / 10` requêtes sur les 7 liens actifs (`BJ`, `CI`, `SN`) ont renvoyé `302` vers les domaines `allowed_hosts` autorisés avec `subid=clk_...` et créé exactement `10` lignes correspondantes dans `clicks` (`isBot = false`).
+- **Suites finales après dernier ajustement** : `prettier --check .`, `tsc --noEmit`, `eslint .`, `npm run build` (`71/71`), `npm run test:unit` (`15` fichiers, `63` tests), `npm run test:integration` (`3` fichiers, `3` tests) et `npm run test:e2e` (`21/21` Playwright).
