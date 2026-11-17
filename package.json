@@ -8,7 +8,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "postbuild": "node scripts/restart-and-verify-css.mjs",
     "start": "next start",
+    "server:ensure": "node scripts/restart-and-verify-css.mjs",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
