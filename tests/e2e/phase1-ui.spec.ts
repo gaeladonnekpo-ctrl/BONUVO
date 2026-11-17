@@ -40,6 +40,7 @@ test.describe("Phase 1 — Design system, accessibilité, thèmes et responsive"
 
     const hreflangEn = await enPage
       .locator('link[rel="alternate"][hreflang="en"]')
+      .first()
       .getAttribute("href");
     expect(hreflangEn).toMatch(/\/en$/);
     await enContext.close();
