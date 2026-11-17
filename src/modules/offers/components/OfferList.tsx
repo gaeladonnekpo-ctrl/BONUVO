@@ -23,6 +23,7 @@ import type {
 export interface OfferListProps {
   offers: readonly PublicOfferListItem[];
   countryCode: string;
+  currencyCode?: string;
   isCountryCovered: boolean;
   paymentMethods: readonly PublicPaymentMethodSummary[];
 }
@@ -30,6 +31,7 @@ export interface OfferListProps {
 export function OfferList({
   offers,
   countryCode,
+  currencyCode,
   isCountryCovered,
   paymentMethods,
 }: OfferListProps) {
@@ -98,6 +100,7 @@ export function OfferList({
         offerType={query.type}
         payment={query.paiement}
         maxDeposit={query.depotMax}
+        currencyCode={currencyCode}
         withCodeOnly={query.avecCode}
         bookmakerSlug={query.bookmaker}
         paymentMethods={paymentMethods}

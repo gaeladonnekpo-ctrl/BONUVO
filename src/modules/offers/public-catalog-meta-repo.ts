@@ -3,6 +3,7 @@ import "server-only";
 import { asc, eq } from "drizzle-orm";
 import { withAppDb, type AppDbTransaction } from "@/server/db/context";
 import { countries, mediaAssets, paymentMethods } from "@/server/db/schema";
+import { COUNTRY_OPTIONS } from "@/lib/i18n/countries";
 import type { PublicCatalogMeta } from "@/modules/offers/public-types";
 
 export function selectBestAffiliateSlug(params: {
@@ -66,11 +67,14 @@ export async function loadCatalogMetaTx(
   ]);
 
   const normalized = countryCode.toUpperCase();
-  const isCountryCovered =
-    normalized === "GLOBAL" || activeCountries.some((c) => c.code === normalized);
+  const dbCountry = activeCountries.find((c) => c.code === normalized);
+  const fallbackOption = COUNTRY_OPTIONS.find((c) => c.code === normalized);
+  const currencyCode = dbCountry?.currencyCode ?? fallbackOption?.currency ?? "EUR";
+  const isCountryCovered = normalized === "GLOBAL" || Boolean(dbCountry);
 
   return {
     countryCode: normalized,
+    currencyCode,
     isCountryCovered,
     activeCountries: activeCountries.map((c) => ({
       ...c,

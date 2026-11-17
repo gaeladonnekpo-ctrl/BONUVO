@@ -13,7 +13,11 @@ import {
   paymentMethods,
   promoCodes,
 } from "@/server/db/schema";
-import { selectBestAffiliateSlug } from "@/modules/offers/public-catalog-meta-repo";
+import {
+  loadCatalogMetaTx,
+  selectBestAffiliateSlug,
+} from "@/modules/offers/public-catalog-meta-repo";
+import { localizePaymentMinDeposit } from "@/modules/offers/public-currency-localize";
 import { buildShortCode } from "@/modules/offers/public-mappers";
 import { queryPublishedOffersTx } from "@/modules/offers/public-offers-repo";
 import type { PublicBookmakerDetailData } from "@/modules/offers/public-types";
@@ -38,7 +42,8 @@ export async function getPublicBookmakerBySlugRepo(params: {
     if (!row) return null;
 
     const upperCountry = params.countryCode.toUpperCase();
-    const [bmCountries, bmRatings, bmPayments, promos, links] = await Promise.all([
+    const [meta, bmCountries, bmRatings, bmPayments, promos, links] = await Promise.all([
+      loadCatalogMetaTx(tx, upperCountry),
       tx
         .select({
           countryId: bookmakerCountries.countryId,
@@ -144,9 +149,12 @@ export async function getPublicBookmakerBySlugRepo(params: {
               name: p.name,
               category: p.category,
               logoUrl: p.logoUrl ?? null,
-              minDepositDisplay: p.minDepositAmount
-                ? `${String(p.minDepositAmount).replace(/\.00$/, "")} ${p.currencyCode}`
-                : null,
+              minDepositDisplay: localizePaymentMinDeposit({
+                rawAmount: p.minDepositAmount,
+                sourceCurrency: p.currencyCode,
+                targetCurrency: meta.currencyCode,
+                locale: params.locale,
+              }),
               supportsDeposit: p.supportsDeposit,
               supportsWithdrawal: p.supportsWithdrawal,
             },

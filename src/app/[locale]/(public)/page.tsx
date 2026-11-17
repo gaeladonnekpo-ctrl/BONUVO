@@ -54,7 +54,7 @@ export default async function PublicHomePage({
       getTranslations("publicCatalog"),
       listOffers({ countryCode, locale: resolvedLocale }),
       listBookmakers(countryCode),
-      listPromoCodes({ countryCode }),
+      listPromoCodes({ countryCode, locale: resolvedLocale }),
     ]);
 
   const topOffers = offersData.offers.slice(0, 4);

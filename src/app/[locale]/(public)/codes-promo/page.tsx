@@ -35,7 +35,7 @@ export default async function PromoCodesPage({
 
   const [t, { codes }] = await Promise.all([
     getTranslations("publicCatalog"),
-    listPromoCodes({ countryCode }),
+    listPromoCodes({ countryCode, locale: resolvedLocale }),
   ]);
 
   return (

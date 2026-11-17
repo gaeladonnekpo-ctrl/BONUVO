@@ -87,6 +87,7 @@ export default async function OffersCatalogPage({
         <OfferList
           offers={offers}
           countryCode={countryCode}
+          currencyCode={meta.currencyCode}
           isCountryCovered={meta.isCountryCovered}
           paymentMethods={meta.paymentMethods}
         />

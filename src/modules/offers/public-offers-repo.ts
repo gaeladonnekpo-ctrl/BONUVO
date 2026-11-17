@@ -21,10 +21,10 @@ import {
   loadCatalogMetaTx,
   selectBestAffiliateSlug,
 } from "@/modules/offers/public-catalog-meta-repo";
+import { localizeOfferFields } from "@/modules/offers/public-currency-localize";
 import {
   buildShortCode,
   dedupePaymentItems,
-  formatAmountDisplay,
   formatVerifiedLabel,
   filterAndRankOffers,
   resolveOfferBadges,
@@ -246,18 +246,24 @@ export async function queryPublishedOffersTx(
       bookmakerName: bookmaker.name,
       bookmakerShortName: buildShortCode(bookmaker.name),
       bookmakerLogoUrl: logoUrl ?? null,
-      bonusHeadline: params.locale === "en" ? offer.titleEn : offer.titleFr,
-      bonusAmountDisplay: formatAmountDisplay({
+      ...localizeOfferFields({
+        sourceCurrency: offer.currencyCode,
+        targetCurrency: meta.currencyCode,
+        locale: params.locale,
         bonusAmount: offer.bonusAmount,
         bonusPercentage: offer.bonusPercentage,
-        currencyCode: offer.currencyCode,
-        locale: params.locale,
+        minDeposit: offer.minDeposit,
+        headline: params.locale === "en" ? offer.titleEn : offer.titleFr,
+        positiveHighlights: highlights.filter((h) => h.polarity === "positive").map((h) => h.label),
+        negativeHighlight: highlights.find((h) => h.polarity === "negative")?.label,
+        rolloverText: offer.rolloverText || undefined,
+        termsSummary:
+          termsList.length > 0
+            ? termsList.map((t) => `${t.title}: ${t.body}`).join(" · ")
+            : undefined,
       }),
-      bonusAmountNumber: offer.bonusAmount !== null ? Number(offer.bonusAmount) : null,
       bonusPercentage: offer.bonusPercentage,
-      minDepositNumber: offer.minDeposit !== null ? Number(offer.minDeposit) : null,
       minOddsNumber: offer.minOdds !== null ? Number(offer.minOdds) : null,
-      currencyCode: offer.currencyCode,
       ratingScore: latestScoreByBm.get(bookmaker.id) ?? null,
       ratingMax: 10,
       badges: resolveOfferBadges({
@@ -266,9 +272,6 @@ export async function queryPublishedOffersTx(
         lastVerifiedAt: offer.lastVerifiedAt,
         now,
       }),
-      highlights: highlights.filter((h) => h.polarity === "positive").map((h) => h.label),
-      weaknessNote: highlights.find((h) => h.polarity === "negative")?.label,
-      rolloverText: offer.rolloverText || undefined,
       paymentMethods: uniqueBmPayments.map((p) => p.name),
       paymentMethodItems: uniqueBmPayments,
       paymentMethodSlugs: uniqueBmPayments.map((p) => p.slug),
@@ -277,10 +280,6 @@ export async function queryPublishedOffersTx(
       ctaHref: bestSlug ? `/go/${bestSlug}` : undefined,
       verifiedDateLabel: formatVerifiedLabel(offer.lastVerifiedAt, params.locale),
       licenseLabel: countryLicense?.localLicense || countryLicense?.authorityName || undefined,
-      termsSummary:
-        termsList.length > 0
-          ? termsList.map((t) => `${t.title}: ${t.body}`).join(" · ")
-          : undefined,
       lastVerifiedIso: offer.lastVerifiedAt ? offer.lastVerifiedAt.toISOString() : null,
       updatedAtIso: offer.updatedAt.toISOString(),
       effectiveRank: countryOverrideRank ?? offer.rankOrder,

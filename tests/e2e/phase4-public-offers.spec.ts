@@ -129,4 +129,35 @@ test.describe("Phase 4 — Catalogue public, /go/[slug], /api/events et accessib
     const tops = boxes.map((b) => b!.y);
     expect(Math.max(...tops) - Math.min(...tops)).toBeLessThanOrEqual(2);
   });
+
+  test("adapte automatiquement la devise et les moyens de paiement selon le pays (Bénin XOF vs Nigeria NGN)", async ({
+    browser,
+  }) => {
+    const ngContext = await browser.newContext({
+      extraHTTPHeaders: { "x-vercel-ip-country": "NG" },
+    });
+    const ngPage = await ngContext.newPage();
+    await ngPage.goto("/en/offres");
+    await expect(ngPage.locator("label[for='offers-max-deposit']")).toContainText("NGN");
+    await expect(ngPage.getByRole("heading", { name: "1xBet" }).first()).toBeVisible();
+    const ngMainText = await ngPage.locator("main").innerText();
+    expect(ngMainText).toContain("NGN");
+    expect(ngMainText).not.toContain("XOF");
+
+    await ngPage.goto("/en/bookmakers/1xbet");
+    await expect(ngPage.locator("img[alt='OPay']")).toBeVisible();
+    await ngContext.close();
+
+    const bjContext = await browser.newContext({
+      extraHTTPHeaders: { "x-vercel-ip-country": "BJ" },
+    });
+    const bjPage = await bjContext.newPage();
+    await bjPage.goto("/fr/offres");
+    await expect(bjPage.locator("label[for='offers-max-deposit']")).toContainText("XOF");
+    await expect(bjPage.getByRole("heading", { name: "1xBet" }).first()).toBeVisible();
+    const bjMainText = await bjPage.locator("main").innerText();
+    expect(bjMainText).toContain("XOF");
+    expect(bjMainText).not.toContain("NGN");
+    await bjContext.close();
+  });
 });

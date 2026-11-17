@@ -1,24 +1,19 @@
-import { cookies, headers } from "next/headers";
 import type { ReactNode } from "react";
 import { PublicShell } from "@/components/layout/PublicShell";
 import { isDesignShowcaseEnabled } from "@/lib/design/showcase-guard";
-import { COUNTRY_COOKIE_NAME, normalizeCountryCode } from "@/lib/i18n/countries";
+import { normalizeCountryCode } from "@/lib/i18n/countries";
+import { resolvePublicRequestCountry } from "@/server/geo/request-country";
 
 export default async function PublicLayout({
   children,
 }: Readonly<{
   children: ReactNode;
 }>) {
-  const cookieStore = await cookies();
-  const headerStore = await headers();
-  const rawCountry =
-    cookieStore.get(COUNTRY_COOKIE_NAME)?.value ??
-    headerStore.get("x-vercel-ip-country") ??
-    undefined;
+  const detectedCountry = await resolvePublicRequestCountry();
 
   return (
     <PublicShell
-      initialCountry={normalizeCountryCode(rawCountry)}
+      initialCountry={normalizeCountryCode(detectedCountry)}
       showDevDesignLink={isDesignShowcaseEnabled()}
     >
       {children}

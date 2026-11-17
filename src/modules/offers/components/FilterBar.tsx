@@ -19,6 +19,7 @@ export interface FilterBarProps {
   offerType: string;
   payment: string;
   maxDeposit: number | null;
+  currencyCode?: string;
   withCodeOnly: boolean;
   bookmakerSlug: string;
   paymentMethods: readonly PublicPaymentMethodSummary[];
@@ -37,6 +38,7 @@ export function FilterBar({
   offerType,
   payment,
   maxDeposit,
+  currencyCode,
   withCodeOnly,
   bookmakerSlug,
   paymentMethods,
@@ -174,7 +176,9 @@ export function FilterBar({
             htmlFor="offers-max-deposit"
             className="block truncate text-xs font-semibold tracking-wide text-fg-muted"
           >
-            {t("filterMaxDepositLabel")}
+            {currencyCode
+              ? `${t("filterMaxDepositLabel")} (${currencyCode})`
+              : t("filterMaxDepositLabel")}
           </label>
           <Input
             id="offers-max-deposit"

@@ -69,8 +69,8 @@ const getBookmakerCached = withCatalogCache(
 );
 
 const listPromoCodesCached = withCatalogCache(
-  async (countryCode: string, bookmakerSlug?: string, q?: string) =>
-    listPublicPromoCodesRepo({ countryCode, bookmakerSlug, q }),
+  async (countryCode: string, locale: "fr" | "en", bookmakerSlug?: string, q?: string) =>
+    listPublicPromoCodesRepo({ countryCode, locale, bookmakerSlug, q }),
   ["public-promo-codes"],
   [
     PUBLIC_CATALOG_CACHE_TAGS.promoCodes,
@@ -125,11 +125,13 @@ export async function getBookmaker(params: {
 
 export async function listPromoCodes(params: {
   countryCode: string;
+  locale?: "fr" | "en";
   bookmakerSlug?: string;
   q?: string;
 }) {
   return listPromoCodesCached(
     params.countryCode.toUpperCase(),
+    params.locale ?? "fr",
     params.bookmakerSlug?.trim().toLowerCase() || undefined,
     params.q?.trim().slice(0, 80) || undefined,
   );

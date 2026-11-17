@@ -11,6 +11,8 @@ import {
   offerTerms,
   offers,
 } from "@/server/db/schema";
+import { localizeFinancialText } from "@/lib/currency/converter";
+import { loadCatalogMetaTx } from "@/modules/offers/public-catalog-meta-repo";
 import { listPublicOffersRepo, queryPublishedOffersTx } from "@/modules/offers/public-offers-repo";
 import type {
   PublicCatalogMeta,
@@ -107,10 +109,13 @@ export async function getPublicOfferBySlugRepo(params: {
     const eligibleInCountry =
       upperCountry === "GLOBAL" || eligibleCountries.some((c) => c.code === upperCountry);
 
-    const { offers: countryOffers } = await queryPublishedOffersTx(tx, {
-      countryCode: eligibleInCountry ? upperCountry : "GLOBAL",
-      locale: params.locale,
-    });
+    const [{ offers: countryOffers }, meta] = await Promise.all([
+      queryPublishedOffersTx(tx, {
+        countryCode: eligibleInCountry ? upperCountry : "GLOBAL",
+        locale: params.locale,
+      }),
+      loadCatalogMetaTx(tx, upperCountry),
+    ]);
 
     const fullItem = countryOffers.find((item) => item.id === offerRow.offer.id);
     if (!fullItem) return null;
@@ -134,17 +139,24 @@ export async function getPublicOfferBySlugRepo(params: {
       };
     }
 
+    const locText = (text: string) =>
+      localizeFinancialText({ text, targetCurrency: meta.currencyCode, locale: params.locale });
+
     return {
       eligibleInCountry: true,
       requestedCountryCode: upperCountry,
       offer: fullItem,
-      terms: termsRows.map((t) => ({ id: t.id, title: t.title, body: t.body })),
+      terms: termsRows.map((t) => ({
+        id: t.id,
+        title: locText(t.title),
+        body: locText(t.body),
+      })),
       positiveHighlights: highlightRows
         .filter((h) => h.polarity === "positive")
-        .map((h) => h.label),
+        .map((h) => locText(h.label)),
       negativeHighlights: highlightRows
         .filter((h) => h.polarity === "negative")
-        .map((h) => h.label),
+        .map((h) => locText(h.label)),
       eligibleCountries,
       neighboringOffers: countryOffers.filter((item) => item.id !== fullItem.id).slice(0, 3),
     };

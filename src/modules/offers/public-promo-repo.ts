@@ -11,6 +11,7 @@ import {
   offers,
   promoCodes,
 } from "@/server/db/schema";
+import { localizeFinancialText } from "@/lib/currency/converter";
 import {
   loadCatalogMetaTx,
   selectBestAffiliateSlug,
@@ -20,6 +21,7 @@ import type { PublicCatalogMeta, PublicPromoCodeItem } from "@/modules/offers/pu
 
 export async function listPublicPromoCodesRepo(params: {
   countryCode: string;
+  locale?: "fr" | "en";
   bookmakerSlug?: string;
   q?: string;
 }): Promise<{ codes: PublicPromoCodeItem[]; meta: PublicCatalogMeta }> {
@@ -124,10 +126,21 @@ export async function listPublicPromoCodesRepo(params: {
         countryId: targetCountryId,
       });
 
+      const activeLocale = params.locale ?? "fr";
+      const rawTitle = row.offer
+        ? activeLocale === "en"
+          ? row.offer.titleEn
+          : row.offer.titleFr
+        : null;
+
       result.push({
         id: row.promo.id,
         code: row.promo.code,
-        description: row.promo.description,
+        description: localizeFinancialText({
+          text: row.promo.description,
+          targetCurrency: meta.currencyCode,
+          locale: activeLocale,
+        }),
         bookmakerId: row.bookmaker.id,
         bookmakerName: row.bookmaker.name,
         bookmakerSlug: row.bookmaker.slug,
@@ -135,7 +148,13 @@ export async function listPublicPromoCodesRepo(params: {
         bookmakerLogoUrl: row.logoUrl ?? null,
         offerId: row.offer?.id ?? null,
         offerSlug: row.offer?.slug ?? null,
-        offerTitle: row.offer ? row.offer.titleFr : null,
+        offerTitle: rawTitle
+          ? localizeFinancialText({
+              text: rawTitle,
+              targetCurrency: meta.currencyCode,
+              locale: activeLocale,
+            })
+          : null,
         countryCode: row.countryCode ?? null,
         ctaHref: bestSlug ? `/go/${bestSlug}` : null,
         validUntilIso: row.promo.validUntil ? row.promo.validUntil.toISOString() : null,

@@ -123,6 +123,7 @@ export interface PublicPromoCodeItem {
 
 export interface PublicCatalogMeta {
   readonly countryCode: string;
+  readonly currencyCode: string;
   readonly isCountryCovered: boolean;
   readonly activeCountries: readonly PublicCountrySummary[];
   readonly paymentMethods: readonly PublicPaymentMethodSummary[];
