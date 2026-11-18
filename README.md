@@ -6,7 +6,7 @@ Plateforme internationale d'affiliation, de comparaison d'offres de bookmakers, 
 
 ## Démarrage rapide (développement local)
 
-1. Installer Node.js `>= 22.0.0` et `npm`.
+1. Installer Node.js `26.x` (LTS) et `npm`.
 2. Copier `.env.example` vers `.env.local` et renseigner les variables requises :
 
    ```bash
