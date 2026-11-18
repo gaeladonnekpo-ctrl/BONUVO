@@ -1,60 +1,25 @@
 "use client";
 
-import { Globe } from "lucide-react";
+import { ChevronDown, Globe } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import * as React from "react";
 import { usePathname, useRouter } from "@/i18n/navigation";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useToast } from "@/components/ui/toast";
-import { compareByBettingPriority, getBettingPriorityTier } from "@/lib/i18n/betting-priority";
 import {
   COUNTRY_COOKIE_NAME,
   COUNTRY_OPTIONS,
   DEFAULT_COUNTRY_CODE,
   normalizeCountryCode,
-  type ContinentKey,
   type CountryOption,
 } from "@/lib/i18n/countries";
 import { cn } from "@/lib/utils";
+import { CountrySwitcherModal, formatCountryDisplay } from "./CountrySwitcherModal";
 import { usePublicCountries } from "./public-countries-context";
-
-const CONTINENT_ORDER: readonly ContinentKey[] = [
-  "africa",
-  "europe",
-  "americas",
-  "asia",
-  "oceania",
-];
 
 export interface CountrySwitcherProps {
   initialCountry?: string;
   className?: string;
-}
-
-function formatCountryDisplay(
-  item: CountryOption,
-  locale: "fr" | "en",
-  globalLabel: string,
-): string {
-  if (item.code === "GLOBAL") {
-    return globalLabel;
-  }
-  const localized = locale === "en" ? item.nameEn : item.nameFr;
-  if (localized) return localized;
-  try {
-    return new Intl.DisplayNames([locale], { type: "region" }).of(item.code) ?? item.code;
-  } catch {
-    return item.code;
-  }
 }
 
 function CountrySwitcherView({
@@ -70,10 +35,10 @@ function CountrySwitcherView({
 }) {
   const locale = useLocale() === "en" ? "en" : "fr";
   const tControls = useTranslations("controls");
-  const tContinents = useTranslations("continents");
   const tCountries = useTranslations("countries");
   const globalLabel = tCountries("GLOBAL");
   const [open, setOpen] = React.useState(false);
+  const listboxId = React.useId();
 
   const selectedItem =
     options.find((c) => c.code === country) ??
@@ -84,72 +49,43 @@ function CountrySwitcherView({
       defaultLocale: locale,
     } satisfies CountryOption);
 
-  const globalItem = options.find((c) => c.code === "GLOBAL") ?? COUNTRY_OPTIONS[0]!;
-  const nonGlobal = open ? options.filter((c) => c.code !== "GLOBAL") : [];
-  const priorityItems = open
-    ? nonGlobal.filter((c) => getBettingPriorityTier(c.code) <= 2).sort(compareByBettingPriority)
-    : [];
-  const priorityCodes = new Set(priorityItems.map((c) => c.code));
-  const remainingItems = open ? nonGlobal.filter((c) => !priorityCodes.has(c.code)) : [];
-
   return (
-    <Select value={country} onValueChange={onChange} open={open} onOpenChange={setOpen}>
-      <SelectTrigger
+    <>
+      <button
+        type="button"
+        role="combobox"
+        aria-expanded={open}
+        aria-controls={listboxId}
+        aria-haspopup="listbox"
         aria-label={tControls("countryLabel")}
-        className={cn("h-9 min-w-[10rem] max-w-[14.5rem] whitespace-nowrap", className)}
+        onClick={() => setOpen((prev) => !prev)}
+        className={cn(
+          "inline-flex h-9 min-w-[10rem] max-w-[14.5rem] cursor-pointer items-center justify-between gap-2 rounded-lg border border-border bg-surface-subtle px-3 py-1.5 text-sm text-fg transition-colors hover:border-border-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+          className,
+        )}
       >
         <span className="inline-flex min-w-0 items-center gap-1.5 overflow-hidden">
           <Globe className="h-3.5 w-3.5 shrink-0 text-accent" aria-hidden="true" />
-          <span className="truncate">
-            <SelectValue />
+          <span className="truncate whitespace-nowrap">
+            {formatCountryDisplay(selectedItem, locale, globalLabel)} ({selectedItem.currency})
           </span>
         </span>
-      </SelectTrigger>
-      <SelectContent className="max-h-96">
-        {!open ? (
-          <SelectItem value={selectedItem.code}>
-            {formatCountryDisplay(selectedItem, locale, globalLabel)} ({selectedItem.currency})
-          </SelectItem>
-        ) : (
-          <>
-            <SelectGroup>
-              <SelectLabel>{tContinents("global")}</SelectLabel>
-              <SelectItem value={globalItem.code}>
-                {formatCountryDisplay(globalItem, locale, globalLabel)} ({globalItem.currency})
-              </SelectItem>
-            </SelectGroup>
+        <ChevronDown className="h-4 w-4 shrink-0 text-fg-muted" aria-hidden="true" />
+      </button>
 
-            {priorityItems.length > 0 ? (
-              <SelectGroup>
-                <SelectLabel>
-                  {locale === "en" ? "Top Sports Betting & Gaming" : "Top Paris Sportifs & Gaming"}
-                </SelectLabel>
-                {priorityItems.map((item) => (
-                  <SelectItem key={item.code} value={item.code}>
-                    {formatCountryDisplay(item, locale, globalLabel)} ({item.currency})
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            ) : null}
-
-            {CONTINENT_ORDER.map((continent) => {
-              const items = remainingItems.filter((item) => item.continent === continent);
-              if (items.length === 0) return null;
-              return (
-                <SelectGroup key={continent}>
-                  <SelectLabel>{tContinents(continent)}</SelectLabel>
-                  {items.map((item) => (
-                    <SelectItem key={item.code} value={item.code}>
-                      {formatCountryDisplay(item, locale, globalLabel)} ({item.currency})
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              );
-            })}
-          </>
-        )}
-      </SelectContent>
-    </Select>
+      <CountrySwitcherModal
+        open={open}
+        listboxId={listboxId}
+        country={country}
+        locale={locale}
+        options={options}
+        onClose={() => setOpen(false)}
+        onSelect={(code) => {
+          setOpen(false);
+          onChange(code);
+        }}
+      />
+    </>
   );
 }
 
@@ -168,13 +104,22 @@ function CountrySwitcherWithQuery({
   const dbOptions = usePublicCountries();
   const options = dbOptions ?? COUNTRY_OPTIONS;
 
-  const [country, setCountry] = React.useState(() => normalizeCountryCode(initialCountry));
+  const [selectedOverride, setSelectedOverride] = React.useState<{
+    base: string;
+    chosen: string;
+  } | null>(null);
+
+  const normalizedInitial = normalizeCountryCode(initialCountry);
   const paysParam = searchParams?.get("pays");
-  const activeCountry = paysParam ? normalizeCountryCode(paysParam) : country;
+  const activeCountry = paysParam
+    ? normalizeCountryCode(paysParam)
+    : selectedOverride && selectedOverride.base === normalizedInitial
+      ? selectedOverride.chosen
+      : normalizedInitial;
 
   function handleChange(nextCode: string) {
     const normalized = normalizeCountryCode(nextCode);
-    setCountry(normalized);
+    setSelectedOverride({ base: normalizedInitial, chosen: normalized });
     if (typeof document !== "undefined") {
       document.cookie = `${COUNTRY_COOKIE_NAME}=${normalized}; Path=/; Max-Age=31536000; SameSite=Lax`;
       const params = new URLSearchParams(window.location.search);

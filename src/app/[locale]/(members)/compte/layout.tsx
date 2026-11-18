@@ -3,7 +3,9 @@ import { getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
 import { MemberShell } from "@/components/layout/MemberShell";
 import { isDesignShowcaseEnabled } from "@/lib/design/showcase-guard";
+import { listActivePublicCountryOptionsRepo } from "@/modules/offers/public-catalog-meta-repo";
 import { requireEmailVerified } from "@/server/auth/guards";
+import { resolvePublicRequestCountry } from "@/server/geo/request-country";
 
 export const dynamic = "force-dynamic";
 
@@ -22,14 +24,21 @@ export default async function MemberAccountLayout({
   params: Promise<{ locale: string }>;
 }>) {
   const { locale } = await params;
-  const user = await requireEmailVerified(locale);
+  const [user, detectedCountry, availableCountries] = await Promise.all([
+    requireEmailVerified(locale),
+    resolvePublicRequestCountry(),
+    listActivePublicCountryOptionsRepo(),
+  ]);
   const t = await getTranslations("auth.protected");
+  const effectiveCountry =
+    detectedCountry && detectedCountry !== "GLOBAL" ? detectedCountry : user.countryCode;
 
   return (
     <MemberShell
       navAriaLabel={t("memberNavAria")}
       navItems={[{ id: "overview", label: t("memberNavOverview"), href: `/${locale}/compte` }]}
-      initialCountry={user.countryCode}
+      initialCountry={effectiveCountry}
+      availableCountries={availableCountries}
       showDevDesignLink={isDesignShowcaseEnabled()}
     >
       {children}
