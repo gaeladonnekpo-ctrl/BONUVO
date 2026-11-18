@@ -173,4 +173,51 @@ test.describe("Phase 1 — Design system, accessibilité, thèmes et responsive"
       }
     }
   });
+
+  test("expose un manifest PWA valide, des icônes PNG 192/512/maskable et un Service Worker actif", async ({
+    page,
+    request,
+  }) => {
+    const manifestRes = await request.get("/manifest.webmanifest");
+    expect(manifestRes.status()).toBe(200);
+    const manifest = (await manifestRes.json()) as {
+      name: string;
+      short_name: string;
+      display: string;
+      start_url: string;
+      icons: Array<{ src: string; sizes: string; type: string; purpose?: string }>;
+    };
+    expect(manifest.short_name).toBe("BONUVO");
+    expect(manifest.display).toBe("standalone");
+    expect(manifest.start_url).toBe("/fr");
+    expect(manifest.icons.some((i) => i.sizes === "192x192" && i.type === "image/png")).toBe(true);
+    expect(manifest.icons.some((i) => i.sizes === "512x512" && i.type === "image/png")).toBe(true);
+    expect(manifest.icons.some((i) => i.purpose === "maskable")).toBe(true);
+
+    for (const icon of manifest.icons) {
+      const iconRes = await request.get(icon.src);
+      expect(iconRes.status(), `Icon ${icon.src}`).toBe(200);
+      expect(iconRes.headers()["content-type"]).toContain("image/png");
+    }
+
+    const swRes = await request.get("/sw.js");
+    expect(swRes.status()).toBe(200);
+    expect(swRes.headers()["service-worker-allowed"]).toBe("/");
+    expect(swRes.headers()["cache-control"]).toContain("no-cache");
+
+    const offlineRes = await request.get("/offline.html");
+    expect(offlineRes.status()).toBe(200);
+
+    await page.goto("/fr");
+    await expect(page.locator('link[rel="manifest"]')).toHaveAttribute(
+      "href",
+      "/manifest.webmanifest",
+    );
+    const swActive = await page.evaluate(async () => {
+      if (!("serviceWorker" in navigator)) return false;
+      const reg = await navigator.serviceWorker.ready;
+      return Boolean(reg.active);
+    });
+    expect(swActive).toBe(true);
+  });
 });

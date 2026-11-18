@@ -5,6 +5,7 @@ import { getMessages, setRequestLocale } from "next-intl/server";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import type { ReactNode } from "react";
 import { ThemeProvider, type AppTheme } from "@/components/layout/ThemeProvider";
+import { PwaInstallProvider } from "@/components/pwa/PwaInstallProvider";
 import { ToastProvider } from "@/components/ui/toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { routing } from "@/i18n/routing";
@@ -46,9 +47,11 @@ export default async function LocaleLayout({
         <NextIntlClientProvider locale={locale} messages={messages}>
           <NuqsAdapter>
             <ThemeProvider initialTheme={initialTheme}>
-              <TooltipProvider>
-                <ToastProvider dismissLabel={dismissLabel}>{children}</ToastProvider>
-              </TooltipProvider>
+              <PwaInstallProvider>
+                <TooltipProvider>
+                  <ToastProvider dismissLabel={dismissLabel}>{children}</ToastProvider>
+                </TooltipProvider>
+              </PwaInstallProvider>
             </ThemeProvider>
           </NuqsAdapter>
         </NextIntlClientProvider>

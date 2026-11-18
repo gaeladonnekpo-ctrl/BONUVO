@@ -18,6 +18,7 @@ import { Link } from "@/i18n/navigation";
 import { CountrySwitcher } from "./CountrySwitcher";
 import { LocaleSwitcher } from "./LocaleSwitcher";
 import { PUBLIC_PRIMARY_LINKS, TRUST_PAGE_LINKS } from "./navigation-links";
+import { PwaInstallButton } from "@/components/pwa/PwaInstallButton";
 import type { ShellUserSummary } from "./Header";
 import { ThemeToggle } from "./ThemeToggle";
 
@@ -143,6 +144,7 @@ export function MobileNav({ initialCountry, currentUser }: MobileNavProps) {
         </div>
 
         <div className="mt-4 space-y-3 border-t border-border pt-4">
+          <PwaInstallButton locale={locale} />
           <CountrySwitcher initialCountry={initialCountry} className="w-full max-w-none" />
           <div className="flex items-center justify-between gap-2">
             <LocaleSwitcher />
