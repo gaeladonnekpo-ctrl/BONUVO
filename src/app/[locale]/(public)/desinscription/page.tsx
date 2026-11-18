@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CheckCircle2, MailX, ShieldAlert } from "lucide-react";
+import { NewsletterEmailUnsubscribeForm } from "@/components/members/NewsletterEmailUnsubscribeForm";
 import { processSignedUnsubscribe } from "@/modules/members/purge-service";
 import { verifyUnsubscribeToken } from "@/modules/members/unsubscribe-token";
 
@@ -110,15 +111,18 @@ export default async function PublicUnsubscribePage({
           <div className="mt-4 space-y-3">
             <p className="text-sm leading-relaxed text-fg-muted">
               {isFr
-                ? "Utilisez le lien de désinscription figurant au bas de nos e-mails pour désactiver vos alertes en un clic sans connexion, ou connectez-vous à votre espace membre."
-                : "Use the unsubscribe link at the bottom of our emails to disable alerts in one click without login, or sign in to your member account."}
+                ? "Saisissez votre adresse e-mail ci-dessous pour vous désabonner immédiatement de la newsletter BONUVO, ou gérez vos alertes depuis votre espace membre."
+                : "Enter your email address below to immediately unsubscribe from the BONUVO newsletter, or manage alerts from your member account."}
             </p>
-            <Link
-              href={`/${locale}/compte`}
-              className="inline-flex min-h-10 items-center rounded-xl border border-border bg-surface-muted px-4 py-2 text-xs font-semibold text-fg hover:bg-bg"
-            >
-              {isFr ? "Accéder à mon espace membre" : "Go to member area"}
-            </Link>
+            <NewsletterEmailUnsubscribeForm locale={isFr ? "fr" : "en"} />
+            <div className="pt-2">
+              <Link
+                href={`/${locale}/compte`}
+                className="inline-flex min-h-10 items-center rounded-xl border border-border bg-surface-muted px-4 py-2 text-xs font-semibold text-fg hover:bg-bg"
+              >
+                {isFr ? "Accéder à mon espace membre" : "Go to member area"}
+              </Link>
+            </div>
           </div>
         )}
       </div>

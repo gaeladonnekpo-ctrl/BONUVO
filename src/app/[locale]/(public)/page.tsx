@@ -1,6 +1,7 @@
 import { ArrowRight, BookOpenCheck, ExternalLink, ShieldCheck } from "lucide-react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { BrandLogo } from "@/components/brand/BrandLogo";
+import { NewsletterSection } from "@/components/business/NewsletterSection";
 import { OfferCard } from "@/components/business/OfferCard";
 import { PartnerLogoGrid } from "@/components/business/PartnerLogoGrid";
 import { PromoCodeBox } from "@/components/business/PromoCodeBox";
@@ -68,12 +69,13 @@ export default async function PublicHomePage({
     logoUrl: bm.logoUrl,
     licenseSummary: bm.licenseSummary ?? undefined,
   }));
+  const siteBase = process.env.NEXT_PUBLIC_SITE_URL ?? "https://bonuvo.vercel.app";
   const jsonLd = serializeSafeJsonLd({
     "@context": "https://schema.org",
     "@type": "WebSite",
     name: "BONUVO",
     description: tHome("heroDescription"),
-    url: `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://bonuvo.vercel.app"}/${resolvedLocale}`,
+    url: `${siteBase}/${resolvedLocale}`,
   });
 
   return (
@@ -91,14 +93,12 @@ export default async function PublicHomePage({
             {tBrand("fullSignature")}
           </p>
         </div>
-
         <h2 className="mt-6 max-w-3xl font-display text-2xl font-bold tracking-tight text-fg sm:text-3xl">
           {tHome("heroTitle")}
         </h2>
         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-fg-muted sm:text-base">
           {tHome("heroDescription")}
         </p>
-
         <div className="mt-6 flex flex-wrap gap-3">
           <Button asChild variant="primary">
             <Link href="/offres">
@@ -113,7 +113,6 @@ export default async function PublicHomePage({
             <Link href="/comparateur">{tCatalog("homeCtaComparator")}</Link>
           </Button>
         </div>
-
         <div className="mt-6 flex items-start gap-2.5 rounded-lg border border-border bg-surface-subtle p-3.5 text-xs leading-relaxed text-fg-muted sm:text-sm">
           <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-trust" aria-hidden="true" />
           <p>{tHome("disclosureBanner")}</p>
@@ -273,7 +272,6 @@ export default async function PublicHomePage({
             ))}
           </div>
         </div>
-
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {TRUST_PAGE_LINKS.map((item) => (
             <Card key={item.key} className="flex flex-col justify-between">
@@ -295,6 +293,7 @@ export default async function PublicHomePage({
           ))}
         </div>
       </section>
+      <NewsletterSection locale={resolvedLocale} initialCountry={countryCode} />
     </div>
   );
 }

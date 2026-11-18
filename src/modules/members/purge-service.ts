@@ -8,6 +8,7 @@ import {
   communicationPreferences,
   consents,
   memberActivity,
+  newsletterSubscribers,
   profiles,
 } from "@/server/db/schema";
 import { verifyUnsubscribeToken } from "./unsubscribe-token";
@@ -15,7 +16,8 @@ import { verifyUnsubscribeToken } from "./unsubscribe-token";
 const CURRENT_POLICY_VERSION = "2026-11-v1";
 
 /**
- * Traite une désinscription en 1 clic sans besoin de connexion grâce au jeton signé HMAC.
+ * Traite une désinscription en 1 clic sans besoin de connexion grâce au jeton signé HMAC
+ * (fonctionne aussi bien pour un membre inscrit que pour un abonné Newsletter CRM).
  */
 export async function processSignedUnsubscribe(input: { token: string; ipHash?: string }) {
   const verified = verifyUnsubscribeToken(input.token);
@@ -29,8 +31,43 @@ export async function processSignedUnsubscribe(input: { token: string; ipHash?: 
     const [profile] = await tx.select().from(profiles).where(eq(profiles.id, userId)).limit(1);
 
     if (!profile) {
-      return { ok: false as const, reason: "USER_NOT_FOUND" };
+      const [subscriber] = await tx
+        .select()
+        .from(newsletterSubscribers)
+        .where(eq(newsletterSubscribers.id, userId))
+        .limit(1);
+
+      if (!subscriber) {
+        return { ok: false as const, reason: "USER_NOT_FOUND" };
+      }
+
+      const now = new Date();
+      await tx
+        .update(newsletterSubscribers)
+        .set({
+          status: "unsubscribed",
+          consentGranted: false,
+          unsubscribedAt: now,
+          updatedAt: now,
+        })
+        .where(eq(newsletterSubscribers.id, subscriber.id));
+
+      return {
+        ok: true as const,
+        userId: subscriber.id,
+        scope,
+      };
     }
+
+    await tx
+      .update(newsletterSubscribers)
+      .set({
+        status: "unsubscribed",
+        consentGranted: false,
+        unsubscribedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(newsletterSubscribers.email, profile.email.toLowerCase()));
 
     const consentTypesToWithdraw: Array<"marketing_email" | "notifications"> =
       scope === "marketing_email"

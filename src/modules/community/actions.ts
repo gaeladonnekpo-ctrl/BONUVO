@@ -8,6 +8,7 @@ import {
   PUBLIC_CATALOG_CACHE_TAGS,
 } from "@/server/cache/catalog-tags";
 import type { CommunityPlatform } from "./channel-url";
+import { setAdminNewsletterSubscriberStatus } from "@/modules/members/newsletter-service";
 import { createValidatedCoupon, dispatchNotificationBatch } from "./notification-service";
 import { createCommunityChannel, createOrUpdatePost } from "./service";
 
@@ -163,6 +164,34 @@ export async function sendNotificationAction(formData: FormData): Promise<void> 
       skippedCount: result.skippedCount,
     },
   });
+
+  revalidatePath("/fr/admin/notifications");
+  revalidatePath("/en/admin/notifications");
+}
+
+export async function toggleSubscriberStatusAction(formData: FormData): Promise<void> {
+  const actor = await requireActionPermission("community.manage");
+  const subscriberId = String(formData.get("subscriberId") ?? "").trim();
+  const nextStatusRaw = String(formData.get("nextStatus") ?? "unsubscribed");
+  const nextStatus = nextStatusRaw === "active" ? "active" : "unsubscribed";
+
+  if (!subscriberId) return;
+
+  const updated = await setAdminNewsletterSubscriberStatus({
+    actorId: actor.id,
+    subscriberId,
+    status: nextStatus,
+  });
+
+  if (updated) {
+    await logAudit({
+      actorId: actor.id,
+      action: "newsletter.subscriber.status",
+      entityType: "newsletter_subscribers",
+      entityId: updated.id,
+      afterState: { status: updated.status, consentGranted: updated.consentGranted },
+    });
+  }
 
   revalidatePath("/fr/admin/notifications");
   revalidatePath("/en/admin/notifications");

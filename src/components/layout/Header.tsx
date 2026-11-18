@@ -1,6 +1,7 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { LogIn, UserPlus } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { Link, usePathname } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
@@ -17,6 +18,8 @@ export interface HeaderProps {
 export function Header({ initialCountry }: HeaderProps) {
   const tBrand = useTranslations("brand");
   const tNav = useTranslations("nav");
+  const locale = useLocale();
+  const isFr = locale !== "en";
   const pathname = usePathname();
 
   return (
@@ -48,7 +51,7 @@ export function Header({ initialCountry }: HeaderProps) {
           })}
         </nav>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           <div className="hidden sm:block">
             <CountrySwitcher initialCountry={initialCountry} />
           </div>
@@ -56,6 +59,20 @@ export function Header({ initialCountry }: HeaderProps) {
             <LocaleSwitcher />
           </div>
           <ThemeToggle responsiveLabel />
+          <Link
+            href="/connexion"
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 text-xs font-semibold text-fg transition-colors hover:border-accent/50 hover:bg-surface-elevated"
+          >
+            <LogIn className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
+            <span>{isFr ? "Connexion" : "Sign in"}</span>
+          </Link>
+          <Link
+            href="/inscription"
+            className="hidden h-9 items-center gap-1.5 rounded-lg bg-accent px-3 text-xs font-semibold text-accent-fg transition-colors hover:bg-accent-hover md:inline-flex"
+          >
+            <UserPlus className="h-3.5 w-3.5" aria-hidden="true" />
+            <span>{isFr ? "S'inscrire" : "Sign up"}</span>
+          </Link>
           <MobileNav initialCountry={initialCountry} />
         </div>
       </div>

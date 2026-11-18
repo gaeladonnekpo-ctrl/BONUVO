@@ -6,6 +6,7 @@ import {
   createUnsubscribeToken,
   verifyUnsubscribeToken,
 } from "@/modules/members/unsubscribe-token";
+import { newsletterSubscriptionSchema } from "@/modules/members/newsletter-schema";
 
 describe("Phase 8 — BONUVO COMMUNITY & MEMBERS : Unitaires (Sanitisation, Canaux, Désinscription HMAC, Purge 14j)", () => {
   describe("Sanitisation serveur des contenus éditoriaux", () => {
@@ -153,6 +154,38 @@ describe("Phase 8 — BONUVO COMMUNITY & MEMBERS : Unitaires (Sanitisation, Cana
       const requestedAt = new Date("2026-11-01T12:00:00.000Z");
       const purgeAt = computeScheduledPurgeDate(requestedAt);
       expect(purgeAt.toISOString()).toBe("2026-11-15T12:00:00.000Z");
+    });
+  });
+
+  describe("Validation CRM Newsletter", () => {
+    it("valide une inscription complète, normalise l'e-mail et exige le consentement explicite", () => {
+      const ok = newsletterSubscriptionSchema.safeParse({
+        fullName: "Jean Kouassi",
+        email: "  Jean.Kouassi@Example.COM ",
+        phone: "+229 01 02 03 04",
+        countryCode: "bj",
+        locale: "fr",
+        consentGranted: true,
+      });
+      expect(ok.success).toBe(true);
+      if (ok.success) {
+        expect(ok.data.email).toBe("jean.kouassi@example.com");
+        expect(ok.data.countryCode).toBe("BJ");
+      }
+
+      const noConsent = newsletterSubscriptionSchema.safeParse({
+        fullName: "Jean Kouassi",
+        email: "jean@example.com",
+        consentGranted: false,
+      });
+      expect(noConsent.success).toBe(false);
+
+      const badEmail = newsletterSubscriptionSchema.safeParse({
+        fullName: "Jean Kouassi",
+        email: "not-an-email",
+        consentGranted: true,
+      });
+      expect(badEmail.success).toBe(false);
     });
   });
 });

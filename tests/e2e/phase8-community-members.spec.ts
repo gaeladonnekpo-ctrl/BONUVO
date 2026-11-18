@@ -114,4 +114,52 @@ test.describe("Phase 8 — BONUVO COMMUNITY & Espace MEMBERS", () => {
     await page.goto("/fr/admin/notifications");
     await expect(page).toHaveURL(/\/fr\/connexion/);
   });
+
+  test("affiche Connexion / Inscription en accès libre et permet l'inscription CRM Newsletter + désabonnement", async ({
+    page,
+    request,
+  }) => {
+    await page.goto("/fr");
+    await expect(page).toHaveURL(/\/fr$/);
+    await expect(page.locator("header").getByRole("link", { name: /Connexion/i })).toBeVisible();
+    await expect(page.locator("header").getByRole("link", { name: /S'inscrire/i })).toBeVisible();
+
+    const newsletter = page.locator("#newsletter");
+    await expect(newsletter).toBeVisible();
+
+    const testEmail = `e2e-crm-${Date.now()}@example.com`;
+    await newsletter.locator('input[name="fullName"]').fill("Koffi Mensah");
+    await newsletter.locator('input[name="email"]').fill(testEmail);
+    await newsletter.locator('input[name="phone"]').fill("+229 90 00 00 01");
+    await newsletter.locator('select[name="countryCode"]').selectOption("BJ");
+    await newsletter.locator('input[name="consentGranted"]').check();
+    await newsletter.getByRole("button", { name: /S'inscrire à la newsletter BONUVO/i }).click();
+
+    await expect(newsletter.getByRole("status")).toContainText(
+      /Inscription confirmée à la newsletter BONUVO/i,
+    );
+
+    // Prévention des doublons : une nouvelle soumission avec le même e-mail met à jour sans créer de doublon
+    const dupRes = await request.post("/api/newsletter", {
+      data: {
+        fullName: "Koffi Mensah",
+        email: testEmail,
+        countryCode: "BJ",
+        locale: "fr",
+        consentGranted: true,
+      },
+    });
+    expect(dupRes.status()).toBe(200);
+    const dupJson = (await dupRes.json()) as {
+      ok: boolean;
+      alreadySubscribed: boolean;
+      unsubscribeUrl: string;
+    };
+    expect(dupJson.ok).toBe(true);
+    expect(dupJson.alreadySubscribed).toBe(true);
+
+    // Désabonnement 1-clic via le lien généré
+    await page.goto(`${dupJson.unsubscribeUrl}&confirm=1`);
+    await expect(page.getByText(/désinscription a été enregistrée/i)).toBeVisible();
+  });
 });

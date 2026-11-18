@@ -134,6 +134,13 @@
       "when": 1794995100000,
       "tag": "0018_phase8_facebook_and_official_channels",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1795008000000,
+      "tag": "0019_crm_newsletter_subscribers",
+      "breakpoints": true
     }
   ]
 }

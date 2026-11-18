@@ -1,6 +1,6 @@
 "use client";
 
-import { Menu } from "lucide-react";
+import { LogIn, Menu, UserPlus } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import * as React from "react";
 import { BrandLogo } from "@/components/brand/BrandLogo";
@@ -45,6 +45,25 @@ export function MobileNav({ initialCountry }: MobileNavProps) {
           </DialogTitle>
           <DialogDescription>{tNav("menuTitle")}</DialogDescription>
         </DialogHeader>
+
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <Link
+            href="/connexion"
+            onClick={() => setOpen(false)}
+            className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-border bg-surface-subtle px-3 py-2 text-xs font-semibold text-fg transition hover:border-accent/40 hover:bg-surface-elevated"
+          >
+            <LogIn className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
+            <span>{isFr ? "Se connecter" : "Sign in"}</span>
+          </Link>
+          <Link
+            href="/inscription"
+            onClick={() => setOpen(false)}
+            className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl bg-accent px-3 py-2 text-xs font-semibold text-accent-fg transition hover:bg-accent-hover"
+          >
+            <UserPlus className="h-3.5 w-3.5" aria-hidden="true" />
+            <span>{isFr ? "S'inscrire" : "Sign up"}</span>
+          </Link>
+        </div>
 
         <nav aria-label={tNav("menuTitle")} className="mt-4 flex flex-col gap-1">
           {PUBLIC_PRIMARY_LINKS.map((item) => (

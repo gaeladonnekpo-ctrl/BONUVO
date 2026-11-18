@@ -31,6 +31,43 @@ export type MemberActivityType = (typeof MEMBER_ACTIVITY_TYPES)[number];
 export const DELETION_REQUEST_STATUSES = ["pending", "cancelled", "executed"] as const;
 export type DeletionRequestStatus = (typeof DELETION_REQUEST_STATUSES)[number];
 
+export const NEWSLETTER_SUBSCRIBER_STATUSES = ["active", "unsubscribed"] as const;
+export type NewsletterSubscriberStatus = (typeof NEWSLETTER_SUBSCRIBER_STATUSES)[number];
+
+export const newsletterSubscribers = pgTable(
+  "newsletter_subscribers",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    fullName: text("full_name").notNull(),
+    email: text("email").notNull(),
+    phone: text("phone").notNull().default(""),
+    countryCode: text("country_code").notNull().default("GLOBAL"),
+    locale: text("locale").notNull().default("fr"),
+    status: text("status").$type<NewsletterSubscriberStatus>().notNull().default("active"),
+    consentGranted: boolean("consent_granted").notNull().default(true),
+    consentPolicyVersion: text("consent_policy_version").notNull().default("1.0"),
+    consentRecordedAt: timestamp("consent_recorded_at", {
+      withTimezone: true,
+      mode: "date",
+    })
+      .notNull()
+      .defaultNow(),
+    unsubscribedAt: timestamp("unsubscribed_at", { withTimezone: true, mode: "date" }),
+    source: text("source").notNull().default("home_newsletter"),
+    ipHash: text("ip_hash").notNull().default(""),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("newsletter_subscribers_email_uidx").on(table.email),
+    index("newsletter_subscribers_status_country_idx").on(table.status, table.countryCode),
+    check(
+      "newsletter_subscribers_status_check",
+      sql`${table.status} IN ('active', 'unsubscribed')`,
+    ),
+  ],
+);
+
 export const communicationPreferences = pgTable(
   "communication_preferences",
   {
