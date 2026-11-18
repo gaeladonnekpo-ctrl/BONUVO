@@ -38,6 +38,7 @@ export default async function MemberAccountLayout({
       navItems={[{ id: "overview", label: t("memberNavOverview"), href: `/${locale}/compte` }]}
       initialCountry={effectiveCountry}
       availableCountries={availableCountries}
+      currentUser={{ displayName: user.displayName, email: user.email }}
     >
       {children}
     </MemberShell>

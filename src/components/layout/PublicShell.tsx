@@ -4,13 +4,14 @@ import { CommunityFab } from "@/components/business/CommunityFab";
 import { OFFICIAL_SOCIAL_LINKS } from "@/components/community/SocialBrandIcon";
 import type { CountryOption } from "@/lib/i18n/countries";
 import { Footer } from "./Footer";
-import { Header } from "./Header";
+import { Header, type ShellUserSummary } from "./Header";
 import { PublicCountriesProvider } from "./public-countries-context";
 
 export interface PublicShellProps {
   children: ReactNode;
   initialCountry?: string;
   availableCountries?: readonly CountryOption[];
+  currentUser?: ShellUserSummary | null;
   showDevDesignLink?: boolean;
 }
 
@@ -21,6 +22,7 @@ export function PublicShell({
   children,
   initialCountry,
   availableCountries,
+  currentUser,
   showDevDesignLink = false,
 }: PublicShellProps) {
   const tNav = useTranslations("nav");
@@ -57,7 +59,7 @@ export function PublicShell({
         >
           {tNav("skipToContent")}
         </a>
-        <Header initialCountry={initialCountry} />
+        <Header initialCountry={initialCountry} currentUser={currentUser} />
         <main id="main-content" className="flex-1">
           {children}
         </main>

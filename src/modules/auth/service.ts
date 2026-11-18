@@ -1,7 +1,7 @@
 import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { logAudit, logSecurityEvent } from "@/server/audit/log";
+import { logSecurityEvent } from "@/server/audit/log";
 import { loadOrBootstrapProfileContext } from "@/server/auth/session";
 import { roleRequiresTotp } from "@/server/auth/rbac-catalog";
 import { createSupabaseAdminClient, createSupabaseServerClient } from "@/server/auth/supabase";
@@ -10,8 +10,9 @@ import { getServerEnv } from "@/server/env";
 import { hashIdentifier, hashIp } from "@/server/security/ip";
 import { createUpstashRateLimitBackend, type RateLimitBackend } from "@/server/security/rate-limit";
 import { sanitizeRelativeRedirect } from "@/server/security/redirect";
-import { findProfileForSecurityByEmail, recordConsentDecisions } from "@/modules/auth/repository";
+import { findProfileForSecurityByEmail } from "@/modules/auth/repository";
 import type { SignInInput, SignUpInput } from "@/modules/auth/schema";
+import { executeSignUpProvisioning } from "@/modules/auth/signup-helper";
 
 export interface AuthActionResponse<T = undefined> {
   ok: boolean;
@@ -208,71 +209,12 @@ export async function signUpWithRateLimit(
     return rateLimitedResponse(input.locale, ipDecision.retryAfterSeconds);
   }
 
-  const redirectTo = `${deps.siteUrl}/api/auth/callback?locale=${input.locale}&next=/${input.locale}/compte`;
-  const { data, error } = await deps.supabase.auth.signUp({
-    email: input.email,
-    password: input.password,
-    options: {
-      emailRedirectTo: redirectTo,
-      data: { display_name: input.displayName, locale: input.locale, country: input.countryCode },
-    },
+  return executeSignUpProvisioning({
+    input,
+    ipHash,
+    ipHashSecret: deps.ipHashSecret,
+    siteUrl: deps.siteUrl,
+    supabase: deps.supabase,
+    adminSupabase: deps.adminSupabase,
   });
-
-  if (error && (error.status ?? 0) >= 500) {
-    await logSecurityEvent({
-      eventType: "signup_provider_error",
-      severity: "high",
-      ipHash,
-      identifierHash: hashIdentifier(input.email, deps.ipHashSecret),
-      route: "/api/auth/sign-up",
-      details: { status: error.status ?? 500, code: error.code ?? "unexpected_failure" },
-    });
-    return {
-      ok: false,
-      status: 503,
-      code: "SIGNUP_DELIVERY_UNAVAILABLE",
-      message:
-        input.locale === "en"
-          ? "Registration is temporarily unavailable (verification e-mail delivery failed). Please retry later."
-          : "L'inscription est temporairement indisponible (échec d'envoi de l'e-mail de confirmation). Veuillez réessayer ultérieurement.",
-    };
-  }
-
-  if (data.user && !error) {
-    await loadOrBootstrapProfileContext({
-      userId: data.user.id,
-      email: input.email,
-      displayName: input.displayName,
-      emailVerifiedAt: data.user.email_confirmed_at ? new Date(data.user.email_confirmed_at) : null,
-    });
-    await recordConsentDecisions({
-      userId: data.user.id,
-      ipHash,
-      policyVersion: "2026-11-phase-2",
-      decisions: [
-        { type: "analytics", granted: input.acceptAnalytics },
-        { type: "notifications", granted: input.acceptNotifications },
-        { type: "marketing_email", granted: input.acceptMarketing },
-      ],
-    });
-    await logAudit({
-      actorId: data.user.id,
-      action: "user.registered",
-      entityType: "profiles",
-      entityId: data.user.id,
-      beforeState: null,
-      afterState: { locale: input.locale, countryCode: input.countryCode },
-      ipHash,
-    });
-  }
-
-  return {
-    ok: true,
-    status: 200,
-    redirectTo: `/${input.locale}/verification`,
-    message:
-      input.locale === "en"
-        ? "If this address is eligible, a verification e-mail has been sent."
-        : "Si cette adresse est recevable, un e-mail de vérification vient d'être envoyé.",
-  };
 }

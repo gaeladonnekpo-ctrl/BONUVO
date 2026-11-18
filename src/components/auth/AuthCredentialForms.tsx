@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { AuthForm, type AuthFormStatus } from "@/components/auth/AuthForm";
@@ -14,7 +13,6 @@ import { signInSchema, signUpSchema } from "@/modules/auth/schema";
 
 export function SignInForm({ nextPath }: { nextPath?: string }) {
   const locale = useLocale() === "en" ? "en" : "fr";
-  const router = useRouter();
   const t = useTranslations("auth.signIn");
   const tFields = useTranslations("auth.fields");
 
@@ -47,8 +45,7 @@ export function SignInForm({ nextPath }: { nextPath?: string }) {
         setStatus({ kind: "error", message: result.message });
         return;
       }
-      router.push(result.redirectTo ?? `/${locale}/compte`);
-      router.refresh();
+      window.location.assign(result.redirectTo ?? `/${locale}/compte`);
     } finally {
       setSubmitting(false);
     }
@@ -108,7 +105,6 @@ export function SignInForm({ nextPath }: { nextPath?: string }) {
 
 export function SignUpForm({ initialCountry = "GLOBAL" }: { initialCountry?: string }) {
   const locale = useLocale() === "en" ? "en" : "fr";
-  const router = useRouter();
   const t = useTranslations("auth.signUp");
   const tFields = useTranslations("auth.fields");
 
@@ -155,9 +151,7 @@ export function SignUpForm({ initialCountry = "GLOBAL" }: { initialCountry?: str
         return;
       }
       setStatus({ kind: "success", message: result.message });
-      if (result.redirectTo) {
-        router.push(result.redirectTo);
-      }
+      window.location.assign(result.redirectTo ?? `/${locale}`);
     } finally {
       setSubmitting(false);
     }

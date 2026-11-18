@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import type { CountryOption } from "@/lib/i18n/countries";
 import { Footer } from "./Footer";
-import { Header } from "./Header";
+import { Header, type ShellUserSummary } from "./Header";
 import { PublicCountriesProvider } from "./public-countries-context";
 
 export interface MemberNavLink {
@@ -16,6 +16,7 @@ export interface MemberShellProps {
   navAriaLabel: string;
   initialCountry?: string;
   availableCountries?: readonly CountryOption[];
+  currentUser?: ShellUserSummary | null;
   showDevDesignLink?: boolean;
 }
 
@@ -28,12 +29,13 @@ export function MemberShell({
   navAriaLabel,
   initialCountry,
   availableCountries,
+  currentUser,
   showDevDesignLink = false,
 }: MemberShellProps) {
   return (
     <PublicCountriesProvider countries={availableCountries}>
       <div className="flex min-h-screen flex-col bg-bg text-fg">
-        <Header initialCountry={initialCountry} />
+        <Header initialCountry={initialCountry} currentUser={currentUser} />
         <div className="mx-auto grid w-full max-w-[1200px] flex-1 grid-cols-1 gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[240px_1fr]">
           <aside aria-label={navAriaLabel}>
             <nav className="flex flex-wrap gap-1.5 rounded-card border border-border bg-surface p-2 lg:flex-col">

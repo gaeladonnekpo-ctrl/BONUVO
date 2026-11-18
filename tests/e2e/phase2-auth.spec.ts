@@ -98,4 +98,36 @@ test.describe("Phase 2 — Protection /admin et /compte, formulaires auth et sé
     expect([401, 503]).toContain(res.status());
     expect(res.status()).not.toBe(200);
   });
+
+  test("inscrit un nouvel utilisateur, le connecte automatiquement, redirige vers /fr et masque Connexion/S'inscrire", async ({
+    page,
+  }) => {
+    const testEmail = `e2e-signup-${Date.now()}@example.com`;
+    const displayName = "Alex E2E";
+
+    await page.goto("/fr/inscription");
+    await page.locator("#signup-name").fill(displayName);
+    await page.locator("#signup-email").fill(testEmail);
+    await page.locator("#signup-password").fill("BonuvoStrong2026!");
+    await page.getByRole("button", { name: /Créer mon compte/i }).click();
+
+    await page.waitForURL(/\/fr$/, { timeout: 15000 });
+    await expect(page.locator("header").getByRole("link", { name: displayName })).toBeVisible();
+    await expect(page.locator("header").getByRole("link", { name: /Connexion/i })).toHaveCount(0);
+    await expect(page.locator("header").getByRole("link", { name: /S'inscrire/i })).toHaveCount(0);
+
+    // Persistance de session pendant la navigation
+    await page.goto("/fr/offres");
+    await expect(page.locator("header").getByRole("link", { name: displayName })).toBeVisible();
+    await expect(page.locator("header").getByRole("link", { name: /Connexion/i })).toHaveCount(0);
+
+    await page.goto("/fr/compte");
+    await expect(page.getByRole("heading", { name: displayName })).toBeVisible();
+    await expect(page.locator("header").getByRole("link", { name: displayName })).toBeVisible();
+
+    // Déconnexion -> réaffichage des boutons Connexion / S'inscrire
+    await page.getByRole("button", { name: /Se déconnecter/i }).click();
+    await page.waitForURL(/\/fr$/, { timeout: 15000 });
+    await expect(page.locator("header").getByRole("link", { name: /Connexion/i })).toBeVisible();
+  });
 });

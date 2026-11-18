@@ -1,11 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
 export function SignOutButton({ locale, label }: { locale: string; label: string }) {
-  const router = useRouter();
   const [loading, setLoading] = React.useState(false);
 
   async function handleSignOut() {
@@ -16,8 +14,7 @@ export function SignOutButton({ locale, label }: { locale: string; label: string
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ locale }),
       });
-      router.push(`/${locale}/connexion`);
-      router.refresh();
+      window.location.assign(`/${locale}`);
     } finally {
       setLoading(false);
     }

@@ -1,6 +1,6 @@
 "use client";
 
-import { LogIn, UserPlus } from "lucide-react";
+import { LogIn, UserCheck, UserPlus } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { Link, usePathname } from "@/i18n/navigation";
@@ -11,11 +11,17 @@ import { MobileNav } from "./MobileNav";
 import { PUBLIC_PRIMARY_LINKS } from "./navigation-links";
 import { ThemeToggle } from "./ThemeToggle";
 
-export interface HeaderProps {
-  initialCountry?: string;
+export interface ShellUserSummary {
+  displayName: string;
+  email: string;
 }
 
-export function Header({ initialCountry }: HeaderProps) {
+export interface HeaderProps {
+  initialCountry?: string;
+  currentUser?: ShellUserSummary | null;
+}
+
+export function Header({ initialCountry, currentUser }: HeaderProps) {
   const tBrand = useTranslations("brand");
   const tNav = useTranslations("nav");
   const locale = useLocale();
@@ -59,21 +65,33 @@ export function Header({ initialCountry }: HeaderProps) {
             <LocaleSwitcher />
           </div>
           <ThemeToggle responsiveLabel />
-          <Link
-            href="/connexion"
-            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 text-xs font-semibold text-fg transition-colors hover:border-accent/50 hover:bg-surface-elevated"
-          >
-            <LogIn className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
-            <span>{isFr ? "Connexion" : "Sign in"}</span>
-          </Link>
-          <Link
-            href="/inscription"
-            className="hidden h-9 items-center gap-1.5 rounded-lg bg-accent px-3 text-xs font-semibold text-accent-fg transition-colors hover:bg-accent-hover md:inline-flex"
-          >
-            <UserPlus className="h-3.5 w-3.5" aria-hidden="true" />
-            <span>{isFr ? "S'inscrire" : "Sign up"}</span>
-          </Link>
-          <MobileNav initialCountry={initialCountry} />
+          {currentUser ? (
+            <Link
+              href="/compte"
+              className="inline-flex h-9 max-w-[140px] items-center gap-1.5 rounded-lg border border-trust/40 bg-trust-soft px-2.5 text-xs font-semibold text-fg transition-colors hover:border-trust hover:bg-surface-elevated sm:max-w-[180px]"
+            >
+              <UserCheck className="h-3.5 w-3.5 shrink-0 text-trust" aria-hidden="true" />
+              <span className="truncate">{currentUser.displayName}</span>
+            </Link>
+          ) : (
+            <>
+              <Link
+                href="/connexion"
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 text-xs font-semibold text-fg transition-colors hover:border-accent/50 hover:bg-surface-elevated"
+              >
+                <LogIn className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
+                <span>{isFr ? "Connexion" : "Sign in"}</span>
+              </Link>
+              <Link
+                href="/inscription"
+                className="hidden h-9 items-center gap-1.5 rounded-lg bg-accent px-3 text-xs font-semibold text-accent-fg transition-colors hover:bg-accent-hover md:inline-flex"
+              >
+                <UserPlus className="h-3.5 w-3.5" aria-hidden="true" />
+                <span>{isFr ? "S'inscrire" : "Sign up"}</span>
+              </Link>
+            </>
+          )}
+          <MobileNav initialCountry={initialCountry} currentUser={currentUser} />
         </div>
       </div>
     </header>
