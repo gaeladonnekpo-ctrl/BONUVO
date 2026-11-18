@@ -79,13 +79,13 @@ test.describe("Phase 1 — Design system, accessibilité, thèmes et responsive"
     expect(lightSevere).toEqual([]);
   });
 
-  test("sert les 4 pages de confiance, la page 404 et les en-têtes CSP-Report-Only", async ({
+  test("sert les 4 pages de confiance, la page 404 et les en-têtes CSP bloquants", async ({
     page,
   }) => {
     const homeResponse = await page.goto("/fr");
     expect(homeResponse?.status()).toBe(200);
     const headers = homeResponse?.headers() ?? {};
-    expect(headers["content-security-policy-report-only"]).toContain("default-src 'self'");
+    expect(headers["content-security-policy"]).toContain("default-src 'self'");
     expect(headers["x-frame-options"]).toBe("DENY");
     expect(headers["x-content-type-options"]).toBe("nosniff");
     expect(headers["x-powered-by"]).toBeUndefined();

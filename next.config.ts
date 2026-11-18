@@ -3,9 +3,11 @@ import createNextIntlPlugin from "next-intl/plugin";
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
-const cspReportOnlyDirectives = [
+const isHttpsSite = (process.env.NEXT_PUBLIC_SITE_URL ?? "").startsWith("https://");
+
+const cspDirectives = [
   "default-src 'self'",
-  "script-src 'self'",
+  "script-src 'self' 'unsafe-inline'",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: https:",
   "font-src 'self' data:",
@@ -14,6 +16,7 @@ const cspReportOnlyDirectives = [
   "base-uri 'self'",
   "form-action 'self'",
   "frame-ancestors 'none'",
+  ...(isHttpsSite ? ["upgrade-insecure-requests"] : []),
 ].join("; ");
 
 const securityHeaders = [
@@ -38,8 +41,8 @@ const securityHeaders = [
     value: "camera=(), microphone=(), geolocation=()",
   },
   {
-    key: "Content-Security-Policy-Report-Only",
-    value: cspReportOnlyDirectives,
+    key: "Content-Security-Policy",
+    value: cspDirectives,
   },
 ];
 
