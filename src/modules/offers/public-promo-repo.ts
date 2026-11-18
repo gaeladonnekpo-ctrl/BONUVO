@@ -1,7 +1,17 @@
 import "server-only";
 
 import { and, desc, eq, gt, inArray, isNull, lte, or } from "drizzle-orm";
-import { withAppDb } from "@/server/db/context";
+import { localizeFinancialText } from "@/lib/currency/converter";
+import {
+  isReferenceMemoryWarm,
+  loadCatalogMetaTx,
+  resolveCountryIdOnTx,
+  selectBestAffiliateSlug,
+} from "@/modules/offers/public-catalog-meta-repo";
+import { buildShortCode } from "@/modules/offers/public-mappers";
+import type { PublicCatalogMeta, PublicPromoCodeItem } from "@/modules/offers/public-types";
+import { getCatalogCacheGeneration } from "@/server/cache/catalog-tags";
+import { withAppDb, type AppDbTransaction } from "@/server/db/context";
 import {
   affiliateLinks,
   bookmakerCountries,
@@ -11,13 +21,94 @@ import {
   offers,
   promoCodes,
 } from "@/server/db/schema";
-import { localizeFinancialText } from "@/lib/currency/converter";
-import {
-  loadCatalogMetaTx,
-  selectBestAffiliateSlug,
-} from "@/modules/offers/public-catalog-meta-repo";
-import { buildShortCode } from "@/modules/offers/public-mappers";
-import type { PublicCatalogMeta, PublicPromoCodeItem } from "@/modules/offers/public-types";
+
+async function fetchRawPromosSnapshotTx(tx: AppDbTransaction) {
+  const now = new Date();
+  const rows = await tx
+    .select({
+      promo: promoCodes,
+      bookmaker: bookmakers,
+      logoUrl: mediaAssets.publicUrl,
+      offer: offers,
+      countryCode: countries.code,
+    })
+    .from(promoCodes)
+    .innerJoin(bookmakers, eq(bookmakers.id, promoCodes.bookmakerId))
+    .leftJoin(mediaAssets, eq(mediaAssets.id, bookmakers.logoAssetId))
+    .leftJoin(offers, eq(offers.id, promoCodes.offerId))
+    .leftJoin(countries, eq(countries.id, promoCodes.countryId))
+    .where(
+      and(
+        eq(promoCodes.status, "active"),
+        isNull(promoCodes.deletedAt),
+        eq(bookmakers.status, "active"),
+        isNull(bookmakers.deletedAt),
+        or(isNull(promoCodes.validFrom), lte(promoCodes.validFrom, now)),
+        or(isNull(promoCodes.validUntil), gt(promoCodes.validUntil, now)),
+      ),
+    )
+    .orderBy(desc(promoCodes.updatedAt));
+
+  if (rows.length === 0) return null;
+
+  const bmIds = Array.from(new Set(rows.map((r) => r.bookmaker.id)));
+  const [bmCountries, links] = await Promise.all([
+    tx
+      .select({
+        bookmakerId: bookmakerCountries.bookmakerId,
+        countryId: bookmakerCountries.countryId,
+      })
+      .from(bookmakerCountries)
+      .where(
+        and(
+          inArray(bookmakerCountries.bookmakerId, bmIds),
+          eq(bookmakerCountries.eligible, true),
+          eq(bookmakerCountries.status, "active"),
+          isNull(bookmakerCountries.deletedAt),
+        ),
+      ),
+    tx
+      .select({
+        slug: affiliateLinks.slug,
+        bookmakerId: affiliateLinks.bookmakerId,
+        offerId: affiliateLinks.offerId,
+        countryId: affiliateLinks.countryId,
+      })
+      .from(affiliateLinks)
+      .where(
+        and(
+          inArray(affiliateLinks.bookmakerId, bmIds),
+          eq(affiliateLinks.active, true),
+          eq(affiliateLinks.status, "active"),
+          isNull(affiliateLinks.deletedAt),
+        ),
+      ),
+  ]);
+
+  return { rows, bmCountries, links };
+}
+
+type RawPromosSnapshot = Awaited<ReturnType<typeof fetchRawPromosSnapshotTx>>;
+let promosMemoryCache: { data: RawPromosSnapshot; expiresAt: number; generation: number } | null =
+  null;
+
+async function getRawPromosSnapshotOnTx(tx: AppDbTransaction): Promise<RawPromosSnapshot> {
+  const isTest = process.env.VITEST === "true" || process.env.NODE_ENV === "test";
+  const gen = getCatalogCacheGeneration();
+  if (
+    !isTest &&
+    promosMemoryCache &&
+    promosMemoryCache.generation === gen &&
+    promosMemoryCache.expiresAt > Date.now()
+  ) {
+    return promosMemoryCache.data;
+  }
+  const data = await fetchRawPromosSnapshotTx(tx);
+  if (!isTest) {
+    promosMemoryCache = { data, expiresAt: Date.now() + 300_000, generation: gen };
+  }
+  return data;
+}
 
 export async function listPublicPromoCodesRepo(params: {
   countryCode: string;
@@ -25,81 +116,24 @@ export async function listPublicPromoCodesRepo(params: {
   bookmakerSlug?: string;
   q?: string;
 }): Promise<{ codes: PublicPromoCodeItem[]; meta: PublicCatalogMeta }> {
-  return withAppDb({ scope: "public_catalog" }, async (tx) => {
+  const isWarm =
+    process.env.VITEST !== "true" &&
+    process.env.NODE_ENV !== "test" &&
+    isReferenceMemoryWarm() &&
+    promosMemoryCache &&
+    promosMemoryCache.generation === getCatalogCacheGeneration() &&
+    promosMemoryCache.expiresAt > Date.now();
+
+  const runOnTx = async (tx: AppDbTransaction) => {
     const meta = await loadCatalogMetaTx(tx, params.countryCode);
     const upperCountry = params.countryCode.toUpperCase();
-    const now = new Date();
+    const countryLookup = await resolveCountryIdOnTx(tx, upperCountry);
+    if (!countryLookup.found) return { codes: [], meta };
+    const targetCountryId = countryLookup.id;
 
-    let targetCountryId: string | null = null;
-    if (upperCountry !== "GLOBAL") {
-      const [countryRow] = await tx
-        .select({ id: countries.id })
-        .from(countries)
-        .where(and(eq(countries.code, upperCountry), eq(countries.active, true)));
-      if (!countryRow) return { codes: [], meta };
-      targetCountryId = countryRow.id;
-    }
-
-    const rows = await tx
-      .select({
-        promo: promoCodes,
-        bookmaker: bookmakers,
-        logoUrl: mediaAssets.publicUrl,
-        offer: offers,
-        countryCode: countries.code,
-      })
-      .from(promoCodes)
-      .innerJoin(bookmakers, eq(bookmakers.id, promoCodes.bookmakerId))
-      .leftJoin(mediaAssets, eq(mediaAssets.id, bookmakers.logoAssetId))
-      .leftJoin(offers, eq(offers.id, promoCodes.offerId))
-      .leftJoin(countries, eq(countries.id, promoCodes.countryId))
-      .where(
-        and(
-          eq(promoCodes.status, "active"),
-          isNull(promoCodes.deletedAt),
-          eq(bookmakers.status, "active"),
-          isNull(bookmakers.deletedAt),
-          or(isNull(promoCodes.validFrom), lte(promoCodes.validFrom, now)),
-          or(isNull(promoCodes.validUntil), gt(promoCodes.validUntil, now)),
-        ),
-      )
-      .orderBy(desc(promoCodes.updatedAt));
-
-    if (rows.length === 0) return { codes: [], meta };
-
-    const bmIds = Array.from(new Set(rows.map((r) => r.bookmaker.id)));
-    const [bmCountries, links] = await Promise.all([
-      tx
-        .select({
-          bookmakerId: bookmakerCountries.bookmakerId,
-          countryId: bookmakerCountries.countryId,
-        })
-        .from(bookmakerCountries)
-        .where(
-          and(
-            inArray(bookmakerCountries.bookmakerId, bmIds),
-            eq(bookmakerCountries.eligible, true),
-            eq(bookmakerCountries.status, "active"),
-            isNull(bookmakerCountries.deletedAt),
-          ),
-        ),
-      tx
-        .select({
-          slug: affiliateLinks.slug,
-          bookmakerId: affiliateLinks.bookmakerId,
-          offerId: affiliateLinks.offerId,
-          countryId: affiliateLinks.countryId,
-        })
-        .from(affiliateLinks)
-        .where(
-          and(
-            inArray(affiliateLinks.bookmakerId, bmIds),
-            eq(affiliateLinks.active, true),
-            eq(affiliateLinks.status, "active"),
-            isNull(affiliateLinks.deletedAt),
-          ),
-        ),
-    ]);
+    const snap = await getRawPromosSnapshotOnTx(tx);
+    if (!snap) return { codes: [], meta };
+    const { rows, bmCountries, links } = snap;
 
     const result: PublicPromoCodeItem[] = [];
     for (const row of rows) {
@@ -156,11 +190,16 @@ export async function listPublicPromoCodesRepo(params: {
             })
           : null,
         countryCode: row.countryCode ?? null,
-        ctaHref: bestSlug ? `/go/${bestSlug}` : null,
         validUntilIso: row.promo.validUntil ? row.promo.validUntil.toISOString() : null,
+        ctaHref: bestSlug ? `/go/${bestSlug}` : null,
       });
     }
 
     return { codes: result, meta };
-  });
+  };
+
+  if (isWarm) {
+    return runOnTx(null as unknown as AppDbTransaction);
+  }
+  return withAppDb({ scope: "public_catalog" }, runOnTx);
 }

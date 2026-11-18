@@ -23,7 +23,12 @@ export type PostType = (typeof POST_TYPES)[number];
 export const POST_STATUSES = ["draft", "published", "archived"] as const;
 export type PostStatus = (typeof POST_STATUSES)[number];
 
-export const CHANNEL_PLATFORMS = ["telegram", "whatsapp_channel", "whatsapp_group"] as const;
+export const CHANNEL_PLATFORMS = [
+  "telegram",
+  "whatsapp_channel",
+  "whatsapp_group",
+  "facebook",
+] as const;
 export type ChannelPlatform = (typeof CHANNEL_PLATFORMS)[number];
 
 export const COUPON_STATUSES = ["draft", "validated", "archived"] as const;
@@ -92,7 +97,7 @@ export const communityChannels = pgTable(
     ),
     check(
       "community_channels_platform_check",
-      sql`${table.platform} IN ('telegram', 'whatsapp_channel', 'whatsapp_group')`,
+      sql`${table.platform} IN ('telegram', 'whatsapp_channel', 'whatsapp_group', 'facebook')`,
     ),
   ],
 );

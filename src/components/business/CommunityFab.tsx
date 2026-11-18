@@ -1,19 +1,37 @@
 "use client";
 
-import { AlertTriangle, MessageCircle, Send } from "lucide-react";
+import { AlertTriangle, ExternalLink, MessageCircle, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import * as React from "react";
+import { SocialBrandIcon } from "@/components/community/SocialBrandIcon";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import type { CommunityChannelLink, DataComponentState } from "./types";
 
-const ALLOWED_COMMUNITY_HOSTS = new Set(["t.me", "whatsapp.com", "chat.whatsapp.com", "wa.me"]);
+const ALLOWED_COMMUNITY_HOSTS = new Set([
+  "t.me",
+  "www.t.me",
+  "telegram.me",
+  "www.telegram.me",
+  "whatsapp.com",
+  "www.whatsapp.com",
+  "chat.whatsapp.com",
+  "wa.me",
+  "www.wa.me",
+  "facebook.com",
+  "www.facebook.com",
+  "m.facebook.com",
+  "fb.com",
+  "www.fb.com",
+]);
 
 export function isAllowedCommunityUrl(rawUrl: string): boolean {
   try {
     const parsed = new URL(rawUrl);
-    return parsed.protocol === "https:" && ALLOWED_COMMUNITY_HOSTS.has(parsed.hostname);
+    return (
+      parsed.protocol === "https:" && ALLOWED_COMMUNITY_HOSTS.has(parsed.hostname.toLowerCase())
+    );
   } catch {
     return false;
   }
@@ -28,7 +46,7 @@ export interface CommunityFabProps {
 }
 
 /**
- * Floating or inline Telegram/WhatsApp community triggers with strict domain allowlisting.
+ * Floating or inline Telegram/WhatsApp/Facebook community triggers with official brand logos.
  */
 export function CommunityFab({
   channels = [],
@@ -40,6 +58,7 @@ export function CommunityFab({
   const t = useTranslations("communityFab");
   const tStates = useTranslations("states");
   const [showNotice, setShowNotice] = React.useState(false);
+  const [expanded, setExpanded] = React.useState(false);
 
   const wrapperClass =
     mode === "floating"
@@ -64,7 +83,7 @@ export function CommunityFab({
           <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden="true" />
           <span>{tStates("errorDefaultTitle")}</span>
           {onRetry ? (
-            <button type="button" onClick={onRetry} className="underline cursor-pointer">
+            <button type="button" onClick={onRetry} className="cursor-pointer underline">
               {tStates("retry")}
             </button>
           ) : null}
@@ -100,10 +119,54 @@ export function CommunityFab({
     );
   }
 
+  if (mode === "floating") {
+    return (
+      <aside aria-label={t("groupLabel")} className={wrapperClass}>
+        {expanded ? (
+          <div className="flex flex-col items-end gap-2 rounded-2xl border border-border bg-surface p-2.5 shadow-[var(--shadow-floating)]">
+            {validChannels.map((channel) => (
+              <a
+                key={channel.id}
+                href={channel.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex min-h-9 w-full items-center justify-between gap-2.5 rounded-xl border border-border bg-surface-subtle px-3.5 py-2 text-xs font-semibold text-fg transition hover:border-accent/40 hover:bg-surface-elevated"
+              >
+                <span className="inline-flex items-center gap-2">
+                  <SocialBrandIcon platform={channel.platform} className="size-4 shrink-0" />
+                  <span>{channel.label}</span>
+                </span>
+                <ExternalLink className="size-3.5 text-fg-muted" aria-hidden="true" />
+              </a>
+            ))}
+          </div>
+        ) : null}
+
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => setExpanded((prev) => !prev)}
+          aria-expanded={expanded}
+          className="rounded-full shadow-[var(--shadow-floating)]"
+        >
+          {expanded ? (
+            <X className="h-4 w-4 text-accent" aria-hidden="true" />
+          ) : (
+            <span className="inline-flex items-center -space-x-1">
+              <SocialBrandIcon platform="telegram" className="size-4" />
+              <SocialBrandIcon platform="whatsapp" className="size-4" />
+              <SocialBrandIcon platform="facebook" className="size-4" />
+            </span>
+          )}
+          <span>{t("groupLabel")}</span>
+        </Button>
+      </aside>
+    );
+  }
+
   return (
     <aside aria-label={t("groupLabel")} className={wrapperClass}>
       {validChannels.map((channel) => {
-        const Icon = channel.platform === "telegram" ? Send : MessageCircle;
         if (channel.isDevExample) {
           return (
             <Button
@@ -113,15 +176,22 @@ export function CommunityFab({
               disabled
               className="rounded-full"
             >
-              <Icon className="h-4 w-4" aria-hidden="true" />
+              <SocialBrandIcon platform={channel.platform} className="size-4 shrink-0" />
               <span>{channel.label}</span>
             </Button>
           );
         }
+
         return (
-          <Button key={channel.id} asChild variant="secondary" size="sm" className="rounded-full">
+          <Button
+            key={channel.id}
+            asChild
+            variant="secondary"
+            size="sm"
+            className="rounded-full shadow-[var(--shadow-floating)]"
+          >
             <a href={channel.href} target="_blank" rel="noopener noreferrer">
-              <Icon className="h-4 w-4 text-accent" aria-hidden="true" />
+              <SocialBrandIcon platform={channel.platform} className="size-4 shrink-0" />
               <span>{channel.label}</span>
             </a>
           </Button>

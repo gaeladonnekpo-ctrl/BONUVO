@@ -1,9 +1,10 @@
-import { ArrowRight, BookOpenCheck, ShieldCheck } from "lucide-react";
+import { ArrowRight, BookOpenCheck, ExternalLink, ShieldCheck } from "lucide-react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { OfferCard } from "@/components/business/OfferCard";
 import { PartnerLogoGrid } from "@/components/business/PartnerLogoGrid";
 import { PromoCodeBox } from "@/components/business/PromoCodeBox";
+import { OFFICIAL_BONUVO_CHANNELS, SocialBrandIcon } from "@/components/community/SocialBrandIcon";
 import { TRUST_PAGE_LINKS } from "@/components/layout/navigation-links";
 import { UiBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -67,7 +68,6 @@ export default async function PublicHomePage({
     logoUrl: bm.logoUrl,
     licenseSummary: bm.licenseSummary ?? undefined,
   }));
-
   const jsonLd = serializeSafeJsonLd({
     "@context": "https://schema.org",
     "@type": "WebSite",
@@ -250,11 +250,28 @@ export default async function PublicHomePage({
       </section>
 
       <section id="communaute" aria-labelledby="trust-section-heading" className="space-y-5">
-        <div className="space-y-1.5">
-          <h2 id="trust-section-heading" className="font-display text-xl font-bold text-fg">
-            {tHome("trustSectionTitle")}
-          </h2>
-          <p className="max-w-2xl text-sm text-fg-muted">{tHome("trustSectionDescription")}</p>
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div className="space-y-1.5">
+            <h2 id="trust-section-heading" className="font-display text-xl font-bold text-fg">
+              {tHome("trustSectionTitle")}
+            </h2>
+            <p className="max-w-2xl text-sm text-fg-muted">{tHome("trustSectionDescription")}</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {OFFICIAL_BONUVO_CHANNELS.map((social) => (
+              <a
+                key={social.id}
+                href={social.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-border bg-surface px-3.5 py-2 text-xs font-semibold text-fg shadow-2xs transition hover:border-accent/40 hover:bg-surface-elevated"
+              >
+                <SocialBrandIcon platform={social.platform} className="size-4 shrink-0" />
+                <span>{resolvedLocale === "en" ? social.ctaEn : social.ctaFr}</span>
+                <ExternalLink className="size-3.5 text-fg-muted" aria-hidden="true" />
+              </a>
+            ))}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">

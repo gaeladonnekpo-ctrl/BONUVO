@@ -127,6 +127,13 @@
       "when": 1794947350000,
       "tag": "0017_phase8_community_members_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1794995100000,
+      "tag": "0018_phase8_facebook_and_official_channels",
+      "breakpoints": true
     }
   ]
 }

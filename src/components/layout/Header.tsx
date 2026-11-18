@@ -2,7 +2,8 @@
 
 import { useTranslations } from "next-intl";
 import { BrandLogo } from "@/components/brand/BrandLogo";
-import { Link } from "@/i18n/navigation";
+import { Link, usePathname } from "@/i18n/navigation";
+import { cn } from "@/lib/utils";
 import { CountrySwitcher } from "./CountrySwitcher";
 import { LocaleSwitcher } from "./LocaleSwitcher";
 import { MobileNav } from "./MobileNav";
@@ -16,6 +17,7 @@ export interface HeaderProps {
 export function Header({ initialCountry }: HeaderProps) {
   const tBrand = useTranslations("brand");
   const tNav = useTranslations("nav");
+  const pathname = usePathname();
 
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-bg/95 backdrop-blur">
@@ -26,15 +28,24 @@ export function Header({ initialCountry }: HeaderProps) {
         </Link>
 
         <nav aria-label={tNav("menuTitle")} className="hidden items-center gap-1 lg:flex">
-          {PUBLIC_PRIMARY_LINKS.map((item) => (
-            <Link
-              key={item.key}
-              href={item.href}
-              className="rounded-lg px-3 py-2 text-sm font-medium text-fg-muted transition-colors hover:bg-surface-elevated hover:text-fg"
-            >
-              {tNav(item.key)}
-            </Link>
-          ))}
+          {PUBLIC_PRIMARY_LINKS.map((item) => {
+            const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+            return (
+              <Link
+                key={item.key}
+                href={item.href}
+                aria-current={active ? "page" : undefined}
+                className={cn(
+                  "rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                  active
+                    ? "bg-surface-elevated font-semibold text-fg"
+                    : "text-fg-muted hover:bg-surface-elevated hover:text-fg",
+                )}
+              >
+                {tNav(item.key)}
+              </Link>
+            );
+          })}
         </nav>
 
         <div className="flex items-center gap-2">

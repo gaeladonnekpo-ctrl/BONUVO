@@ -1,9 +1,10 @@
 "use client";
 
 import { Menu } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import * as React from "react";
 import { BrandLogo } from "@/components/brand/BrandLogo";
+import { OFFICIAL_BONUVO_CHANNELS, SocialBrandIcon } from "@/components/community/SocialBrandIcon";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -26,6 +27,8 @@ export interface MobileNavProps {
 export function MobileNav({ initialCountry }: MobileNavProps) {
   const tNav = useTranslations("nav");
   const tTrust = useTranslations("trustPages");
+  const locale = useLocale();
+  const isFr = locale !== "en";
   const [open, setOpen] = React.useState(false);
 
   return (
@@ -35,7 +38,7 @@ export function MobileNav({ initialCountry }: MobileNavProps) {
           <Menu className="h-5 w-5" aria-hidden="true" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="top-0 right-0 left-auto h-dvh max-w-xs translate-x-0 translate-y-0 rounded-none rounded-l-2xl border-l p-5">
+      <DialogContent className="top-0 right-0 left-auto h-dvh max-w-xs translate-x-0 translate-y-0 overflow-y-auto rounded-none rounded-l-2xl border-l p-5">
         <DialogHeader className="border-b border-border pb-4 text-left">
           <DialogTitle>
             <BrandLogo size="sm" />
@@ -56,7 +59,28 @@ export function MobileNav({ initialCountry }: MobileNavProps) {
           ))}
         </nav>
 
-        <div className="mt-5 space-y-3 border-t border-border pt-4">
+        <div className="mt-4 space-y-2 border-t border-border pt-4">
+          <p className="px-1 text-xs font-semibold uppercase tracking-wider text-fg-muted">
+            {isFr ? "Nos réseaux officiels" : "Official social channels"}
+          </p>
+          <div className="grid grid-cols-1 gap-2">
+            {OFFICIAL_BONUVO_CHANNELS.map((ch) => (
+              <a
+                key={ch.id}
+                href={ch.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setOpen(false)}
+                className="inline-flex min-h-10 items-center gap-2.5 rounded-xl border border-border bg-surface-subtle px-3 py-2 text-xs font-semibold text-fg transition hover:border-accent/40 hover:bg-surface-elevated"
+              >
+                <SocialBrandIcon platform={ch.platform} className="size-4 shrink-0" />
+                <span>{isFr ? ch.labelFr : ch.labelEn}</span>
+              </a>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-4 space-y-3 border-t border-border pt-4">
           <CountrySwitcher initialCountry={initialCountry} className="w-full max-w-none" />
           <div className="flex items-center justify-between gap-2">
             <LocaleSwitcher />
@@ -66,7 +90,7 @@ export function MobileNav({ initialCountry }: MobileNavProps) {
 
         <nav
           aria-label="Trust links"
-          className="mt-5 flex flex-col gap-1 border-t border-border pt-4"
+          className="mt-4 flex flex-col gap-1 border-t border-border pt-4"
         >
           {TRUST_PAGE_LINKS.map((item) => (
             <Link

@@ -17,9 +17,9 @@ export function getSqlClient(): Sql {
     const env = getServerEnv();
     clientInstance = postgres(sanitizePostgresUrl(env.DATABASE_URL), {
       prepare: false,
-      max: 5,
-      connect_timeout: 5,
-      idle_timeout: 20,
+      max: 4,
+      connect_timeout: 20,
+      idle_timeout: 60,
       ssl: resolveSslOption(env.DATABASE_SSL),
     });
   }

@@ -13,6 +13,24 @@ test.describe("Phase 8 — BONUVO COMMUNITY & Espace MEMBERS", () => {
       }),
     ).toBeVisible();
 
+    // Vérifie la présence des 3 liens officiels (Telegram, WhatsApp, Facebook) et de leurs logos SVG
+    await expect(page.locator('a[href="https://t.me/+OXjlhqM1ShVmZWM0"]').first()).toBeVisible();
+    await expect(
+      page.locator('a[href="https://whatsapp.com/channel/0029VbACyWA4dTnIfN5BA01S"]').first(),
+    ).toBeVisible();
+    await expect(
+      page.locator('a[href="https://www.facebook.com/profile.php?id=100066896162096"]').first(),
+    ).toBeVisible();
+
+    // Vérifie la présence des 3 liens officiels (Telegram, WhatsApp, Facebook) et de leurs logos SVG
+    await expect(page.locator('a[href="https://t.me/+OXjlhqM1ShVmZWM0"]').first()).toBeVisible();
+    await expect(
+      page.locator('a[href="https://whatsapp.com/channel/0029VbACyWA4dTnIfN5BA01S"]').first(),
+    ).toBeVisible();
+    await expect(
+      page.locator('a[href="https://www.facebook.com/profile.php?id=100066896162096"]').first(),
+    ).toBeVisible();
+
     const axeCommunity = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
     const seriousCommunity = axeCommunity.violations.filter(
       (v) => v.impact === "critical" || v.impact === "serious",
@@ -48,6 +66,20 @@ test.describe("Phase 8 — BONUVO COMMUNITY & Espace MEMBERS", () => {
   }) => {
     const offersRes = await page.goto("/fr/offres");
     expect(offersRes?.status()).toBe(200);
+
+    // Vérifie la navigation rapide de Offres vers Codes promo
+    await page
+      .getByRole("link", { name: /Codes promo/i })
+      .first()
+      .click();
+    await expect(page).toHaveURL(/\/fr\/codes-promo/);
+
+    // Vérifie la navigation rapide de Offres vers Codes promo
+    await page
+      .getByRole("link", { name: /Codes promo/i })
+      .first()
+      .click();
+    await expect(page).toHaveURL(/\/fr\/codes-promo/);
 
     // Unsubscribe API rejette un jeton forgé
     const forgedUnsub = await request.post("/api/unsubscribe", {

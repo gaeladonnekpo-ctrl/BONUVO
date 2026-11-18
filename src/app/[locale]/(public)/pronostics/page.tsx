@@ -18,8 +18,6 @@ import {
   listPublicFixtures,
 } from "@/modules/ai/service/public-ai-service";
 
-export const dynamic = "force-dynamic";
-
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   const resolvedLocale: AppLocale = locale === "en" ? "en" : "fr";

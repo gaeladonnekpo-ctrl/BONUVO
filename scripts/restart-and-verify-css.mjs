@@ -24,6 +24,25 @@ function startWmiServer() {
   execSync(`powershell -NoProfile -Command "${psCommand}"`, { stdio: "ignore" });
 }
 
+async function warmPublicRoutes() {
+  const routes = [
+    "/fr",
+    "/en",
+    "/fr/offres",
+    "/fr/codes-promo",
+    "/fr/bookmakers",
+    "/fr/communaute",
+    "/en/communaute",
+  ];
+  for (const route of routes) {
+    try {
+      await fetch(`${BASE_URL}${route}`, { cache: "no-store" });
+    } catch {
+      // Best-effort warmup
+    }
+  }
+}
+
 async function verifyServerAndCss() {
   for (let attempt = 1; attempt <= 20; attempt += 1) {
     try {
@@ -54,8 +73,9 @@ async function verifyServerAndCss() {
       }
 
       if (allCssOk) {
+        await warmPublicRoutes();
         console.log(
-          `[bonuvo-css-guard] Serveur :${PORT} prêt — ${cssMatches.length} fichier(s) CSS vérifiés (200 OK).`,
+          `[bonuvo-css-guard] Serveur :${PORT} prêt et préchauffé — ${cssMatches.length} fichier(s) CSS vérifiés (200 OK).`,
         );
         return true;
       }

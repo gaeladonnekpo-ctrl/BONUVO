@@ -1,111 +1,149 @@
 import "server-only";
 
 import { and, asc, desc, eq, gt, inArray, isNull, lte, or } from "drizzle-orm";
-import { withAppDb } from "@/server/db/context";
+import {
+  isReferenceMemoryWarm,
+  loadCatalogMetaTx,
+  resolveCountryIdOnTx,
+} from "@/modules/offers/public-catalog-meta-repo";
+import { buildShortCode, getPaymentSortPriority } from "@/modules/offers/public-mappers";
+import type { PublicBookmakerListItem, PublicCatalogMeta } from "@/modules/offers/public-types";
+import { getCatalogCacheGeneration } from "@/server/cache/catalog-tags";
+import { withAppDb, type AppDbTransaction } from "@/server/db/context";
 import {
   bookmakerCountries,
   bookmakerPaymentMethods,
   bookmakerRatings,
   bookmakers,
-  countries,
   mediaAssets,
   offers,
   paymentMethods,
   promoCodes,
 } from "@/server/db/schema";
-import { loadCatalogMetaTx } from "@/modules/offers/public-catalog-meta-repo";
-import { buildShortCode, getPaymentSortPriority } from "@/modules/offers/public-mappers";
-import type { PublicBookmakerListItem, PublicCatalogMeta } from "@/modules/offers/public-types";
+
+async function fetchRawBookmakersSnapshotTx(tx: AppDbTransaction) {
+  const now = new Date();
+  const rawBms = await tx
+    .select({ bookmaker: bookmakers, logoUrl: mediaAssets.publicUrl })
+    .from(bookmakers)
+    .leftJoin(mediaAssets, eq(mediaAssets.id, bookmakers.logoAssetId))
+    .where(and(eq(bookmakers.status, "active"), isNull(bookmakers.deletedAt)))
+    .orderBy(asc(bookmakers.name));
+
+  if (rawBms.length === 0) return null;
+  const bmIds = rawBms.map((r) => r.bookmaker.id);
+
+  const [bmCountries, bmRatings, bmPayments, activeOffers, activePromos] = await Promise.all([
+    tx
+      .select()
+      .from(bookmakerCountries)
+      .where(
+        and(
+          inArray(bookmakerCountries.bookmakerId, bmIds),
+          eq(bookmakerCountries.eligible, true),
+          eq(bookmakerCountries.status, "active"),
+          isNull(bookmakerCountries.deletedAt),
+        ),
+      ),
+    tx
+      .select()
+      .from(bookmakerRatings)
+      .where(inArray(bookmakerRatings.bookmakerId, bmIds))
+      .orderBy(desc(bookmakerRatings.createdAt)),
+    tx
+      .select({
+        bookmakerId: bookmakerPaymentMethods.bookmakerId,
+        countryId: bookmakerPaymentMethods.countryId,
+        slug: paymentMethods.slug,
+        name: paymentMethods.name,
+        category: paymentMethods.category,
+        logoUrl: mediaAssets.publicUrl,
+      })
+      .from(bookmakerPaymentMethods)
+      .innerJoin(paymentMethods, eq(paymentMethods.id, bookmakerPaymentMethods.paymentMethodId))
+      .leftJoin(mediaAssets, eq(mediaAssets.id, paymentMethods.logoAssetId))
+      .where(
+        and(inArray(bookmakerPaymentMethods.bookmakerId, bmIds), eq(paymentMethods.active, true)),
+      ),
+    tx
+      .select({
+        id: offers.id,
+        bookmakerId: offers.bookmakerId,
+        slug: offers.slug,
+        offerType: offers.offerType,
+      })
+      .from(offers)
+      .where(
+        and(
+          inArray(offers.bookmakerId, bmIds),
+          eq(offers.status, "published"),
+          isNull(offers.deletedAt),
+          or(isNull(offers.validFrom), lte(offers.validFrom, now)),
+          or(isNull(offers.validUntil), gt(offers.validUntil, now)),
+        ),
+      )
+      .orderBy(asc(offers.rankOrder)),
+    tx
+      .select({ id: promoCodes.id, bookmakerId: promoCodes.bookmakerId })
+      .from(promoCodes)
+      .where(
+        and(
+          inArray(promoCodes.bookmakerId, bmIds),
+          eq(promoCodes.status, "active"),
+          isNull(promoCodes.deletedAt),
+        ),
+      ),
+  ]);
+
+  return { rawBms, bmCountries, bmRatings, bmPayments, activeOffers, activePromos };
+}
+
+type RawBookmakersSnapshot = Awaited<ReturnType<typeof fetchRawBookmakersSnapshotTx>>;
+let bookmakersMemoryCache: {
+  data: RawBookmakersSnapshot;
+  expiresAt: number;
+  generation: number;
+} | null = null;
+
+async function getRawBookmakersSnapshotOnTx(tx: AppDbTransaction): Promise<RawBookmakersSnapshot> {
+  const isTest = process.env.VITEST === "true" || process.env.NODE_ENV === "test";
+  const gen = getCatalogCacheGeneration();
+  if (
+    !isTest &&
+    bookmakersMemoryCache &&
+    bookmakersMemoryCache.generation === gen &&
+    bookmakersMemoryCache.expiresAt > Date.now()
+  ) {
+    return bookmakersMemoryCache.data;
+  }
+  const data = await fetchRawBookmakersSnapshotTx(tx);
+  if (!isTest) {
+    bookmakersMemoryCache = { data, expiresAt: Date.now() + 300_000, generation: gen };
+  }
+  return data;
+}
 
 export async function listPublicBookmakersRepo(params: {
   countryCode: string;
 }): Promise<{ bookmakers: PublicBookmakerListItem[]; meta: PublicCatalogMeta }> {
-  return withAppDb({ scope: "public_catalog" }, async (tx) => {
+  const isWarm =
+    process.env.VITEST !== "true" &&
+    process.env.NODE_ENV !== "test" &&
+    isReferenceMemoryWarm() &&
+    bookmakersMemoryCache &&
+    bookmakersMemoryCache.generation === getCatalogCacheGeneration() &&
+    bookmakersMemoryCache.expiresAt > Date.now();
+
+  const runOnTx = async (tx: AppDbTransaction) => {
     const meta = await loadCatalogMetaTx(tx, params.countryCode);
     const upperCountry = params.countryCode.toUpperCase();
-    const now = new Date();
+    const countryLookup = await resolveCountryIdOnTx(tx, upperCountry);
+    if (!countryLookup.found) return { bookmakers: [], meta };
+    const targetCountryId = countryLookup.id;
 
-    let targetCountryId: string | null = null;
-    if (upperCountry !== "GLOBAL") {
-      const [countryRow] = await tx
-        .select({ id: countries.id })
-        .from(countries)
-        .where(and(eq(countries.code, upperCountry), eq(countries.active, true)));
-      if (!countryRow) return { bookmakers: [], meta };
-      targetCountryId = countryRow.id;
-    }
-
-    const rawBms = await tx
-      .select({ bookmaker: bookmakers, logoUrl: mediaAssets.publicUrl })
-      .from(bookmakers)
-      .leftJoin(mediaAssets, eq(mediaAssets.id, bookmakers.logoAssetId))
-      .where(and(eq(bookmakers.status, "active"), isNull(bookmakers.deletedAt)))
-      .orderBy(asc(bookmakers.name));
-
-    if (rawBms.length === 0) return { bookmakers: [], meta };
-    const bmIds = rawBms.map((r) => r.bookmaker.id);
-
-    const [bmCountries, bmRatings, bmPayments, activeOffers, activePromos] = await Promise.all([
-      tx
-        .select()
-        .from(bookmakerCountries)
-        .where(
-          and(
-            inArray(bookmakerCountries.bookmakerId, bmIds),
-            eq(bookmakerCountries.eligible, true),
-            eq(bookmakerCountries.status, "active"),
-            isNull(bookmakerCountries.deletedAt),
-          ),
-        ),
-      tx
-        .select()
-        .from(bookmakerRatings)
-        .where(inArray(bookmakerRatings.bookmakerId, bmIds))
-        .orderBy(desc(bookmakerRatings.createdAt)),
-      tx
-        .select({
-          bookmakerId: bookmakerPaymentMethods.bookmakerId,
-          countryId: bookmakerPaymentMethods.countryId,
-          slug: paymentMethods.slug,
-          name: paymentMethods.name,
-          category: paymentMethods.category,
-          logoUrl: mediaAssets.publicUrl,
-        })
-        .from(bookmakerPaymentMethods)
-        .innerJoin(paymentMethods, eq(paymentMethods.id, bookmakerPaymentMethods.paymentMethodId))
-        .leftJoin(mediaAssets, eq(mediaAssets.id, paymentMethods.logoAssetId))
-        .where(
-          and(inArray(bookmakerPaymentMethods.bookmakerId, bmIds), eq(paymentMethods.active, true)),
-        ),
-      tx
-        .select({
-          id: offers.id,
-          bookmakerId: offers.bookmakerId,
-          slug: offers.slug,
-          offerType: offers.offerType,
-        })
-        .from(offers)
-        .where(
-          and(
-            inArray(offers.bookmakerId, bmIds),
-            eq(offers.status, "published"),
-            isNull(offers.deletedAt),
-            or(isNull(offers.validFrom), lte(offers.validFrom, now)),
-            or(isNull(offers.validUntil), gt(offers.validUntil, now)),
-          ),
-        )
-        .orderBy(asc(offers.rankOrder)),
-      tx
-        .select({ id: promoCodes.id, bookmakerId: promoCodes.bookmakerId })
-        .from(promoCodes)
-        .where(
-          and(
-            inArray(promoCodes.bookmakerId, bmIds),
-            eq(promoCodes.status, "active"),
-            isNull(promoCodes.deletedAt),
-          ),
-        ),
-    ]);
+    const snap = await getRawBookmakersSnapshotOnTx(tx);
+    if (!snap) return { bookmakers: [], meta };
+    const { rawBms, bmCountries, bmRatings, bmPayments, activeOffers, activePromos } = snap;
 
     const items: PublicBookmakerListItem[] = [];
     for (const { bookmaker, logoUrl } of rawBms) {
@@ -123,7 +161,7 @@ export async function listPublicBookmakersRepo(params: {
         ? bmCountries.find(
             (bc) => bc.bookmakerId === bookmaker.id && bc.countryId === targetCountryId,
           )
-        : bmCountries.find((bc) => bc.bookmakerId === bookmaker.id && bc.localLicense);
+        : bmCountries.find((bc) => bookmaker.id === bc.bookmakerId && bc.localLicense);
 
       const paymentsMap = new Map<
         string,
@@ -154,18 +192,21 @@ export async function listPublicBookmakersRepo(params: {
         foundedYear: bookmaker.foundedYear,
         appPlatforms: bookmaker.appPlatforms,
         finalScore: rating ? Number(rating.finalScore) : null,
+        licenseSummary: countryEntry?.localLicense || countryEntry?.authorityName || null,
         activeOffersCount: bmOffers.length,
         activePromoCount: activePromos.filter((p) => p.bookmakerId === bookmaker.id).length,
-        primaryOfferSlug: primaryOffer?.slug ?? null,
-        licenseSummary: countryEntry?.localLicense || countryEntry?.authorityName || null,
         paymentMethods: Array.from(paymentsMap.values()).sort(
-          (a, b) =>
-            getPaymentSortPriority(a) - getPaymentSortPriority(b) || a.name.localeCompare(b.name),
+          (a, b) => getPaymentSortPriority(a) - getPaymentSortPriority(b),
         ),
+        primaryOfferSlug: primaryOffer?.slug ?? null,
       });
     }
 
-    items.sort((a, b) => (b.finalScore ?? -1) - (a.finalScore ?? -1));
     return { bookmakers: items, meta };
-  });
+  };
+
+  if (isWarm) {
+    return runOnTx(null as unknown as AppDbTransaction);
+  }
+  return withAppDb({ scope: "public_catalog" }, runOnTx);
 }

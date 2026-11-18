@@ -51,7 +51,7 @@ export interface PartnerGridItem {
 
 export interface CommunityChannelLink {
   readonly id: string;
-  readonly platform: "telegram" | "whatsapp";
+  readonly platform: "telegram" | "whatsapp" | "facebook";
   readonly href: string;
   readonly label: string;
   readonly isDevExample?: boolean;

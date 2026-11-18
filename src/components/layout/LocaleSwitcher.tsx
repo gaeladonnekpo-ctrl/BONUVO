@@ -38,7 +38,7 @@ export function LocaleSwitcher({ className }: { className?: string }) {
             title={label}
             aria-pressed={active}
             className={cn(
-              "inline-flex h-7.5 items-center rounded-md px-2 text-xs font-semibold uppercase transition-colors cursor-pointer",
+              "inline-flex h-7.5 cursor-pointer items-center rounded-md px-2 text-xs font-semibold uppercase transition-colors",
               active ? "bg-accent text-accent-fg" : "text-fg-muted hover:text-fg",
             )}
           >

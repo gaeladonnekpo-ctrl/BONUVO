@@ -62,6 +62,7 @@ export function CommunityAdminView({ locale, channels, coupons }: CommunityAdmin
                   <option value="telegram">Telegram</option>
                   <option value="whatsapp_channel">WhatsApp Channel</option>
                   <option value="whatsapp_group">WhatsApp Group</option>
+                  <option value="facebook">Facebook</option>
                 </select>
               </label>
               <label className="block space-y-1 text-xs font-semibold text-fg">

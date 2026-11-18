@@ -1,6 +1,7 @@
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { CommunityFab } from "@/components/business/CommunityFab";
+import { OFFICIAL_SOCIAL_LINKS } from "@/components/community/SocialBrandIcon";
 import type { CountryOption } from "@/lib/i18n/countries";
 import { Footer } from "./Footer";
 import { Header } from "./Header";
@@ -14,7 +15,7 @@ export interface PublicShellProps {
 }
 
 /**
- * Primary public BONUVO shell: sticky header, skip link, main content, community trigger, footer.
+ * Primary public BONUVO shell: sticky header, skip link, main content, official social community trigger, footer.
  */
 export function PublicShell({
   children,
@@ -23,6 +24,29 @@ export function PublicShell({
   showDevDesignLink = false,
 }: PublicShellProps) {
   const tNav = useTranslations("nav");
+  const locale = useLocale() === "en" ? "en" : "fr";
+  const isFr = locale === "fr";
+
+  const officialFloatingChannels = [
+    {
+      id: "fab-telegram",
+      platform: "telegram" as const,
+      href: OFFICIAL_SOCIAL_LINKS.telegram,
+      label: isFr ? "Canal Telegram" : "Telegram Channel",
+    },
+    {
+      id: "fab-whatsapp",
+      platform: "whatsapp" as const,
+      href: OFFICIAL_SOCIAL_LINKS.whatsapp,
+      label: isFr ? "Chaîne WhatsApp" : "WhatsApp Channel",
+    },
+    {
+      id: "fab-facebook",
+      platform: "facebook" as const,
+      href: OFFICIAL_SOCIAL_LINKS.facebook,
+      label: isFr ? "Page Facebook" : "Facebook Page",
+    },
+  ];
 
   return (
     <PublicCountriesProvider countries={availableCountries}>
@@ -37,7 +61,7 @@ export function PublicShell({
         <main id="main-content" className="flex-1">
           {children}
         </main>
-        <CommunityFab mode="floating" state="empty" />
+        <CommunityFab mode="floating" state="content" channels={officialFloatingChannels} />
         <Footer showDevDesignLink={showDevDesignLink} />
       </div>
     </PublicCountriesProvider>

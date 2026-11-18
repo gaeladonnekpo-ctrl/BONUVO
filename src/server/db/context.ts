@@ -36,6 +36,7 @@ function assertValidUuidOrEmpty(value: string | null | undefined): string {
 /**
  * Executes queries inside a transaction pinned to the least-privilege `bonuvo_app`
  * role with transaction-local session context so RLS is always enforced server-side.
+ * Combines `set_config` calls into a single statement to minimize network RTTs.
  */
 export async function withAppDb<T>(
   context: DbExecutionContext,
@@ -46,9 +47,12 @@ export async function withAppDb<T>(
   const db = getDb();
 
   return db.transaction(async (tx) => {
-    await tx.execute(sql`SELECT set_config('app.current_user_id', ${actorId}, true)`);
-    await tx.execute(sql`SELECT set_config('app.db_scope', ${context.scope}, true)`);
-    await tx.execute(sql`SELECT set_config('app.request_id', ${requestId}, true)`);
+    await tx.execute(sql`
+      SELECT
+        set_config('app.current_user_id', ${actorId}, true),
+        set_config('app.db_scope', ${context.scope}, true),
+        set_config('app.request_id', ${requestId}, true)
+    `);
     await tx.execute(sql`SET LOCAL ROLE bonuvo_app`);
     return handler(tx);
   });

@@ -1,6 +1,8 @@
 import "server-only";
 
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { OFFICIAL_BONUVO_CHANNELS } from "@/components/community/SocialBrandIcon";
+import { PUBLIC_CATALOG_CACHE_TAGS, withCatalogCache } from "@/server/cache/catalog-tags";
 import { withAppDb } from "@/server/db/context";
 import { bookmakers, communityChannels, coupons, posts } from "@/server/db/schema";
 import { validateCommunityChannelUrl, type CommunityPlatform } from "./channel-url";
@@ -50,36 +52,18 @@ export type PublicPostItem = {
   publishedAt: Date | null;
 };
 
-const DEFAULT_PUBLIC_CHANNELS: PublicChannelItem[] = [
-  {
-    id: "default-tg-global",
-    platform: "telegram",
-    countryCode: "GLOBAL",
-    titleFr: "BONUVO Officiel — Pronostics & Codes Promo",
-    titleEn: "BONUVO Official — Predictions & Promo Codes",
-    descriptionFr:
-      "Canal Telegram principal : sélections BONUVO AI vérifiées, coupons validés et alertes bonus bookmakers.",
-    descriptionEn:
-      "Main Telegram channel: verified BONUVO AI picks, validated coupons and bookmaker bonus alerts.",
-    inviteUrl: "https://t.me/bonuvo_official",
-    subscriberCountLabel: "Accès direct",
-    priorityOrder: 10,
-  },
-  {
-    id: "default-wa-channel",
-    platform: "whatsapp_channel",
-    countryCode: "GLOBAL",
-    titleFr: "Chaîne WhatsApp BONUVO Afrique",
-    titleEn: "BONUVO Africa WhatsApp Channel",
-    descriptionFr:
-      "Diffusion quotidienne des meilleurs codes promos vérifiés (1xBet, Melbet, Betwinner) et coupons du jour.",
-    descriptionEn:
-      "Daily broadcast of top verified promo codes (1xBet, Melbet, Betwinner) and daily coupons.",
-    inviteUrl: "https://whatsapp.com/channel/0029VaBonuvoOfficial",
-    subscriberCountLabel: "Notifications silencieuses",
-    priorityOrder: 20,
-  },
-];
+const DEFAULT_PUBLIC_CHANNELS: PublicChannelItem[] = OFFICIAL_BONUVO_CHANNELS.map((ch, idx) => ({
+  id: ch.id,
+  platform: ch.platform,
+  countryCode: "GLOBAL",
+  titleFr: ch.badgeFr,
+  titleEn: ch.badgeEn,
+  descriptionFr: ch.descriptionFr,
+  descriptionEn: ch.descriptionEn,
+  inviteUrl: ch.href,
+  subscriberCountLabel: ch.labelFr,
+  priorityOrder: (idx + 1) * 10,
+}));
 
 function mapPostRow(p: typeof posts.$inferSelect): PublicPostItem {
   return {
@@ -99,74 +83,84 @@ function mapPostRow(p: typeof posts.$inferSelect): PublicPostItem {
   };
 }
 
+const listPublicCommunityDataCached = withCatalogCache(
+  async (normalizedCountry: string) => {
+    const allowedCountries =
+      normalizedCountry && normalizedCountry !== "GLOBAL"
+        ? ["GLOBAL", normalizedCountry]
+        : undefined;
+
+    return withAppDb({ scope: "public_catalog" }, async (tx) => {
+      const [channelRows, couponRows, postRows] = await Promise.all([
+        tx
+          .select()
+          .from(communityChannels)
+          .where(
+            allowedCountries
+              ? and(
+                  eq(communityChannels.active, true),
+                  inArray(communityChannels.countryCode, allowedCountries),
+                )
+              : eq(communityChannels.active, true),
+          )
+          .orderBy(asc(communityChannels.priorityOrder), desc(communityChannels.createdAt))
+          .limit(20),
+        tx
+          .select({
+            id: coupons.id,
+            titleFr: coupons.titleFr,
+            titleEn: coupons.titleEn,
+            descriptionFr: coupons.descriptionFr,
+            descriptionEn: coupons.descriptionEn,
+            countryCode: coupons.countryCode,
+            bookmakerName: bookmakers.name,
+            couponCode: coupons.couponCode,
+            combinedOdds: coupons.combinedOdds,
+            confidenceLabel: coupons.confidenceLabel,
+            validatedAt: coupons.validatedAt,
+            publishedToTelegramAt: coupons.publishedToTelegramAt,
+          })
+          .from(coupons)
+          .leftJoin(bookmakers, eq(coupons.bookmakerId, bookmakers.id))
+          .where(eq(coupons.status, "validated"))
+          .orderBy(desc(coupons.validatedAt), desc(coupons.createdAt))
+          .limit(12),
+        tx
+          .select()
+          .from(posts)
+          .where(eq(posts.status, "published"))
+          .orderBy(desc(posts.featured), desc(posts.publishedAt), desc(posts.createdAt))
+          .limit(24),
+      ]);
+
+      return {
+        channels:
+          channelRows.length > 0
+            ? channelRows.map((c) => ({
+                id: c.id,
+                platform: c.platform as CommunityPlatform,
+                countryCode: c.countryCode,
+                titleFr: c.titleFr,
+                titleEn: c.titleEn || c.titleFr,
+                descriptionFr: c.descriptionFr,
+                descriptionEn: c.descriptionEn || c.descriptionFr,
+                inviteUrl: c.inviteUrl,
+                subscriberCountLabel: c.subscriberCountLabel,
+                priorityOrder: c.priorityOrder,
+              }))
+            : DEFAULT_PUBLIC_CHANNELS,
+        coupons: couponRows,
+        posts: postRows.map(mapPostRow),
+      };
+    });
+  },
+  ["public-community-data"],
+  [PUBLIC_CATALOG_CACHE_TAGS.community],
+  300,
+);
+
 export async function listPublicCommunityData(countryCode?: string) {
-  const normalizedCountry = countryCode?.trim().toUpperCase();
-  const allowedCountries =
-    normalizedCountry && normalizedCountry !== "GLOBAL" ? ["GLOBAL", normalizedCountry] : undefined;
-
-  return withAppDb({ scope: "public_catalog" }, async (tx) => {
-    const channelRows = await tx
-      .select()
-      .from(communityChannels)
-      .where(
-        allowedCountries
-          ? and(
-              eq(communityChannels.active, true),
-              inArray(communityChannels.countryCode, allowedCountries),
-            )
-          : eq(communityChannels.active, true),
-      )
-      .orderBy(asc(communityChannels.priorityOrder), desc(communityChannels.createdAt))
-      .limit(20);
-
-    const couponRows = await tx
-      .select({
-        id: coupons.id,
-        titleFr: coupons.titleFr,
-        titleEn: coupons.titleEn,
-        descriptionFr: coupons.descriptionFr,
-        descriptionEn: coupons.descriptionEn,
-        countryCode: coupons.countryCode,
-        bookmakerName: bookmakers.name,
-        couponCode: coupons.couponCode,
-        combinedOdds: coupons.combinedOdds,
-        confidenceLabel: coupons.confidenceLabel,
-        validatedAt: coupons.validatedAt,
-        publishedToTelegramAt: coupons.publishedToTelegramAt,
-      })
-      .from(coupons)
-      .leftJoin(bookmakers, eq(coupons.bookmakerId, bookmakers.id))
-      .where(eq(coupons.status, "validated"))
-      .orderBy(desc(coupons.validatedAt), desc(coupons.createdAt))
-      .limit(12);
-
-    const postRows = await tx
-      .select()
-      .from(posts)
-      .where(eq(posts.status, "published"))
-      .orderBy(desc(posts.featured), desc(posts.publishedAt), desc(posts.createdAt))
-      .limit(24);
-
-    return {
-      channels:
-        channelRows.length > 0
-          ? channelRows.map((c) => ({
-              id: c.id,
-              platform: c.platform as CommunityPlatform,
-              countryCode: c.countryCode,
-              titleFr: c.titleFr,
-              titleEn: c.titleEn || c.titleFr,
-              descriptionFr: c.descriptionFr,
-              descriptionEn: c.descriptionEn || c.descriptionFr,
-              inviteUrl: c.inviteUrl,
-              subscriberCountLabel: c.subscriberCountLabel,
-              priorityOrder: c.priorityOrder,
-            }))
-          : DEFAULT_PUBLIC_CHANNELS,
-      coupons: couponRows,
-      posts: postRows.map(mapPostRow),
-    };
-  });
+  return listPublicCommunityDataCached((countryCode || "GLOBAL").trim().toUpperCase());
 }
 
 export async function getPublicPostBySlug(slug: string): Promise<PublicPostItem | null> {

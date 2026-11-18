@@ -3,6 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { logAudit } from "@/server/audit/log";
 import { requireActionPermission } from "@/server/auth/guards";
+import {
+  invalidatePublicCatalogTags,
+  PUBLIC_CATALOG_CACHE_TAGS,
+} from "@/server/cache/catalog-tags";
 import type { CommunityPlatform } from "./channel-url";
 import { createValidatedCoupon, dispatchNotificationBatch } from "./notification-service";
 import { createCommunityChannel, createOrUpdatePost } from "./service";
@@ -46,6 +50,7 @@ export async function savePostAction(formData: FormData): Promise<void> {
     afterState: { slug: saved.slug, status: saved.status, postType: saved.postType },
   });
 
+  invalidatePublicCatalogTags([PUBLIC_CATALOG_CACHE_TAGS.community]);
   revalidatePath("/fr/communaute");
   revalidatePath("/en/communaute");
   revalidatePath(`/fr/actualites/${saved.slug}`);
@@ -58,7 +63,9 @@ export async function saveChannelAction(formData: FormData): Promise<void> {
   const actor = await requireActionPermission("community.manage");
   const platformRaw = String(formData.get("platform") ?? "telegram");
   const platform: CommunityPlatform =
-    platformRaw === "whatsapp_channel" || platformRaw === "whatsapp_group"
+    platformRaw === "whatsapp_channel" ||
+    platformRaw === "whatsapp_group" ||
+    platformRaw === "facebook"
       ? platformRaw
       : "telegram";
 
@@ -84,6 +91,7 @@ export async function saveChannelAction(formData: FormData): Promise<void> {
     afterState: { platform: saved.platform, inviteUrl: saved.inviteUrl },
   });
 
+  invalidatePublicCatalogTags([PUBLIC_CATALOG_CACHE_TAGS.community]);
   revalidatePath("/fr/communaute");
   revalidatePath("/en/communaute");
   revalidatePath("/fr/admin/communaute");
@@ -122,6 +130,7 @@ export async function saveCouponAction(formData: FormData): Promise<void> {
     },
   });
 
+  invalidatePublicCatalogTags([PUBLIC_CATALOG_CACHE_TAGS.community]);
   revalidatePath("/fr/communaute");
   revalidatePath("/en/communaute");
   revalidatePath("/fr/admin/communaute");

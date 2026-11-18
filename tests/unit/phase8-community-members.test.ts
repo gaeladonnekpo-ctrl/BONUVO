@@ -37,18 +37,27 @@ describe("Phase 8 — BONUVO COMMUNITY & MEMBERS : Unitaires (Sanitisation, Cana
   });
 
   describe("Validation stricte des URLs de canaux communautaires", () => {
-    it("accepte uniquement HTTPS sur les domaines officiels Telegram et WhatsApp", () => {
-      const tg = validateCommunityChannelUrl("https://t.me/bonuvo_official", "telegram");
+    it("accepte uniquement HTTPS sur les domaines officiels Telegram, WhatsApp et Facebook (y compris les liens officiels BONUVO)", () => {
+      const tg = validateCommunityChannelUrl("https://t.me/+OXjlhqM1ShVmZWM0", "telegram");
       expect(tg.ok).toBe(true);
       if (tg.ok) {
         expect(tg.detectedPlatform).toBe("telegram");
       }
 
       const waChannel = validateCommunityChannelUrl(
-        "https://whatsapp.com/channel/0029VaBonuvo",
+        "https://whatsapp.com/channel/0029VbACyWA4dTnIfN5BA01S",
         "whatsapp_channel",
       );
       expect(waChannel.ok).toBe(true);
+
+      const fbPage = validateCommunityChannelUrl(
+        "https://www.facebook.com/profile.php?id=100066896162096",
+        "facebook",
+      );
+      expect(fbPage.ok).toBe(true);
+      if (fbPage.ok) {
+        expect(fbPage.detectedPlatform).toBe("facebook");
+      }
 
       const waGroup = validateCommunityChannelUrl(
         "https://chat.whatsapp.com/InviteCode123",
