@@ -177,7 +177,7 @@ export async function listPublicFixtures(filter?: {
   limit?: number;
 }) {
   const key = [
-    "ai-fixtures",
+    "ai-fixtures-v2",
     filter?.leagueId ?? "all",
     filter?.upcomingOnly ? "up" : "any",
     filter?.settledOnly ? "settled" : "all",
@@ -283,7 +283,7 @@ export async function getPublicFixtureDetail(fixtureId: string) {
           })),
         };
       }),
-    ["ai-fixture-detail", fixtureId],
+    ["ai-fixture-detail-v2", fixtureId],
     [PUBLIC_CATALOG_CACHE_TAGS.predictions],
   )();
 }
