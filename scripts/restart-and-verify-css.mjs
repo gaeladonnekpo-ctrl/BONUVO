@@ -88,7 +88,14 @@ async function verifyServerAndCss() {
 }
 
 async function main() {
-  if (process.env.CI === "true" || process.env.SKIP_POSTBUILD_SERVER === "1") {
+  if (
+    Boolean(process.env.CI) ||
+    Boolean(process.env.VERCEL) ||
+    Boolean(process.env.VERCEL_ENV) ||
+    process.env.SKIP_POSTBUILD_SERVER === "1" ||
+    process.platform !== "win32"
+  ) {
+    console.log("[bonuvo-css-guard] Environnement Cloud/CI détecté — redémarrage local ignoré.");
     return;
   }
 
