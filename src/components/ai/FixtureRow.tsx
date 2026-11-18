@@ -89,7 +89,7 @@ export function FixtureRow({ fixture, locale = "fr" }: FixtureRowProps) {
               locale={locale}
             />
           ) : (
-            <UiBadge tone="neutral">{isEn ? "Analyzing (<6 games)" : "Échantillon <6 m."}</UiBadge>
+            <UiBadge tone="neutral">{isEn ? "Analysis in progress" : "Analyse en cours"}</UiBadge>
           )}
         </div>
 

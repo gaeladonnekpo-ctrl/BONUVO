@@ -33,25 +33,14 @@ export default async function PublicUnsubscribePage({
   const autoConfirm = sp.confirm === "1";
 
   let status: "missing" | "invalid" | "ready" | "completed" = "missing";
-  let errorReason = "";
 
   if (token) {
     if (autoConfirm) {
       const res = await processSignedUnsubscribe({ token });
-      if (res.ok) {
-        status = "completed";
-      } else {
-        status = "invalid";
-        errorReason = res.reason;
-      }
+      status = res.ok ? "completed" : "invalid";
     } else {
       const check = verifyUnsubscribeToken(token);
-      if (check.valid) {
-        status = "ready";
-      } else {
-        status = "invalid";
-        errorReason = check.reason;
-      }
+      status = check.valid ? "ready" : "invalid";
     }
   }
 
@@ -91,8 +80,8 @@ export default async function PublicUnsubscribePage({
           <div className="mt-4 space-y-4">
             <p className="text-sm leading-relaxed text-fg-muted">
               {isFr
-                ? "Votre jeton de désinscription signé est valide. Confirmez en un clic ci-dessous pour couper toutes les communications e-mail."
-                : "Your signed unsubscribe token is valid. Confirm in one click below to stop all email communications."}
+                ? "Confirmez en un clic ci-dessous pour ne plus recevoir les communications e-mail de BONUVO."
+                : "Confirm in one click below to stop receiving email communications from BONUVO."}
             </p>
             <Link
               href={`/${locale}/desinscription?token=${encodeURIComponent(token)}&confirm=1`}
@@ -105,8 +94,8 @@ export default async function PublicUnsubscribePage({
           <div className="mt-4 space-y-3">
             <p className="text-sm leading-relaxed text-fg-muted">
               {isFr
-                ? `Ce lien de désinscription est invalide, altéré ou expiré (${errorReason}).`
-                : `This unsubscribe link is invalid, tampered with, or expired (${errorReason}).`}
+                ? "Ce lien de désinscription est invalide ou a expiré."
+                : "This unsubscribe link is invalid or has expired."}
             </p>
             <Link
               href={`/${locale}/compte`}

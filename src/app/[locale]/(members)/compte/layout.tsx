@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
 import { MemberShell } from "@/components/layout/MemberShell";
-import { isDesignShowcaseEnabled } from "@/lib/design/showcase-guard";
 import { listActivePublicCountryOptionsRepo } from "@/modules/offers/public-catalog-meta-repo";
 import { requireEmailVerified } from "@/server/auth/guards";
 import { resolvePublicRequestCountry } from "@/server/geo/request-country";
@@ -39,7 +38,6 @@ export default async function MemberAccountLayout({
       navItems={[{ id: "overview", label: t("memberNavOverview"), href: `/${locale}/compte` }]}
       initialCountry={effectiveCountry}
       availableCountries={availableCountries}
-      showDevDesignLink={isDesignShowcaseEnabled()}
     >
       {children}
     </MemberShell>

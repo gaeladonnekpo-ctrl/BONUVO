@@ -102,11 +102,6 @@ export function OfferCard({
       <CardHeader className="gap-3 border-b border-border bg-surface-subtle/60 pb-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-1.5">
-            {offer.rank !== undefined ? (
-              <UiBadge tone="neutral" className="font-mono font-bold">
-                {t("rankLabel", { rank: offer.rank })}
-              </UiBadge>
-            ) : null}
             {offer.badges?.map((tone) => (
               <Badge key={tone} tone={tone} />
             ))}

@@ -197,7 +197,7 @@ export function CouponsSection({
                       </strong>
                     </span>
                     <span className="rounded-md bg-surface px-2 py-0.5 font-mono font-semibold text-fg">
-                      {isEn ? "Fair index" : "Indice juste"} ~{coupon.combinedFairOdds}
+                      {isEn ? "Estimated odds" : "Cote théorique"} ~{coupon.combinedFairOdds}
                     </span>
                   </div>
                 </CardContent>

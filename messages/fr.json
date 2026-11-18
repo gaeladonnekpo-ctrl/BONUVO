@@ -58,17 +58,17 @@
     "AU": "Australie"
   },
   "home": {
-    "eyebrow": "Design system et architecture éditoriale — Phase 1",
+    "eyebrow": "Bonus, codes promo & pronostics vérifiés",
     "heroTitle": "Comparer les bookmakers avec des faits vérifiables.",
     "heroDescription": "BONUVO centralise les bonus, codes promo vérifiés, licences par pays et analyses football sans promesse de gain ni données inventées.",
-    "disclosureBanner": "Transparence : certaines redirections sortantes peuvent générer une commission d'affiliation lorsque le catalogue partenaire sera activé (18+).",
-    "catalogEmptyTitle": "Catalogue d'offres en préparation",
-    "catalogEmptyDescription": "Aucune offre de bookmaker n'est affichée tant que la saisie vérifiée en base de données (Phase 3) et l'éligibilité par pays ne sont pas activées.",
+    "disclosureBanner": "Transparence : certaines redirections vers nos bookmakers partenaires peuvent générer une commission d'affiliation sans surcoût pour vous (18+).",
+    "catalogEmptyTitle": "Aucune offre disponible pour cette sélection",
+    "catalogEmptyDescription": "Aucune offre de bookmaker n'est actuellement active pour le pays sélectionné.",
     "catalogEmptyAction": "Consulter notre méthodologie",
     "partnersEmptyTitle": "Grille partenaires en attente de configuration",
     "partnersEmptyDescription": "Les marques retenues (1xBet, Melbet, 888starz, Megapari, Linebet, Winwinbet, 1win, Paripesa) apparaîtront ici dès validation de leurs fiches et licences.",
     "trustSectionTitle": "Engagements et pages de confiance",
-    "trustSectionDescription": "Chaque règle de notation, lien d'affiliation et mesure de jeu responsable est publiée avant même l'ouverture du catalogue.",
+    "trustSectionDescription": "Chaque règle de notation, lien d'affiliation et mesure de jeu responsable est publiée en toute transparence.",
     "readMore": "Lire la page"
   },
   "states": {
@@ -81,7 +81,6 @@
     "retry": "Réessayer"
   },
   "offerCard": {
-    "rankLabel": "Rang #{rank}",
     "badgeRecommended": "Recommandé",
     "badgeExclusive": "Exclusif",
     "badgeNew": "Nouveau",
@@ -116,7 +115,7 @@
     "groupLabel": "Canaux communautaires",
     "telegram": "Rejoindre Telegram",
     "whatsapp": "Rejoindre WhatsApp",
-    "unconfigured": "Les liens communautaires officiels seront activés en Phase 8."
+    "unconfigured": "Rejoignez nos canaux communautaires officiels."
   },
   "trustPages": {
     "methodology": {
@@ -126,19 +125,19 @@
       "sections": [
         {
           "title": "1. Règle de tri des classements",
-          "body": "Les offres éligibles pour votre pays sont triées d'abord par priorité éditoriale par pays, puis par note vérifiée, puis par date de dernière vérification. Aucun opérateur ne peut payer pour falsifier sa note technique."
+          "body": "Les offres éligibles pour votre pays sont classées selon la pertinence locale, leur note vérifiée sur 10 et leur date de dernière vérification. Aucun opérateur ne peut payer pour modifier sa note."
         },
         {
           "title": "2. Grille d'évaluation transparente",
-          "body": "La note repose sur des critères pondérés : transparence des conditions de bonus (rollover, cote minimale, délai), méthodes de paiement disponibles dans le pays, qualité du support client, stabilité technique mobile et présence d'une licence valide."
+          "body": "La note repose sur des critères pondérés : transparence des conditions de bonus (conditions de mise, cote minimale, délai), méthodes de paiement disponibles dans le pays, qualité du support client, stabilité mobile et présence d'une licence valide."
         },
         {
           "title": "3. Fraîcheur et interdiction des fausses mentions",
-          "body": "La mention « Vérifié aujourd'hui » ne s'affiche que si l'horodatage réel de contrôle date du jour même. En l'absence de contrôle récent, BONUVO affiche la date réelle ou signale que la fiche attend une relecture."
+          "body": "La mention « Vérifié aujourd'hui » ne s'affiche que si le contrôle date réellement du jour même. Sinon, BONUVO affiche la date exacte de dernière vérification."
         },
         {
           "title": "4. Pronostics football basés sur des données",
-          "body": "Les probabilités affichées dans le futur module BONUVO AI sont calculées par un modèle déterministe versionné, verrouillé avant le coup d'envoi et réglé sans modification a posteriori, pertes comprises."
+          "body": "Les probabilités affichées par BONUVO AI sont calculées à partir des statistiques réelles des équipes, verrouillées avant le coup d'envoi et suivies en toute transparence, pertes comprises."
         }
       ]
     },
@@ -153,11 +152,11 @@
         },
         {
           "title": "2. Indépendance éditoriale",
-          "body": "Les liens sponsorisés portent systématiquement les attributs rel=\"sponsored nofollow noopener\" et restent clairement signalés. Chaque fiche affiche également au moins un point d'attention objectif lorsque cela s'applique."
+          "body": "Les liens partenaires sont clairement signalés. Chaque fiche affiche également un point d'attention objectif lorsque cela s'applique."
         },
         {
           "title": "3. Séparation des faits mesurés",
-          "body": "Un clic sortant est comptabilisé distinctement d'une inscription, d'un premier dépôt ou d'une commission confirmée par un partenaire via postback vérifié."
+          "body": "Un clic vers un partenaire est distingué d'une inscription ou d'un premier dépôt confirmé par l'opérateur."
         }
       ]
     },
@@ -168,7 +167,7 @@
       "sections": [
         {
           "title": "1. Aucune promesse de gain",
-          "body": "Aucune cote, aucun code promo et aucun modèle statistique ne garantit un profit. Ne misez jamais de l'argent dont vous avez besoin pour vos dépenses essentielles."
+          "body": "Aucune cote, aucun code promo et aucune analyse statistique ne garantit un profit. Ne misez jamais de l'argent dont vous avez besoin pour vos dépenses essentielles."
         },
         {
           "title": "2. Bonnes pratiques de maîtrise",
@@ -187,15 +186,15 @@
       "sections": [
         {
           "title": "1. Préférences locales strictement utiles",
-          "body": "Le choix de pays et le thème clair/sombre sont mémorisés uniquement via des cookies de préférence techniques sans traçage publicitaire."
+          "body": "Le choix de pays et le thème clair/sombre sont mémorisés uniquement via des cookies de préférence fonctionnels sans traçage publicitaire."
         },
         {
-          "title": "2. Mesure technique sans suivi invasif",
-          "body": "Les futurs journaux techniques hachent les adresses IP avant stockage afin de détecter les abus et respecter le principe de confidentialité dès la conception."
+          "title": "2. Protection de la vie privée",
+          "body": "Nos journaux de sécurité anonymisent les adresses IP avant stockage afin de prévenir les abus tout en respectant votre confidentialité."
         },
         {
-          "title": "3. Droits des futurs membres",
-          "body": "À l'ouverture de l'espace membre (Phase 2 et Phase 8), chaque utilisateur pourra exporter ses données, retirer son consentement en un clic ou demander la suppression complète de son compte."
+          "title": "3. Droits des membres",
+          "body": "Depuis votre espace membre, vous pouvez à tout moment exporter vos données, retirer votre consentement en un clic ou demander la suppression complète de votre compte."
         }
       ]
     }
@@ -270,7 +269,7 @@
     },
     "signIn": {
       "title": "Connexion à BONUVO",
-      "description": "Accédez à votre espace membre ou back-office sécurisé.",
+      "description": "Connectez-vous pour accéder à votre espace personnel BONUVO.",
       "submit": "Se connecter",
       "submitting": "Connexion...",
       "forgotLink": "Mot de passe oublié ?",
@@ -301,28 +300,28 @@
     },
     "verification": {
       "title": "Vérification d'adresse e-mail",
-      "description": "Votre adresse e-mail doit être confirmée avant d'accéder à l'espace membre ou à l'administration.",
+      "description": "Veuillez confirmer votre adresse e-mail pour activer votre compte BONUVO.",
       "invalidToken": "Ce lien de vérification est invalide ou expiré. Demandez un nouvel envoi ci-dessous.",
       "submit": "Renvoyer l'e-mail de vérification",
       "submitting": "Envoi...",
       "backToSignIn": "Aller à la connexion"
     },
     "totp": {
-      "title": "Double authentification (TOTP)",
-      "description": "Un second facteur TOTP valide est obligatoire pour accéder aux fonctions d'administration.",
-      "enrollButton": "Configurer une application TOTP",
+      "title": "Double authentification",
+      "description": "Saisissez le code à 6 chiffres généré par votre application d'authentification.",
+      "enrollButton": "Configurer l'application d'authentification",
       "enrolling": "Initialisation...",
-      "qrAlt": "QR code de configuration TOTP BONUVO",
+      "qrAlt": "QR code de configuration BONUVO",
       "secretLabel": "Clé manuelle :",
-      "submit": "Valider le code TOTP",
+      "submit": "Valider le code",
       "submitting": "Vérification...",
-      "noFactor": "Aucun facteur TOTP vérifié trouvé pour ce compte. Initialisez-en un ci-dessous."
+      "noFactor": "Aucune application d'authentification configurée sur ce compte. Initialisez-la ci-dessous."
     },
     "protected": {
       "memberNavAria": "Navigation espace membre",
       "memberNavOverview": "Aperçu du compte",
       "memberTitle": "Espace membre BONUVO",
-      "memberSubtitle": "Session serveur vérifiée (Phase 2). Les préférences et historiques détaillés seront branchés en Phase 8.",
+      "memberSubtitle": "Gérez vos informations personnelles, vos préférences de notifications et la confidentialité de votre compte.",
       "adminTitle": "Administration BONUVO",
       "adminSubtitle": "Accès vérifié par rôle RBAC et double authentification TOTP (AAL2).",
       "sessionCardTitle": "Session active",
@@ -343,7 +342,7 @@
     "compareMetaTitle": "Comparateur d'offres côte à côte | BONUVO",
     "compareMetaDescription": "Comparez jusqu'à 3 offres de bookmakers sur les mêmes critères transparents.",
     "offersTitle": "Offres et bonus vérifiés",
-    "offersSubtitle": "Classement filtré selon votre pays, mis à jour à partir du catalogue vérifié.",
+    "offersSubtitle": "Sélection filtrée selon votre pays et mise à jour régulièrement.",
     "resultsCount": "{count, plural, =0 {0 offre} one {1 offre} other {# offres}}",
     "filterSearchLabel": "Rechercher",
     "filterSearchPlaceholder": "Bookmaker, offre ou code...",
@@ -361,7 +360,7 @@
     "filterWithCodeLabel": "Avec code promo uniquement",
     "filterReset": "Réinitialiser",
     "sortLabel": "Trier par",
-    "sortRank": "Classement BONUVO",
+    "sortRank": "Sélection BONUVO",
     "sortRating": "Meilleure note",
     "sortBonus": "Montant du bonus",
     "sortRecent": "Vérifiées récemment",
@@ -372,19 +371,19 @@
     "compareTrayButton": "Comparer maintenant",
     "compareTrayClear": "Vider",
     "compareEmptyTitle": "Sélectionnez 2 à 3 offres à comparer",
-    "compareEmptyDescription": "Ajoutez des offres depuis le catalogue ou sélectionnez-les ci-dessous pour comparer bonus, rollover, cotes minimales et paiements.",
+    "compareEmptyDescription": "Ajoutez des offres depuis le catalogue ou sélectionnez-les ci-dessous pour comparer bonus, conditions de mise, cotes minimales et paiements.",
     "compareRowBookmaker": "Opérateur",
     "compareRowNote": "Note BONUVO",
     "compareRowBonus": "Montant du bonus",
     "compareRowMinDeposit": "Dépôt minimum",
-    "compareRowRollover": "Rollover / Conditions",
+    "compareRowRollover": "Conditions de mise",
     "compareRowMinOdds": "Cote minimale",
     "compareRowPayments": "Moyens de paiement",
     "compareRowCode": "Code promo",
     "compareRowVerified": "Dernière vérification",
     "compareRowAction": "Accès partenaire",
-    "countryGateUnsupportedTitle": "Pays non couvert ou sans offre disponible ({country})",
-    "countryGateUnsupportedDescription": "Aucune offre vérifiée n'est actuellement active pour ce pays. Sélectionnez un autre marché ou affichez toutes les offres disponibles.",
+    "countryGateUnsupportedTitle": "Aucune offre disponible pour ce pays ({country})",
+    "countryGateUnsupportedDescription": "Aucune offre vérifiée n'est actuellement active pour ce pays. Sélectionnez un autre pays ou affichez toutes les offres disponibles.",
     "countryGateShowGlobal": "Afficher tous les pays",
     "countryGateLinkOffers": "Voir le catalogue",
     "offerIneligibleTitle": "Offre non disponible dans votre pays ({country})",
@@ -398,12 +397,12 @@
     "offerDetailNeighborsTitle": "Autres offres vérifiées dans votre pays",
     "offerViewDetails": "Voir la fiche complète",
     "bookmakersTitle": "Bookmakers évalués",
-    "bookmakersSubtitle": "Répertoire transparent basé sur nos grilles de notation pondérées /10 et licences par pays.",
+    "bookmakersSubtitle": "Répertoire transparent basé sur nos évaluations sur 10 et licences par pays.",
     "bookmakersEmptyTitle": "Aucun bookmaker actif pour ce pays",
     "bookmakersEmptyDescription": "Aucun opérateur vérifié n'est encore actif dans la zone sélectionnée.",
     "bookmakerOffersCount": "{count, plural, =0 {0 offre} one {1 offre active} other {# offres actives}}",
     "bookmakerViewProfile": "Voir la fiche bookmaker",
-    "bookmakerScoreTitle": "Grille de notation BONUVO ({version})",
+    "bookmakerScoreTitle": "Détail de la note BONUVO",
     "bookmakerScoreBonus": "Bonus & clarté",
     "bookmakerScorePayments": "Paiements locaux",
     "bookmakerScoreOdds": "Qualité des cotes",

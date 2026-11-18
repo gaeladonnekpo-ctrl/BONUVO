@@ -45,6 +45,25 @@ interface MemberDashboardViewProps {
   unsubscribeToken: string;
 }
 
+function formatActivityLabel(activityType: string, isFr: boolean): string {
+  switch (activityType) {
+    case "profile_updated":
+      return isFr ? "Profil mis à jour" : "Profile updated";
+    case "consent_updated":
+      return isFr ? "Préférences d'alertes mises à jour" : "Alert preferences updated";
+    case "data_exported":
+      return isFr ? "Données personnelles exportées" : "Personal data exported";
+    case "deletion_requested":
+      return isFr ? "Demande de fermeture de compte" : "Account closure requested";
+    case "deletion_cancelled":
+      return isFr ? "Fermeture de compte annulée" : "Account closure cancelled";
+    case "unsubscribe_one_click":
+      return isFr ? "Désinscription e-mail en un clic" : "One-click email unsubscribe";
+    default:
+      return isFr ? "Action sur le compte" : "Account action";
+  }
+}
+
 export function MemberDashboardView({
   locale,
   user,
@@ -56,6 +75,14 @@ export function MemberDashboardView({
   unsubscribeToken,
 }: MemberDashboardViewProps) {
   const isFr = locale === "fr";
+  const statusLabel =
+    (profile?.status ?? "active") === "active"
+      ? isFr
+        ? "Actif"
+        : "Active"
+      : isFr
+        ? "En attente"
+        : "Pending";
 
   return (
     <div className="mx-auto max-w-5xl space-y-8 px-4 py-8 sm:px-6 sm:py-12">
@@ -69,8 +96,8 @@ export function MemberDashboardView({
             {profile?.displayName || user.email}
           </h1>
           <p className="text-sm text-fg-muted">
-            {user.email} · {isFr ? "Statut :" : "Status:"}{" "}
-            <strong className="text-fg">{profile?.status || "active"}</strong>
+            {user.email} · {isFr ? "Compte :" : "Account:"}{" "}
+            <strong className="text-fg">{statusLabel}</strong>
           </p>
         </div>
 
@@ -81,7 +108,7 @@ export function MemberDashboardView({
             className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-border bg-surface-muted px-4 py-2 text-xs font-semibold text-fg transition hover:bg-bg"
           >
             <Download className="size-3.5" aria-hidden="true" />
-            <span>{isFr ? "Exporter mes données (JSON)" : "Export my data (JSON)"}</span>
+            <span>{isFr ? "Exporter mes données" : "Export my data"}</span>
           </a>
           <SignOutButton locale={locale} label={isFr ? "Se déconnecter" : "Sign out"} />
         </div>
@@ -107,7 +134,7 @@ export function MemberDashboardView({
               </label>
 
               <label className="block space-y-1 text-xs font-semibold text-fg">
-                <span>{isFr ? "Pays ISO-2" : "Country ISO-2"}</span>
+                <span>{isFr ? "Code pays" : "Country code"}</span>
                 <input
                   name="countryCode"
                   defaultValue={profile?.countryCode ?? ""}
@@ -124,8 +151,8 @@ export function MemberDashboardView({
                   defaultValue={profile?.locale ?? locale}
                   className="w-full rounded-xl border border-border bg-bg px-3 py-2 text-sm text-fg"
                 >
-                  <option value="fr">Français (FR)</option>
-                  <option value="en">English (EN)</option>
+                  <option value="fr">Français</option>
+                  <option value="en">English</option>
                 </select>
               </label>
             </div>
@@ -156,7 +183,9 @@ export function MemberDashboardView({
             <ul className="mt-3 divide-y divide-border text-xs">
               {activities.slice(0, 6).map((act) => (
                 <li key={act.id} className="flex items-center justify-between py-2">
-                  <span className="font-mono text-fg">{act.activityType}</span>
+                  <span className="font-medium text-fg">
+                    {formatActivityLabel(act.activityType, isFr)}
+                  </span>
                   <span className="text-fg-muted">
                     {new Intl.DateTimeFormat(isFr ? "fr-FR" : "en-US", {
                       dateStyle: "short",
@@ -172,9 +201,7 @@ export function MemberDashboardView({
               href={`/${locale}/desinscription?token=${encodeURIComponent(unsubscribeToken)}`}
               className="text-xs font-semibold text-fg underline hover:text-accent"
             >
-              {isFr
-                ? "Tester mon lien de désinscription 1-clic signé"
-                : "Test my signed 1-click unsubscribe link"}
+              {isFr ? "Se désinscrire des e-mails en un clic" : "One-click email unsubscribe"}
             </Link>
           </div>
         </section>

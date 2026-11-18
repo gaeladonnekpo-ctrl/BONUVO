@@ -147,9 +147,7 @@ export default async function BookmakerDetailPage({
       {detail.rating ? (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">
-              {t("bookmakerScoreTitle", { version: detail.rating.gridVersion })}
-            </CardTitle>
+            <CardTitle className="text-lg">{t("bookmakerScoreTitle")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {criteria.map((row) => (
@@ -182,8 +180,7 @@ export default async function BookmakerDetailPage({
                 className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-surface-subtle/50 p-3"
               >
                 <span className="font-semibold text-fg">
-                  {resolvedLocale === "en" ? item.countryNameEn : item.countryNameFr} (
-                  {item.countryCode})
+                  {resolvedLocale === "en" ? item.countryNameEn : item.countryNameFr}
                 </span>
                 <span className="inline-flex items-center gap-1.5 text-xs text-fg-muted">
                   <Shield className="h-3.5 w-3.5 text-trust" aria-hidden="true" />

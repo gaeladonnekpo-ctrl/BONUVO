@@ -63,6 +63,24 @@ export function resolveDefaultLeagueLogo(externalId: string, name?: string): str
   return byName?.logoUrl ?? "";
 }
 
+const TREND_LABELS: Record<string, string> = {
+  home: "victoire domicile",
+  away: "victoire extérieur",
+  draw: "match nul",
+  over_2_5: "+2,5 buts",
+  under_2_5: "-2,5 buts",
+  yes: "Oui",
+  no: "Non",
+};
+
+export function humanizeAnalysisText(raw: string): string {
+  return raw
+    .replace(/Distribution Poisson\s*:/gi, "Probabilités estimées :")
+    .replace(/\(tendance\s*:\s*([a-z0-9_]+)\)/gi, (m, k: string) =>
+      TREND_LABELS[k.toLowerCase()] ? `(tendance : ${TREND_LABELS[k.toLowerCase()]})` : m,
+    );
+}
+
 export function currentFootballSeasonYear(now = new Date()): number {
   const month = now.getUTCMonth() + 1;
   const year = now.getUTCFullYear();

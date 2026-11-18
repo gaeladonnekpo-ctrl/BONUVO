@@ -1,5 +1,8 @@
 import { and, desc, eq, gte, inArray, lte } from "drizzle-orm";
-import { resolveDefaultLeagueLogo } from "@/modules/ai/service/ingestion-helpers";
+import {
+  humanizeAnalysisText,
+  resolveDefaultLeagueLogo,
+} from "@/modules/ai/service/ingestion-helpers";
 import { getPublicPredictionStats } from "@/modules/ai/service/public-ai-stats";
 import type {
   LeagueFilterOption,
@@ -34,7 +37,7 @@ function mapPredictionCard(
     probabilities: p.probabilitiesJson,
     expectedHomeGoals: Number(p.expectedHomeGoals),
     expectedAwayGoals: Number(p.expectedAwayGoals),
-    analysisText: p.analysisText,
+    analysisText: humanizeAnalysisText(p.analysisText),
     analysisStatus: p.analysisStatus,
     couponValidated: p.couponValidated,
     publishedAt: p.publishedAt ? p.publishedAt.toISOString() : null,
@@ -187,18 +190,16 @@ export async function listPublicFixtures(filter?: {
 
 export async function getPublicFixtureDetail(fixtureId: string) {
   return withCatalogCache(
-    async () => {
-      return withAppDb({ scope: "public_catalog" }, async (db) => {
+    async () =>
+      withAppDb({ scope: "public_catalog" }, async (db) => {
         const [fix] = await db.select().from(fixtures).where(eq(fixtures.id, fixtureId)).limit(1);
         if (!fix) return null;
+        const pairIds = [fix.homeTeamId, fix.awayTeamId];
 
         const [leagueRows, teamRows, predRows, resRows, statsRows, standingRows, h2hRows] =
           await Promise.all([
             db.select().from(leagues).where(eq(leagues.id, fix.leagueId)).limit(1),
-            db
-              .select()
-              .from(teams)
-              .where(inArray(teams.id, [fix.homeTeamId, fix.awayTeamId])),
+            db.select().from(teams).where(inArray(teams.id, pairIds)),
             db
               .select()
               .from(predictions)
@@ -215,27 +216,22 @@ export async function getPublicFixtureDetail(fixtureId: string) {
               .where(
                 and(
                   eq(teamStatsSnapshots.seasonId, fix.seasonId),
-                  inArray(teamStatsSnapshots.teamId, [fix.homeTeamId, fix.awayTeamId]),
+                  inArray(teamStatsSnapshots.teamId, pairIds),
                 ),
               )
               .orderBy(desc(teamStatsSnapshots.asOfDate)),
             db
               .select()
               .from(standings)
-              .where(
-                and(
-                  eq(standings.seasonId, fix.seasonId),
-                  inArray(standings.teamId, [fix.homeTeamId, fix.awayTeamId]),
-                ),
-              ),
+              .where(and(eq(standings.seasonId, fix.seasonId), inArray(standings.teamId, pairIds))),
             db
               .select()
               .from(fixtures)
               .where(
                 and(
                   eq(fixtures.fixtureStatus, "finished"),
-                  inArray(fixtures.homeTeamId, [fix.homeTeamId, fix.awayTeamId]),
-                  inArray(fixtures.awayTeamId, [fix.homeTeamId, fix.awayTeamId]),
+                  inArray(fixtures.homeTeamId, pairIds),
+                  inArray(fixtures.awayTeamId, pairIds),
                 ),
               )
               .orderBy(desc(fixtures.kickoffAt))
@@ -286,8 +282,7 @@ export async function getPublicFixtureDetail(fixtureId: string) {
             awayGoals: h.awayGoals,
           })),
         };
-      });
-    },
+      }),
     ["ai-fixture-detail", fixtureId],
     [PUBLIC_CATALOG_CACHE_TAGS.predictions],
   )();

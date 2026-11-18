@@ -27,8 +27,8 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
         : "Historique & Précision BONUVO AI",
     description:
       resolvedLocale === "en"
-        ? "Transparent settled track record, hit rate and Brier calibration scores."
-        : "Bilan transparent des pronostics réglés, taux de réussite et score de Brier.",
+        ? "Transparent settled track record and hit rate by BONUVO AI."
+        : "Bilan transparent des pronostics terminés et taux de réussite BONUVO AI.",
   });
 }
 
@@ -71,8 +71,8 @@ export default async function PublicPredictionHistoryPage({
         </h1>
         <p className="max-w-2xl text-sm text-fg-muted">
           {isEn
-            ? "Every forecast is locked before kickoff and settled automatically after full time. Postponed or cancelled matches are marked void."
-            : "Chaque pronostic est verrouillé avant le coup d'envoi puis réglé automatiquement après le score final. Les matchs reportés ou annulés sont marqués void."}
+            ? "Every forecast is locked before kickoff and settled automatically after full time. Postponed or cancelled matches are excluded from the win rate."
+            : "Chaque pronostic est verrouillé avant le coup d'envoi puis mis à jour automatiquement après le score final. Les matchs reportés ou annulés sont neutralisés."}
         </p>
       </header>
 
@@ -80,7 +80,7 @@ export default async function PublicPredictionHistoryPage({
         <Card>
           <CardContent className="pt-5">
             <p className="text-xs uppercase text-fg-muted">
-              {isEn ? "Settled picks" : "Pronostics réglés"}
+              {isEn ? "Settled picks" : "Pronostics terminés"}
             </p>
             <p className="mt-1 font-display text-2xl font-bold text-fg">
               {stats.overall.totalSettled}
@@ -90,10 +90,10 @@ export default async function PublicPredictionHistoryPage({
         <Card>
           <CardContent className="pt-5">
             <p className="text-xs uppercase text-fg-muted">
-              {isEn ? "Won / Lost / Void" : "Validés / Manqués / Void"}
+              {isEn ? "Won / Lost" : "Validés / Manqués"}
             </p>
             <p className="mt-1 font-display text-xl font-bold text-fg">
-              {stats.overall.won} / {stats.overall.lost} / {stats.overall.voidCount}
+              {stats.overall.won} / {stats.overall.lost}
             </p>
           </CardContent>
         </Card>
@@ -109,9 +109,11 @@ export default async function PublicPredictionHistoryPage({
         </Card>
         <Card>
           <CardContent className="pt-5">
-            <p className="text-xs uppercase text-fg-muted">Brier Score</p>
+            <p className="text-xs uppercase text-fg-muted">
+              {isEn ? "Postponed / Cancelled" : "Matchs reportés / annulés"}
+            </p>
             <p className="mt-1 font-display text-2xl font-bold text-fg">
-              {stats.overall.avgBrierScore !== null ? stats.overall.avgBrierScore.toFixed(4) : "—"}
+              {stats.overall.voidCount}
             </p>
           </CardContent>
         </Card>
@@ -126,9 +128,8 @@ export default async function PublicPredictionHistoryPage({
                 {mc.summary.winRatePct !== null ? `${mc.summary.winRatePct}%` : "—"}
               </p>
               <p className="text-xs text-fg-muted">
-                Brier:{" "}
-                {mc.summary.avgBrierScore !== null ? mc.summary.avgBrierScore.toFixed(4) : "—"} ·{" "}
-                {mc.summary.totalSettled} {isEn ? "settled" : "réglés"}
+                {mc.summary.won} {isEn ? "won" : "validés"} · {mc.summary.totalSettled}{" "}
+                {isEn ? "settled" : "terminés"}
               </p>
             </CardContent>
           </Card>

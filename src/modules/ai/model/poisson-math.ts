@@ -187,13 +187,21 @@ export function buildDeterministicAnalysisText(params: {
   lambdaAway: number;
 }): string {
   const pct = (value: number) => `${Math.round(value * 100)}%`;
-  const baseStats = `${params.home.teamName} (${params.home.matchesPlayed} matchs, ${params.home.goalsFor} buts marqués / ${params.home.goalsAgainst} encaissés) face à ${params.away.teamName} (${params.away.matchesPlayed} matchs, ${params.away.goalsFor} marqués / ${params.away.goalsAgainst} encaissés). Buts attendus : ${params.lambdaHome.toFixed(2)} - ${params.lambdaAway.toFixed(2)}.`;
+  const baseStats = `${params.home.teamName} (${params.home.matchesPlayed} matchs, ${params.home.goalsFor} buts marqués / ${params.home.goalsAgainst} encaissés) face à ${params.away.teamName} (${params.away.matchesPlayed} matchs, ${params.away.goalsFor} marqués / ${params.away.goalsAgainst} encaissés). Moyenne de buts estimée : ${params.lambdaHome.toFixed(2)} - ${params.lambdaAway.toFixed(2)}.`;
 
   if (params.market === "1x2") {
-    return `${baseStats} Distribution Poisson : domicile ${pct(params.probabilities.home ?? 0)}, nul ${pct(params.probabilities.draw ?? 0)}, extérieur ${pct(params.probabilities.away ?? 0)} (tendance : ${params.pick}).`;
+    const pickLabel =
+      params.pick === "home"
+        ? params.home.teamName
+        : params.pick === "away"
+          ? params.away.teamName
+          : "match nul";
+    return `${baseStats} Probabilités estimées : domicile ${pct(params.probabilities.home ?? 0)}, nul ${pct(params.probabilities.draw ?? 0)}, extérieur ${pct(params.probabilities.away ?? 0)} (tendance : ${pickLabel}).`;
   }
   if (params.market === "over_under_25") {
-    return `${baseStats} Probabilité Plus de 2,5 buts : ${pct(params.probabilities.over_2_5 ?? 0)}, Moins de 2,5 buts : ${pct(params.probabilities.under_2_5 ?? 0)} (tendance : ${params.pick}).`;
+    const pickLabel = params.pick === "over_2_5" ? "+2,5 buts" : "-2,5 buts";
+    return `${baseStats} Probabilités estimées : Plus de 2,5 buts ${pct(params.probabilities.over_2_5 ?? 0)}, Moins de 2,5 buts ${pct(params.probabilities.under_2_5 ?? 0)} (tendance : ${pickLabel}).`;
   }
-  return `${baseStats} Probabilité Les deux équipes marquent : Oui ${pct(params.probabilities.yes ?? 0)}, Non ${pct(params.probabilities.no ?? 0)} (tendance : ${params.pick}).`;
+  const pickLabel = params.pick === "yes" ? "Oui" : "Non";
+  return `${baseStats} Probabilité que les deux équipes marquent : Oui ${pct(params.probabilities.yes ?? 0)}, Non ${pct(params.probabilities.no ?? 0)} (tendance : ${pickLabel}).`;
 }

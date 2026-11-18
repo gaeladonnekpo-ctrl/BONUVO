@@ -17,6 +17,19 @@ interface ConsentToggleProps {
   }>;
 }
 
+function formatConsentTypeLabel(consentType: string, isFr: boolean): string {
+  switch (consentType) {
+    case "notifications":
+      return isFr ? "Alertes & notifications" : "Alerts & notifications";
+    case "marketing":
+      return isFr ? "Communications par e-mail" : "Email communications";
+    case "analytics":
+      return isFr ? "Mesure d'audience" : "Audience measurement";
+    default:
+      return isFr ? "Préférences de communication" : "Communication preferences";
+  }
+}
+
 export function ConsentToggle({
   locale,
   userId,
@@ -39,14 +52,12 @@ export function ConsentToggle({
             {isFr ? "Consentements & Communications" : "Consents & Communications"}
           </span>
           <h2 className="mt-2 font-display text-lg font-bold text-fg">
-            {isFr
-              ? "Préférences d'alertes et registre horodaté"
-              : "Alert preferences & timestamped consent ledger"}
+            {isFr ? "Vos préférences d'alertes" : "Your alert preferences"}
           </h2>
           <p className="mt-1 text-sm text-fg-muted">
             {isFr
-              ? "Toute modification est inscrite de façon immuable dans votre registre de consentements."
-              : "Every change is recorded immutably in your personal consent ledger."}
+              ? "Choisissez librement les alertes que vous souhaitez recevoir et modifiez-les à tout moment."
+              : "Freely choose which alerts you want to receive and update them at any time."}
           </p>
         </div>
 
@@ -136,25 +147,23 @@ export function ConsentToggle({
           type="submit"
           className="inline-flex min-h-10 items-center justify-center rounded-xl bg-accent px-4 py-2 text-sm font-semibold text-accent-fg transition hover:bg-accent-hover"
         >
-          {isFr
-            ? "Enregistrer mes préférences et dater mon consentement"
-            : "Save preferences & timestamp consent"}
+          {isFr ? "Enregistrer mes préférences" : "Save preferences"}
         </button>
       </form>
 
       {consentHistory.length > 0 ? (
         <div className="mt-6 border-t border-border pt-4">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-fg-muted">
-            {isFr ? "Historique immuable des consentements" : "Immutable consent history"}
+            {isFr ? "Historique de vos préférences" : "Preferences history"}
           </h3>
           <ul className="mt-2 divide-y divide-border text-xs">
             {consentHistory.slice(0, 5).map((item) => (
               <li key={item.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
-                <span className="font-mono text-fg">
-                  {item.consentType} · v{item.policyVersion}
+                <span className="font-medium text-fg">
+                  {formatConsentTypeLabel(item.consentType, isFr)}
                 </span>
                 <span className="text-fg-muted">
-                  {item.granted ? (isFr ? "Accordé" : "Granted") : isFr ? "Retiré" : "Withdrawn"} ·{" "}
+                  {item.granted ? (isFr ? "Activé" : "Enabled") : isFr ? "Désactivé" : "Disabled"} ·{" "}
                   {new Intl.DateTimeFormat(isFr ? "fr-FR" : "en-US", {
                     dateStyle: "short",
                     timeStyle: "short",

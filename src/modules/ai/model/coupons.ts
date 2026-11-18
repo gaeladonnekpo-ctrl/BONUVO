@@ -237,33 +237,33 @@ export const PLATFORM_GAMING_GUIDES: GamingCategoryGuide[] = [
     id: "sports-singles",
     titleFr: "Paris simples & Double Chance",
     titleEn: "Single Bets & Double Chance",
-    riskProfileFr: "Variance maîtrisée (1 à 2 % de bankroll)",
-    riskProfileEn: "Controlled variance (1%–2% bankroll stake)",
+    riskProfileFr: "Risque maîtrisé (1 à 2 % du budget)",
+    riskProfileEn: "Controlled risk (1%–2% budget stake)",
     guidanceFr:
-      "Privilégie les marchés 1X2 ou Double Chance lorsque la différence de probabilité estimée dépasse +15 pts sur des équipes à >= 6 matchs.",
+      "Privilégie les marchés 1X2 ou Double Chance lorsque l'écart de probabilité estimé dépasse +15 points sur des équipes disposant d'un historique complet.",
     guidanceEn:
-      "Focus on 1X2 or Double Chance when the estimated probability gap exceeds +15 pts across teams with >= 6 played fixtures.",
+      "Focus on 1X2 or Double Chance when the estimated probability gap exceeds +15 points across teams with sufficient match history.",
   },
   {
     id: "sports-combos",
     titleFr: "Paris combinés (2 à 3 sélections)",
     titleEn: "Combined Coupons (2–3 legs)",
-    riskProfileFr: "Variance élevée (probabilité conjointe = produit)",
-    riskProfileEn: "Higher variance (joint probability decays multiplicatively)",
+    riskProfileFr: "Risque plus élevé (probabilités cumulées)",
+    riskProfileEn: "Higher risk (combined probability)",
     guidanceFr:
-      "Chaque sélection ajoutée multiplie le risque d'échec global : limiter à 2-3 matchs indépendants sans gain assuré.",
+      "Chaque sélection ajoutée augmente le niveau de risque global : privilégiez des combinés courts de 2 à 3 matchs indépendants.",
     guidanceEn:
-      "Each added leg multiplies failure risk; cap tickets to 2–3 independent fixtures with strict unit sizing.",
+      "Each added selection increases overall risk; keep combined tickets to 2–3 independent matches.",
   },
   {
     id: "casino-rng",
-    titleFr: "Jeux de hasard, Crash & Casino RNG",
-    titleEn: "Casino RNG, Crash & Instant Games",
-    riskProfileFr: "Avantage maison fixe (aucun historique prédictif)",
-    riskProfileEn: "Fixed house edge (memoryless RNG draws)",
+    titleFr: "Jeux rapides, Crash & Casino",
+    titleEn: "Crash, Instant & Casino Games",
+    riskProfileFr: "Hasard pur (chaque tour est indépendant)",
+    riskProfileEn: "Pure chance (independent rounds)",
     guidanceFr:
-      "Les tirages RNG et jeux Crash sont mathématiquement indépendants : aucune séquence passée n'influence le prochain tour ; fixez toujours un plafond strict de perte.",
+      "Les tirages et jeux Crash sont totalement indépendants d'un tour à l'autre : aucune série passée n'influence le tour suivant ; fixez toujours un budget strict.",
     guidanceEn:
-      "RNG draws and crash rounds are memoryless: past outcomes never predict the next round — always enforce a hard stop-loss budget.",
+      "Instant and crash rounds are completely independent: past outcomes never predict the next round — always enforce a strict budget.",
   },
 ];
