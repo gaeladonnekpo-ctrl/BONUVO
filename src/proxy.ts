@@ -36,6 +36,16 @@ export async function proxy(request: NextRequest) {
     request.headers.set("x-bonuvo-dev-showcase", "1");
   }
 
+  if (process.env.MAINTENANCE_MODE === "1" && path !== "/maintenance") {
+    return NextResponse.rewrite(new URL(`/${locale}/maintenance`, request.url), {
+      status: 503,
+      headers: {
+        "Retry-After": "300",
+        "Cache-Control": "no-store",
+      },
+    });
+  }
+
   let response = handleI18nRouting(request);
   if (response.status >= 300 && response.status < 400) {
     return response;

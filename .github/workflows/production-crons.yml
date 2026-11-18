@@ -1,0 +1,42 @@
+name: Production Crons
+
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+jobs:
+  trigger-crons:
+    name: Exécuter les tâches planifiées BONUVO
+    runs-on: ubuntu-latest
+    steps:
+      - name: Appeler les endpoints cron sécurisés
+        env:
+          SITE_URL: ${{ secrets.PRODUCTION_SITE_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$SITE_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "PRODUCTION_SITE_URL ou CRON_SECRET non configuré — exécution ignorée."
+            exit 0
+          fi
+
+          for ep in \
+            "/api/cron/ingest-fixtures" \
+            "/api/cron/ingest-stats" \
+            "/api/cron/compute-predictions" \
+            "/api/cron/settle-predictions" \
+            "/api/cron/aggregate-metrics" \
+            "/api/cron/purge-data"
+          do
+            echo "POST ${SITE_URL}${ep}"
+            code=$(curl -sS -o /tmp/cron_out.json -w "%{http_code}" -X POST "${SITE_URL}${ep}" \
+              -H "Authorization: Bearer ${CRON_SECRET}" \
+              -H "Content-Type: application/json" \
+              -d '{}')
+            echo "Status: ${code}"
+            cat /tmp/cron_out.json
+            echo ""
+            if [ "$code" -ge 500 ]; then
+              exit 1
+            fi
+          done
