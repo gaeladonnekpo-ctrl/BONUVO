@@ -228,6 +228,8 @@ export async function upsertBookmakerPaymentMethod(
   const parsed = bookmakerPaymentMethodSchema.parse(rawInput);
 
   const saved = await withAppDb({ scope: "user_session", actorId: actor.id }, async (tx) => {
+    const verifiedAt = parsed.confirmed ? new Date() : null;
+    const verifiedBy = parsed.confirmed ? actor.email || actor.id : null;
     const [row] = await tx
       .insert(bookmakerPaymentMethods)
       .values({
@@ -238,6 +240,9 @@ export async function upsertBookmakerPaymentMethod(
         currencyCode: parsed.currencyCode,
         supportsDeposit: parsed.supportsDeposit,
         supportsWithdrawal: parsed.supportsWithdrawal,
+        confirmed: parsed.confirmed,
+        verifiedAt,
+        verifiedBy,
       })
       .onConflictDoUpdate({
         target: [
@@ -250,6 +255,9 @@ export async function upsertBookmakerPaymentMethod(
           currencyCode: parsed.currencyCode,
           supportsDeposit: parsed.supportsDeposit,
           supportsWithdrawal: parsed.supportsWithdrawal,
+          confirmed: parsed.confirmed,
+          verifiedAt,
+          verifiedBy,
         },
       })
       .returning();

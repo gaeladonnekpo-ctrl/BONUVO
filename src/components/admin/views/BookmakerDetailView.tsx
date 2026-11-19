@@ -43,12 +43,17 @@ export interface BookmakerDetailProps {
   }>;
   paymentRows: Array<{
     id: string;
+    paymentMethodId?: string;
     paymentMethodName: string;
+    countryId?: string;
     countryCode: string;
     minDepositAmount: string | null;
     currencyCode: string;
     supportsDeposit: boolean;
     supportsWithdrawal: boolean;
+    confirmed?: boolean;
+    verifiedAt?: Date | string | null;
+    verifiedBy?: string | null;
   }>;
   ratingRows: Array<{
     id: string;

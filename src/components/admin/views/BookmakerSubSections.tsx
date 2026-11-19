@@ -30,10 +30,15 @@ export interface BookmakerSubSectionsProps {
   }>;
   paymentRows: Array<{
     id: string;
+    paymentMethodId?: string;
     paymentMethodName: string;
+    countryId?: string;
     countryCode: string;
     minDepositAmount: string | null;
     currencyCode: string;
+    confirmed?: boolean;
+    verifiedAt?: Date | string | null;
+    verifiedBy?: string | null;
   }>;
   ratingRows: Array<{
     id: string;
@@ -66,6 +71,7 @@ export function BookmakerSubSections({
   const [legalSource, setLegalSource] = React.useState("");
   const [pmId, setPmId] = React.useState(paymentMethods[0]?.id ?? "");
   const [pmMinDeposit, setPmMinDeposit] = React.useState("500");
+  const [pmConfirmed, setPmConfirmed] = React.useState(true);
   const [scores, setScores] = React.useState({
     bonusScore: "8.0",
     paymentsScore: "8.0",
@@ -190,14 +196,45 @@ export function BookmakerSubSections({
             {paymentRows.map((row) => (
               <div
                 key={row.id}
-                className="flex items-center justify-between rounded border border-border p-2.5 text-sm"
+                className="flex flex-wrap items-center justify-between gap-2 rounded border border-border p-2.5 text-sm"
               >
-                <span className="font-medium text-fg">
-                  {row.paymentMethodName} · {row.countryCode}
-                </span>
-                <span className="text-xs text-fg-muted">
-                  Dépôt min : {row.minDepositAmount ?? "—"} {row.currencyCode}
-                </span>
+                <div>
+                  <span className="font-medium text-fg">
+                    {row.paymentMethodName} · {row.countryCode}
+                  </span>
+                  <p className="text-xs text-fg-muted">
+                    Dépôt min : {row.minDepositAmount ?? "—"} {row.currencyCode}
+                    {row.verifiedBy ? ` · Vérifié par ${row.verifiedBy}` : ""}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <UiBadge tone={row.confirmed ? "trust" : "warning"}>
+                    {row.confirmed ? "Confirmé" : "À vérifier"}
+                  </UiBadge>
+                  {canWrite && row.paymentMethodId && row.countryId ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={async () => {
+                        const res = await upsertBookmakerPaymentMethodAction({
+                          bookmakerId,
+                          paymentMethodId: row.paymentMethodId!,
+                          countryId: row.countryId!,
+                          minDepositAmount: row.minDepositAmount,
+                          currencyCode: row.currencyCode,
+                          supportsDeposit: true,
+                          supportsWithdrawal: true,
+                          confirmed: !row.confirmed,
+                        });
+                        onResult(res);
+                        if (res.ok) router.refresh();
+                      }}
+                    >
+                      {row.confirmed ? "Masquer" : "Confirmer"}
+                    </Button>
+                  ) : null}
+                </div>
               </div>
             ))}
             {canWrite ? (
@@ -213,6 +250,7 @@ export function BookmakerSubSections({
                     currencyCode: selectedCountry?.currencyCode ?? "XOF",
                     supportsDeposit: true,
                     supportsWithdrawal: true,
+                    confirmed: pmConfirmed,
                   });
                   onResult(res);
                   if (res.ok) router.refresh();
@@ -236,7 +274,16 @@ export function BookmakerSubSections({
                   value={pmMinDeposit}
                   onChange={(e) => setPmMinDeposit(e.target.value)}
                 />
-                <Button type="submit" size="sm">
+                <label className="flex items-center gap-2 text-xs text-fg">
+                  <input
+                    type="checkbox"
+                    checked={pmConfirmed}
+                    onChange={(e) => setPmConfirmed(e.target.checked)}
+                    className="h-4 w-4 rounded border-border accent-accent"
+                  />
+                  <span>Confirmé pour ce pays</span>
+                </label>
+                <Button type="submit" size="sm" className="sm:col-span-3">
                   Associer
                 </Button>
               </form>

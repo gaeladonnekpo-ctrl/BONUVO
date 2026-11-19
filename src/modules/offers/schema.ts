@@ -100,6 +100,7 @@ export const bookmakerPaymentMethodSchema = z.object({
   currencyCode: z.string().trim().toUpperCase().regex(CURRENCY_REGEX).default("XOF"),
   supportsDeposit: z.boolean().default(true),
   supportsWithdrawal: z.boolean().default(true),
+  confirmed: z.boolean().default(false),
 });
 
 export const bookmakerRatingSchema = z.object({

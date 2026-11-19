@@ -95,6 +95,7 @@ export async function getPublicBookmakerBySlugRepo(params: {
         .where(
           and(
             eq(bookmakerPaymentMethods.bookmakerId, row.bookmaker.id),
+            eq(bookmakerPaymentMethods.confirmed, true),
             eq(paymentMethods.active, true),
             eq(countries.active, true),
           ),

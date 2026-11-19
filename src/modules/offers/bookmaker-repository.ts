@@ -106,6 +106,9 @@ export async function getBookmakerByIdRepo(actorId: string, bookmakerId: string)
         currencyCode: bookmakerPaymentMethods.currencyCode,
         supportsDeposit: bookmakerPaymentMethods.supportsDeposit,
         supportsWithdrawal: bookmakerPaymentMethods.supportsWithdrawal,
+        confirmed: bookmakerPaymentMethods.confirmed,
+        verifiedAt: bookmakerPaymentMethods.verifiedAt,
+        verifiedBy: bookmakerPaymentMethods.verifiedBy,
       })
       .from(bookmakerPaymentMethods)
       .innerJoin(paymentMethods, eq(bookmakerPaymentMethods.paymentMethodId, paymentMethods.id))

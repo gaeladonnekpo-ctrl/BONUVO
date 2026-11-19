@@ -67,7 +67,11 @@ async function fetchRawBookmakersSnapshotTx(tx: AppDbTransaction) {
       .innerJoin(paymentMethods, eq(paymentMethods.id, bookmakerPaymentMethods.paymentMethodId))
       .leftJoin(mediaAssets, eq(mediaAssets.id, paymentMethods.logoAssetId))
       .where(
-        and(inArray(bookmakerPaymentMethods.bookmakerId, bmIds), eq(paymentMethods.active, true)),
+        and(
+          inArray(bookmakerPaymentMethods.bookmakerId, bmIds),
+          eq(bookmakerPaymentMethods.confirmed, true),
+          eq(paymentMethods.active, true),
+        ),
       ),
     tx
       .select({
