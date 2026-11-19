@@ -3,6 +3,8 @@ import { PartnerSupportCenter } from "@/components/layout/PartnerSupportCenter";
 import { TrustPageView } from "@/components/layout/TrustPageView";
 import type { AppLocale } from "@/lib/i18n/config";
 import { buildLocalizedMetadata } from "@/lib/i18n/metadata";
+import { listBookmakers } from "@/modules/offers/public-service";
+import { resolvePublicRequestCountry } from "@/server/geo/request-country";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -26,9 +28,28 @@ export default async function ResponsibleGamblingPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
+
+  const logosBySlug: Record<string, string | null> = {};
+  const shortCodesBySlug: Record<string, string> = {};
+
+  try {
+    const countryCode = await resolvePublicRequestCountry();
+    const { bookmakers } = await listBookmakers(countryCode);
+    for (const bm of bookmakers) {
+      logosBySlug[bm.slug] = bm.logoUrl;
+      shortCodesBySlug[bm.slug] = bm.shortCode;
+    }
+  } catch {
+    // Fallback gracefully to shortCode monograms if catalog lookup is unavailable.
+  }
+
   return (
     <TrustPageView pageKey="responsible">
-      <PartnerSupportCenter locale={locale} />
+      <PartnerSupportCenter
+        locale={locale}
+        logosBySlug={logosBySlug}
+        shortCodesBySlug={shortCodesBySlug}
+      />
     </TrustPageView>
   );
 }

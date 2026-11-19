@@ -1,9 +1,9 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import {
   AlertTriangle,
-  ExternalLink,
   Headphones,
   LifeBuoy,
   Mail,
@@ -19,7 +19,15 @@ import {
   SUPPORT_SCENARIO_GUIDES,
 } from "@/modules/offers/partner-support-data";
 
-export function PartnerSupportCenter({ locale = "fr" }: { locale?: string }) {
+export function PartnerSupportCenter({
+  locale = "fr",
+  logosBySlug = {},
+  shortCodesBySlug = {},
+}: {
+  locale?: string;
+  logosBySlug?: Record<string, string | null>;
+  shortCodesBySlug?: Record<string, string>;
+}) {
   const isEn = locale === "en";
   const [selectedSlug, setSelectedSlug] = React.useState<string>("all");
   const [activeScenarioId, setActiveScenarioId] = React.useState<string>(
@@ -169,8 +177,25 @@ export function PartnerSupportCenter({ locale = "fr" }: { locale?: string }) {
             <Card key={bm.slug} className="border-border/90 bg-surface">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between gap-2">
-                  <CardTitle className="text-base font-bold text-fg">{bm.name}</CardTitle>
-                  <UiBadge tone="trust" className="gap-1">
+                  <div className="flex min-w-0 items-center gap-2.5">
+                    {logosBySlug[bm.slug] ? (
+                      <Image
+                        src={logosBySlug[bm.slug] as string}
+                        alt={bm.name}
+                        width={40}
+                        height={40}
+                        className="h-10 w-10 shrink-0 rounded-full border border-border-strong bg-surface-elevated object-contain p-1"
+                      />
+                    ) : (
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border-strong bg-surface-elevated font-display text-xs font-bold text-accent">
+                        {shortCodesBySlug[bm.slug] ?? bm.name.slice(0, 3).toUpperCase()}
+                      </span>
+                    )}
+                    <CardTitle className="truncate text-base font-bold text-fg">
+                      {bm.name}
+                    </CardTitle>
+                  </div>
+                  <UiBadge tone="trust" className="shrink-0 gap-1">
                     <MessageCircle className="h-3 w-3" aria-hidden="true" />
                     {bm.liveChat}
                   </UiBadge>
@@ -254,18 +279,6 @@ export function PartnerSupportCenter({ locale = "fr" }: { locale?: string }) {
                 <p className="rounded-lg bg-surface-subtle/80 p-2.5 text-[11px] leading-relaxed text-fg-muted">
                   {isEn ? bm.escalationNoteEn : bm.escalationNoteFr}
                 </p>
-
-                <div className="pt-1">
-                  <a
-                    href={bm.officialUrl}
-                    target="_blank"
-                    rel="noopener noreferrer nofollow"
-                    className="inline-flex items-center gap-1.5 font-semibold text-accent hover:underline"
-                  >
-                    <span>{isEn ? `Official ${bm.name} site` : `Site officiel ${bm.name}`}</span>
-                    <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-                  </a>
-                </div>
               </CardContent>
             </Card>
           ))}
