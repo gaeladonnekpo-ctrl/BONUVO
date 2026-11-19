@@ -76,11 +76,13 @@ export interface ProviderFetchResult<T> {
 }
 
 export interface TeamKeyPlayerStat {
+  externalId?: string | null;
   name: string;
   position: string;
   appearances: number;
   goals: number;
   assists: number;
+  photoUrl?: string | null;
 }
 
 export interface TeamRecentMatchStat {

@@ -3,6 +3,7 @@ import {
   humanizeAnalysisText,
   resolveDefaultLeagueLogo,
 } from "@/modules/ai/service/ingestion-helpers";
+import { enrichKeyPlayersWithOfficialPhotos } from "@/modules/ai/service/player-photo-resolver";
 import { getPublicPredictionStats } from "@/modules/ai/service/public-ai-stats";
 import type {
   LeagueFilterOption,
@@ -289,6 +290,37 @@ export async function getPublicFixtureDetail(fixtureId: string) {
 
         const lastIngest = latestRun?.finishedAt ?? latestRun?.startedAt ?? fix.updatedAt;
 
+        const rawHomeStats = latestStats.get(fix.homeTeamId) ?? null;
+        const rawAwayStats = latestStats.get(fix.awayTeamId) ?? null;
+        const homeTeamExtId = teamMap.get(fix.homeTeamId)?.externalId ?? "";
+        const awayTeamExtId = teamMap.get(fix.awayTeamId)?.externalId ?? "";
+
+        const [enrichedHomePlayers, enrichedAwayPlayers] = await Promise.all([
+          rawHomeStats?.keyPlayersJson?.length
+            ? enrichKeyPlayersWithOfficialPhotos({
+                players: rawHomeStats.keyPlayersJson,
+                leagueExternalId: lRow?.externalId ?? "",
+                leagueName: lName,
+                teamExternalId: homeTeamExtId,
+              })
+            : Promise.resolve([]),
+          rawAwayStats?.keyPlayersJson?.length
+            ? enrichKeyPlayersWithOfficialPhotos({
+                players: rawAwayStats.keyPlayersJson,
+                leagueExternalId: lRow?.externalId ?? "",
+                leagueName: lName,
+                teamExternalId: awayTeamExtId,
+              })
+            : Promise.resolve([]),
+        ]);
+
+        const homeStats = rawHomeStats
+          ? { ...rawHomeStats, keyPlayersJson: enrichedHomePlayers }
+          : null;
+        const awayStats = rawAwayStats
+          ? { ...rawAwayStats, keyPlayersJson: enrichedAwayPlayers }
+          : null;
+
         return {
           fixture: {
             id: fix.id,
@@ -312,8 +344,8 @@ export async function getPublicFixtureDetail(fixtureId: string) {
             awayGoals: fix.awayGoals,
             predictions: predRows.map((p) => mapPredictionCard(p, resByPred.get(p.id))),
           },
-          homeStats: latestStats.get(fix.homeTeamId) ?? null,
-          awayStats: latestStats.get(fix.awayTeamId) ?? null,
+          homeStats,
+          awayStats,
           homeStanding: standingMap.get(fix.homeTeamId) ?? null,
           awayStanding: standingMap.get(fix.awayTeamId) ?? null,
           headToHead: h2hRows.map((h) => ({
@@ -328,7 +360,7 @@ export async function getPublicFixtureDetail(fixtureId: string) {
           })),
         };
       }),
-    ["ai-fixture-detail-v2", fixtureId],
+    ["ai-fixture-detail-v3", fixtureId],
     [PUBLIC_CATALOG_CACHE_TAGS.predictions],
   )();
 }

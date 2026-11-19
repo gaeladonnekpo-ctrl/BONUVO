@@ -135,8 +135,10 @@ export const espnSummarySchema = z.object({
                     displayValue: z.string().optional(),
                     shortDisplayValue: z.string().optional(),
                     athlete: z.object({
+                      id: z.union([z.number(), z.string()]).optional(),
                       displayName: z.string().optional(),
                       fullName: z.string().optional(),
+                      headshot: z.object({ href: z.string().optional() }).optional(),
                       position: z.object({ abbreviation: z.string().optional() }).optional(),
                     }),
                     statistics: z
@@ -219,12 +221,20 @@ export function buildEspnMatchIntelligence(
     return goalCat.leaders.slice(0, 3).map((item) => {
       const statNum = (key: string) =>
         Math.round(item.statistics?.find((s) => s.name === key)?.value ?? 0);
+      const athleteId = item.athlete.id !== undefined ? String(item.athlete.id) : null;
+      const headshotHref = item.athlete.headshot?.href?.trim() || null;
       return {
+        externalId: athleteId,
         name: item.athlete.displayName ?? item.athlete.fullName ?? "Joueur",
         position: item.athlete.position?.abbreviation ?? "",
         appearances: statNum("appearances"),
         goals: statNum("totalGoals"),
         assists: statNum("goalAssists"),
+        photoUrl:
+          headshotHref ??
+          (athleteId
+            ? `https://a.espncdn.com/i/headshots/soccer/players/full/${athleteId}.png`
+            : null),
       };
     });
   };

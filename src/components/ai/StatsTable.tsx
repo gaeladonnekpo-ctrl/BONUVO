@@ -1,3 +1,6 @@
+import { Flame } from "lucide-react";
+import { PlayerAvatar } from "@/components/ai/PlayerAvatar";
+import { UiBadge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { TeamKeyPlayerStat, TeamRecentMatchStat } from "@/modules/ai/providers/types";
 
@@ -104,29 +107,75 @@ export function StatsTable({
         </table>
 
         {homePlayers.length > 0 || awayPlayers.length > 0 ? (
-          <div className="grid gap-4 border-t border-border pt-4 sm:grid-cols-2">
+          <div className="grid gap-5 border-t border-border pt-5 sm:grid-cols-2">
             {[
               { team: homeTeamName, players: homePlayers },
               { team: awayTeamName, players: awayPlayers },
             ].map((side) => (
-              <div key={side.team} className="space-y-1.5">
-                <p className="text-xs font-semibold uppercase text-fg-muted">
-                  {isEn ? `Key players · ${side.team}` : `Joueurs clés · ${side.team}`}
-                </p>
+              <div key={side.team} className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-bold uppercase tracking-wider text-fg-muted">
+                    {isEn ? `Key players · ${side.team}` : `Joueurs clés · ${side.team}`}
+                  </p>
+                  <span className="text-[11px] font-medium text-fg-muted">
+                    {side.players.length > 0
+                      ? `${side.players.length} ${isEn ? "featured" : "suivis"}`
+                      : ""}
+                  </span>
+                </div>
                 {side.players.length === 0 ? (
                   <p className="text-xs text-fg-muted">—</p>
                 ) : (
-                  <ul className="space-y-1 text-xs">
-                    {side.players.map((p) => (
-                      <li key={p.name} className="flex items-center justify-between gap-2">
-                        <span className="font-medium text-fg">
-                          {p.name} {p.position ? `(${p.position})` : ""}
-                        </span>
-                        <span className="font-mono text-fg-muted">
-                          {p.goals}G · {p.appearances}M
-                        </span>
-                      </li>
-                    ))}
+                  <ul className="space-y-2.5">
+                    {side.players.map((p, idx) => {
+                      const isTopScorer = idx === 0 && p.goals > 0;
+                      return (
+                        <li
+                          key={`${side.team}-${p.name}`}
+                          className="group/player flex items-center justify-between gap-3 rounded-2xl border border-border/80 bg-surface-subtle/60 p-2.5 transition-all duration-200 hover:border-accent/50 hover:bg-surface-elevated"
+                        >
+                          <div className="flex min-w-0 items-center gap-3">
+                            <PlayerAvatar
+                              name={p.name}
+                              photoUrl={p.photoUrl}
+                              highlight={isTopScorer}
+                            />
+                            <div className="min-w-0 space-y-0.5">
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                <span className="truncate font-display text-sm font-bold text-fg">
+                                  {p.name}
+                                </span>
+                                {p.position ? (
+                                  <UiBadge tone="outline" className="px-1.5 py-0 text-[10px]">
+                                    {p.position}
+                                  </UiBadge>
+                                ) : null}
+                              </div>
+                              <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-fg-muted">
+                                {isTopScorer ? (
+                                  <span className="inline-flex items-center gap-0.5 font-semibold text-accent">
+                                    <Flame className="h-3 w-3" aria-hidden="true" />
+                                    {isEn ? "Top scorer" : "Top buteur"}
+                                  </span>
+                                ) : null}
+                                {isTopScorer ? <span>·</span> : null}
+                                <span>{side.team}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex shrink-0 flex-col items-end gap-0.5 text-right">
+                            <span className="rounded-lg bg-accent/10 px-2 py-0.5 font-mono text-xs font-bold text-accent">
+                              {p.goals} {isEn ? "G" : "buts"}
+                            </span>
+                            <span className="font-mono text-[11px] text-fg-muted">
+                              {p.appearances} {isEn ? "M" : "m."}
+                              {p.assists > 0 ? ` · ${p.assists} ${isEn ? "A" : "pd"}` : ""}
+                            </span>
+                          </div>
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
               </div>
