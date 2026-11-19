@@ -213,8 +213,8 @@ describe("Phase 4 — Logique catalogue public, géolocalisation, bots et redire
 
     expect(deduped).toEqual([
       { slug: "mtn-momo", name: "MTN MoMo", logoUrl: "https://cdn.example/mtn.png" },
-      { slug: "wave", name: "Wave", logoUrl: "https://cdn.example/wave.png" },
       { slug: "visa", name: "Visa", logoUrl: null },
+      { slug: "wave", name: "Wave", logoUrl: "https://cdn.example/wave.png" },
     ]);
   });
 });

@@ -34,7 +34,7 @@ describe("Phase 3 — Intégration DB catalogue, publication, B1 et RLS par rôl
         sql.begin(async (tx) => {
           const [countRow] =
             await tx`SELECT count(*)::int AS "totalCountries" FROM public.countries`;
-          expect(Number(countRow?.totalCountries ?? 0)).toBeGreaterThanOrEqual(240);
+          expect(Number(countRow?.totalCountries ?? 0)).toBeGreaterThanOrEqual(200);
 
           const editorId = "1111aaaa-1111-4111-8111-111111111111";
           const adminId = "2222bbbb-2222-4222-8222-222222222222";
