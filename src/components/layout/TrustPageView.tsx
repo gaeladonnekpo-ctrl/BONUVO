@@ -9,7 +9,13 @@ interface TrustSectionItem {
   readonly body: string;
 }
 
-export function TrustPageView({ pageKey }: { pageKey: TrustPageKey }) {
+export function TrustPageView({
+  pageKey,
+  children,
+}: {
+  pageKey: TrustPageKey;
+  children?: React.ReactNode;
+}) {
   const t = useTranslations(`trustPages.${pageKey}`);
   const tBrand = useTranslations("brand");
   const sections = t.raw("sections") as readonly TrustSectionItem[];
@@ -37,6 +43,8 @@ export function TrustPageView({ pageKey }: { pageKey: TrustPageKey }) {
           </Card>
         ))}
       </div>
+
+      {children}
     </div>
   );
 }

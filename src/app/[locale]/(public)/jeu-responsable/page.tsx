@@ -1,4 +1,5 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import { PartnerSupportCenter } from "@/components/layout/PartnerSupportCenter";
 import { TrustPageView } from "@/components/layout/TrustPageView";
 import type { AppLocale } from "@/lib/i18n/config";
 import { buildLocalizedMetadata } from "@/lib/i18n/metadata";
@@ -25,5 +26,9 @@ export default async function ResponsibleGamblingPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  return <TrustPageView pageKey="responsible" />;
+  return (
+    <TrustPageView pageKey="responsible">
+      <PartnerSupportCenter locale={locale} />
+    </TrustPageView>
+  );
 }
