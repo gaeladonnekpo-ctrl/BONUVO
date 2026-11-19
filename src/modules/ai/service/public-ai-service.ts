@@ -13,9 +13,11 @@ import { PUBLIC_CATALOG_CACHE_TAGS, withCatalogCache } from "@/server/cache/cata
 import { withAppDb } from "@/server/db/context";
 import {
   fixtures,
+  ingestionRuns,
   leagues,
   predictionResults,
   predictions,
+  sportsProviders,
   standings,
   teamStatsSnapshots,
   teams,
@@ -115,7 +117,7 @@ async function queryPublicFixturesUncached(filter?: {
     const teamIds = Array.from(new Set(fixRows.flatMap((f) => [f.homeTeamId, f.awayTeamId])));
     const leagueIds = Array.from(new Set(fixRows.map((f) => f.leagueId)));
 
-    const [teamRows, leagueRows, predRows, resultRows] = await Promise.all([
+    const [teamRows, leagueRows, predRows, resultRows, providerRows, runRows] = await Promise.all([
       db.select().from(teams).where(inArray(teams.id, teamIds)),
       db.select().from(leagues).where(inArray(leagues.id, leagueIds)),
       db
@@ -128,8 +130,26 @@ async function queryPublicFixturesUncached(filter?: {
           ),
         ),
       db.select().from(predictionResults).where(inArray(predictionResults.fixtureId, fixtureIds)),
+      db.select({ id: sportsProviders.id, name: sportsProviders.name }).from(sportsProviders),
+      db
+        .select({
+          providerId: ingestionRuns.providerId,
+          finishedAt: ingestionRuns.finishedAt,
+          startedAt: ingestionRuns.startedAt,
+        })
+        .from(ingestionRuns)
+        .where(eq(ingestionRuns.status, "completed"))
+        .orderBy(desc(ingestionRuns.startedAt))
+        .limit(20),
     ]);
 
+    const providerMap = new Map(providerRows.map((p) => [p.id, p.name]));
+    const latestRunByProvider = new Map<string, Date>();
+    for (const run of runRows) {
+      if (!latestRunByProvider.has(run.providerId)) {
+        latestRunByProvider.set(run.providerId, run.finishedAt ?? run.startedAt);
+      }
+    }
     const teamMap = new Map(teamRows.map((t) => [t.id, t]));
     const leagueMap = new Map(leagueRows.map((l) => [l.id, l]));
     const resultByPred = new Map(resultRows.map((r) => [r.predictionId, r]));
@@ -144,6 +164,8 @@ async function queryPublicFixturesUncached(filter?: {
     const mapped = fixRows.map((f): PublicFixtureDto => {
       const l = leagueMap.get(f.leagueId);
       const lName = l?.name ?? "Football";
+      const providerName = providerMap.get(f.providerId) ?? "Sports Data";
+      const lastIngest = latestRunByProvider.get(f.providerId) ?? f.updatedAt;
       return {
         id: f.id,
         leagueId: f.leagueId,
@@ -162,6 +184,8 @@ async function queryPublicFixturesUncached(filter?: {
         awayTeamLogo: teamMap.get(f.awayTeamId)?.logoUrl ?? "",
         homeGoals: f.homeGoals,
         awayGoals: f.awayGoals,
+        providerName,
+        lastIngestedAt: lastIngest ? lastIngest.toISOString() : null,
         predictions: predsByFixture.get(f.id) ?? [],
       };
     });
@@ -246,6 +270,25 @@ export async function getPublicFixtureDetail(fixtureId: string) {
         const lRow = leagueRows[0];
         const lName = lRow?.name ?? "Football";
 
+        const [provRow] = await db
+          .select({ name: sportsProviders.name })
+          .from(sportsProviders)
+          .where(eq(sportsProviders.id, fix.providerId))
+          .limit(1);
+        const [latestRun] = await db
+          .select({ finishedAt: ingestionRuns.finishedAt, startedAt: ingestionRuns.startedAt })
+          .from(ingestionRuns)
+          .where(
+            and(
+              eq(ingestionRuns.providerId, fix.providerId),
+              eq(ingestionRuns.status, "completed"),
+            ),
+          )
+          .orderBy(desc(ingestionRuns.startedAt))
+          .limit(1);
+
+        const lastIngest = latestRun?.finishedAt ?? latestRun?.startedAt ?? fix.updatedAt;
+
         return {
           fixture: {
             id: fix.id,
@@ -257,6 +300,8 @@ export async function getPublicFixtureDetail(fixtureId: string) {
             venueName: fix.venueName,
             roundLabel: fix.roundLabel,
             fixtureStatus: fix.fixtureStatus,
+            providerName: provRow?.name ?? "Sports Data",
+            lastIngestedAt: lastIngest ? lastIngest.toISOString() : null,
             homeTeamId: fix.homeTeamId,
             homeTeamName: teamMap.get(fix.homeTeamId)?.name ?? "Home",
             homeTeamLogo: teamMap.get(fix.homeTeamId)?.logoUrl ?? "",

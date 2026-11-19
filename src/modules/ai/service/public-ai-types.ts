@@ -36,6 +36,8 @@ export interface PublicFixtureDto {
   awayTeamLogo: string;
   homeGoals: number | null;
   awayGoals: number | null;
+  providerName?: string;
+  lastIngestedAt?: string | null;
   predictions: PublicPredictionCardDto[];
 }
 

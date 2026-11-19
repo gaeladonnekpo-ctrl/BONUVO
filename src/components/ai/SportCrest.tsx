@@ -15,6 +15,29 @@ function getInitials(name: string): string {
   return `${words[0]?.[0] ?? ""}${words[1]?.[0] ?? ""}`.toUpperCase();
 }
 
+const AUTHORIZED_LOGO_HOSTS = new Set(["media.api-sports.io", "a.espncdn.com"]);
+
+/**
+ * Allows only site-local paths, configured Supabase storage URLs, or authorized sports CDNs.
+ * Any other URL falls back cleanly to a deterministic team monogram / league icon.
+ */
+export function isAuthorizedSportLogoUrl(url?: string | null): boolean {
+  if (!url) return false;
+  if (url.startsWith("/") && !url.startsWith("//")) return true;
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "https:") return false;
+    if (AUTHORIZED_LOGO_HOSTS.has(parsed.hostname)) return true;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    if (supabaseUrl && parsed.hostname === new URL(supabaseUrl).hostname) {
+      return parsed.pathname.includes("/storage/v1/object/public/");
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
 export function TeamCrest({
   name,
   logoUrl,
@@ -34,7 +57,7 @@ export function TeamCrest({
         ? "h-7 w-7 text-[10px]"
         : "h-11 w-11 sm:h-12 sm:w-12 text-xs";
 
-  const validLogo = Boolean(logoUrl && logoUrl.startsWith("http") && !failed);
+  const validLogo = Boolean(!failed && isAuthorizedSportLogoUrl(logoUrl));
 
   return (
     <div
@@ -77,7 +100,7 @@ export function LeagueBadge({
   className?: string;
 }) {
   const [failed, setFailed] = React.useState(false);
-  const validLogo = Boolean(logoUrl && logoUrl.startsWith("http") && !failed);
+  const validLogo = Boolean(!failed && isAuthorizedSportLogoUrl(logoUrl));
 
   return (
     <span

@@ -64,6 +64,15 @@ export function FixtureRow({ fixture, locale = "fr" }: FixtureRowProps) {
     ? Math.round((primary.probabilities[primary.pickedSelection] ?? 0) * 100)
     : null;
 
+  const ingestedText = fixture.lastIngestedAt
+    ? new Intl.DateTimeFormat(isEn ? "en-GB" : "fr-FR", {
+        day: "2-digit",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(new Date(fixture.lastIngestedAt))
+    : null;
+
   return (
     <Card className="group relative overflow-hidden border-border/90 bg-surface transition-all duration-300 hover:-translate-y-0.5 hover:border-accent/60 hover:shadow-md">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-trust via-accent to-warning opacity-75 transition-opacity group-hover:opacity-100" />
@@ -181,10 +190,16 @@ export function FixtureRow({ fixture, locale = "fr" }: FixtureRowProps) {
         ) : null}
 
         {/* Touch-friendly Mobile Footer Action */}
-        <div className="flex items-center justify-between border-t border-border/60 pt-2.5 text-xs">
-          <span className="truncate text-fg-muted">
-            {fixture.venueName || (isEn ? "Official fixture" : "Rencontre officielle")}
-          </span>
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/60 pt-2.5 text-xs">
+          <div className="min-w-0 space-y-0.5">
+            <p className="truncate text-fg-muted">
+              {fixture.venueName || (isEn ? "Official fixture" : "Rencontre officielle")}
+            </p>
+            <p className="truncate text-[11px] text-fg-muted">
+              {isEn ? "Source" : "Source"} : {fixture.providerName ?? "Sports Data"}
+              {ingestedText ? ` · ${isEn ? "Ingested" : "Dernière ingestion"} ${ingestedText}` : ""}
+            </p>
+          </div>
           <Link
             href={`/pronostics/${fixture.id}`}
             className="inline-flex shrink-0 items-center gap-1 font-semibold text-fg transition-transform group-hover:translate-x-0.5 hover:text-accent"
