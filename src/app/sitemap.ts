@@ -16,6 +16,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/offres",
     "/bookmakers",
     "/codes-promo",
+    "/pronostics",
+    "/communaute",
     "/comparateur",
     "/methodologie",
     "/affiliation",
@@ -28,8 +30,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     for (const locale of ["fr", "en"] as const) {
       entries.push({
         url: `${baseUrl}/${locale}${path}`,
-        changeFrequency: path === "" || path === "/offres" ? "daily" : "weekly",
-        priority: path === "" ? 1 : path === "/offres" ? 0.9 : 0.7,
+        changeFrequency:
+          path === "" || path === "/offres" || path === "/pronostics" ? "daily" : "weekly",
+        priority: path === "" ? 1 : path === "/offres" || path === "/pronostics" ? 0.9 : 0.7,
         alternates: {
           languages: {
             fr: `${baseUrl}/fr${path}`,

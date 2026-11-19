@@ -49,6 +49,7 @@ export function BrandLogo({
         aria-label={decorative ? undefined : ariaLabel}
         className={`inline-flex items-baseline font-display font-bold leading-none text-fg select-none ${styles.word}`}
       >
+        {!decorative ? <span className="sr-only">{ariaLabel}</span> : null}
         <span aria-hidden="true">B</span>
         <BrandMark variant="ring" className="h-[0.774em] w-[0.774em] shrink-0" />
         <span aria-hidden="true">NUV</span>

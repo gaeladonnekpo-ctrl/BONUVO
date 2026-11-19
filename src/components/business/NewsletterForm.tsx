@@ -4,7 +4,7 @@ import { CheckCircle2, Globe, Mail, Phone, User } from "lucide-react";
 import Link from "next/link";
 import * as React from "react";
 import { Button } from "@/components/ui/button";
-import { COUNTRY_OPTIONS } from "@/lib/i18n/countries";
+import { COUNTRY_OPTIONS, formatCountryDisplay } from "@/lib/i18n/countries";
 
 export interface NewsletterFormProps {
   locale: "fr" | "en";
@@ -204,15 +204,18 @@ export function NewsletterForm({ locale, initialCountry = "GLOBAL" }: Newsletter
               onChange={(e) => setCountryCode(e.target.value)}
               className="h-11 w-full rounded-xl border border-border bg-bg pr-3 pl-9 text-sm text-fg focus:border-accent focus:outline-none"
             >
-              {COUNTRY_OPTIONS.map((c) => (
-                <option key={c.code} value={c.code}>
-                  {c.code === "GLOBAL"
-                    ? isFr
-                      ? "International (Tous pays)"
-                      : "International (All countries)"
-                    : `${isFr ? (c.nameFr ?? c.code) : (c.nameEn ?? c.code)} (${c.code})`}
-                </option>
-              ))}
+              {COUNTRY_OPTIONS.map((c) => {
+                const label = formatCountryDisplay(
+                  c,
+                  locale,
+                  isFr ? "International (Tous pays)" : "International (All countries)",
+                );
+                return (
+                  <option key={c.code} value={c.code}>
+                    {c.code === "GLOBAL" ? label : `${label} (${c.code})`}
+                  </option>
+                );
+              })}
             </select>
           </div>
         </label>

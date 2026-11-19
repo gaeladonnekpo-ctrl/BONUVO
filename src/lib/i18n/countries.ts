@@ -54,3 +54,18 @@ export function normalizeCountryCode(value: string | undefined | null): string {
   const upper = value.trim().toUpperCase();
   return SUPPORTED_COUNTRY_CODES.has(upper) ? upper : DEFAULT_COUNTRY_CODE;
 }
+
+export function formatCountryDisplay(
+  item: CountryOption,
+  locale: "fr" | "en",
+  globalLabel: string,
+): string {
+  if (item.code === "GLOBAL") return globalLabel;
+  const localized = locale === "en" ? item.nameEn : item.nameFr;
+  if (localized) return localized;
+  try {
+    return new Intl.DisplayNames([locale], { type: "region" }).of(item.code) ?? item.code;
+  } catch {
+    return item.code;
+  }
+}

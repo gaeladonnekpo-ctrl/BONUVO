@@ -5,7 +5,8 @@ import { useTranslations } from "next-intl";
 import * as React from "react";
 import { createPortal } from "react-dom";
 import { compareByBettingPriority, getBettingPriorityTier } from "@/lib/i18n/betting-priority";
-import { type ContinentKey, type CountryOption } from "@/lib/i18n/countries";
+import { formatCountryDisplay, type ContinentKey, type CountryOption } from "@/lib/i18n/countries";
+export { formatCountryDisplay };
 import { cn } from "@/lib/utils";
 
 const CONTINENT_ORDER: readonly ContinentKey[] = [
@@ -17,21 +18,6 @@ const CONTINENT_ORDER: readonly ContinentKey[] = [
 ];
 
 type ZoneFilter = "all" | ContinentKey;
-
-export function formatCountryDisplay(
-  item: CountryOption,
-  locale: "fr" | "en",
-  globalLabel: string,
-): string {
-  if (item.code === "GLOBAL") return globalLabel;
-  const localized = locale === "en" ? item.nameEn : item.nameFr;
-  if (localized) return localized;
-  try {
-    return new Intl.DisplayNames([locale], { type: "region" }).of(item.code) ?? item.code;
-  } catch {
-    return item.code;
-  }
-}
 
 function CountryOptionButton({
   item,
