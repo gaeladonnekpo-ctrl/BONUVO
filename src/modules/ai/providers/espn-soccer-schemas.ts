@@ -230,11 +230,7 @@ export function buildEspnMatchIntelligence(
         appearances: statNum("appearances"),
         goals: statNum("totalGoals"),
         assists: statNum("goalAssists"),
-        photoUrl:
-          headshotHref ??
-          (athleteId
-            ? `https://a.espncdn.com/i/headshots/soccer/players/full/${athleteId}.png`
-            : null),
+        photoUrl: headshotHref,
       };
     });
   };

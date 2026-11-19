@@ -15,7 +15,12 @@ function getInitials(name: string): string {
   return `${words[0]?.[0] ?? ""}${words[1]?.[0] ?? ""}`.toUpperCase();
 }
 
-const AUTHORIZED_LOGO_HOSTS = new Set(["media.api-sports.io", "a.espncdn.com"]);
+const AUTHORIZED_LOGO_HOSTS = new Set([
+  "media.api-sports.io",
+  "a.espncdn.com",
+  "r2.thesportsdb.com",
+  "www.thesportsdb.com",
+]);
 
 /**
  * Allows only site-local paths, configured Supabase storage URLs, or authorized sports CDNs.

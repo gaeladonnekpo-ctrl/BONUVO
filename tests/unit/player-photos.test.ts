@@ -1,12 +1,24 @@
 import { describe, expect, it } from "vitest";
+import { isAuthorizedSportLogoUrl } from "@/components/ai/SportCrest";
 import { buildEspnMatchIntelligence } from "@/modules/ai/providers/espn-soccer-schemas";
-import { normalizePlayerName } from "@/modules/ai/service/player-photo-resolver";
+import { doesTeamNameMatch, normalizePlayerName } from "@/modules/ai/service/player-photo-resolver";
 
 describe("Dynamic key player photos & ESPN intelligence extraction", () => {
   it("normalizes accented player names consistently for roster matching", () => {
     expect(normalizePlayerName("Matías Soulé")).toBe("matias soule");
     expect(normalizePlayerName("Matìas Soulè")).toBe("matias soule");
     expect(normalizePlayerName("José Romero")).toBe("jose romero");
+  });
+
+  it("matches team names accurately and rejects mismatched homonym clubs", () => {
+    expect(doesTeamNameMatch("Manchester City", "Manchester City")).toBe(true);
+    expect(doesTeamNameMatch("Roma", "AS Roma")).toBe(true);
+    expect(doesTeamNameMatch("Al-Khaleej", "Fulham")).toBe(false);
+    expect(
+      isAuthorizedSportLogoUrl(
+        "https://r2.thesportsdb.com/images/media/player/cutout/e8cart1789115621.png",
+      ),
+    ).toBe(true);
   });
 
   it("extracts externalId and official ESPN headshot photoUrl from match leaders", () => {

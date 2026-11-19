@@ -302,6 +302,7 @@ export async function getPublicFixtureDetail(fixtureId: string) {
                 leagueExternalId: lRow?.externalId ?? "",
                 leagueName: lName,
                 teamExternalId: homeTeamExtId,
+                teamName: teamMap.get(fix.homeTeamId)?.name ?? "",
               })
             : Promise.resolve([]),
           rawAwayStats?.keyPlayersJson?.length
@@ -310,6 +311,7 @@ export async function getPublicFixtureDetail(fixtureId: string) {
                 leagueExternalId: lRow?.externalId ?? "",
                 leagueName: lName,
                 teamExternalId: awayTeamExtId,
+                teamName: teamMap.get(fix.awayTeamId)?.name ?? "",
               })
             : Promise.resolve([]),
         ]);
@@ -360,7 +362,7 @@ export async function getPublicFixtureDetail(fixtureId: string) {
           })),
         };
       }),
-    ["ai-fixture-detail-v3", fixtureId],
+    ["ai-fixture-detail-v4", fixtureId],
     [PUBLIC_CATALOG_CACHE_TAGS.predictions],
   )();
 }
