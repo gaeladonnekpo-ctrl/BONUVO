@@ -60,6 +60,28 @@ function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
+/**
+ * Estimates joint coupon probability without assuming strict statistical independence.
+ * Applies a conservative correlation penalty for shared slate/league regime effects.
+ */
+export function computeCorrelatedComboProbability(legProbs: number[], sameLeaguePairs = 0): number {
+  if (legProbs.length === 0) return 0;
+  const naive = legProbs.reduce((acc, p) => acc * Math.min(0.99, Math.max(0.01, p)), 1);
+  if (legProbs.length === 1) return naive;
+  const penalty = Math.max(0.65, 1 - 0.04 * (legProbs.length - 1) - 0.03 * sameLeaguePairs);
+  return Math.max(0.01, Math.min(naive, naive * penalty));
+}
+
+function countSameLeaguePairs(legs: Array<{ leagueName: string }>): number {
+  let pairs = 0;
+  for (let i = 0; i < legs.length; i += 1) {
+    for (let j = i + 1; j < legs.length; j += 1) {
+      if (legs[i]?.leagueName && legs[i]?.leagueName === legs[j]?.leagueName) pairs += 1;
+    }
+  }
+  return pairs;
+}
+
 function deriveDoubleChanceCandidate(fix: PublicFixtureDto): SingleBetSuggestion | null {
   const pred = fix.predictions.find((p) => p.market === "1x2");
   if (!pred) return null;
@@ -185,7 +207,10 @@ export function buildCombinedCoupons(fixtures: PublicFixtureDto[]): CombinedCoup
 
   if (dcLegs.length >= 2) {
     const safeSelection = dcLegs.slice(0, 2);
-    const joint = safeSelection.reduce((acc, l) => acc * (l.probabilityPct / 100), 1);
+    const joint = computeCorrelatedComboProbability(
+      safeSelection.map((l) => l.probabilityPct / 100),
+      countSameLeaguePairs(safeSelection),
+    );
     coupons.push({
       id: "coupon-safe-2",
       titleFr: "Combiné Prudent · 2 sélections",
@@ -212,7 +237,10 @@ export function buildCombinedCoupons(fixtures: PublicFixtureDto[]): CombinedCoup
   }
 
   if (uniqueFixtureBalanced.length >= 2) {
-    const joint = uniqueFixtureBalanced.reduce((acc, l) => acc * (l.probabilityPct / 100), 1);
+    const joint = computeCorrelatedComboProbability(
+      uniqueFixtureBalanced.map((l) => l.probabilityPct / 100),
+      countSameLeaguePairs(uniqueFixtureBalanced),
+    );
     coupons.push({
       id: "coupon-balanced-3",
       titleFr: `Combiné Équilibré · ${uniqueFixtureBalanced.length} sélections`,

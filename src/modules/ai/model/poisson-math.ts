@@ -1,10 +1,14 @@
 import { createHash } from "node:crypto";
 
-export const MODEL_VERSION_TAG = "poisson-v1.0";
+export const MODEL_VERSION_TAG = "poisson-v2.0";
 export const MIN_MATCHES_THRESHOLD = 6;
 export const MAX_POISSON_GOALS = 10;
 export const DEFAULT_LEAGUE_HOME_AVG = 1.45;
 export const DEFAULT_LEAGUE_AWAY_AVG = 1.15;
+export const PRIOR_MATCHES_WEIGHT = 8;
+export const MIN_STRENGTH_RATIO = 0.55;
+export const MAX_STRENGTH_RATIO = 1.75;
+export const CALIBRATION_TEMPERATURE = 1.08;
 
 export type PredictionMarketType = "1x2" | "over_under_25" | "btts";
 export type PredictionConfidenceTier = "low" | "medium" | "high";
@@ -94,8 +98,14 @@ function computeFormFactor(form: string | null | undefined, baseRate: number): n
 export function computeAttackAndDefenseRates(
   team: TeamModelInput,
   side: "home" | "away",
+  baseline?: LeagueBaselineInput,
 ): { attack: number; defense: number } {
-  const useSplit = side === "home" ? team.homeMatches >= 3 : team.awayMatches >= 3;
+  const muHome = clamp(baseline?.homeGoalAvg ?? DEFAULT_LEAGUE_HOME_AVG, 0.8, 2.4);
+  const muAway = clamp(baseline?.awayGoalAvg ?? DEFAULT_LEAGUE_AWAY_AVG, 0.6, 2.1);
+  const attackPrior = side === "home" ? muHome : muAway;
+  const defensePrior = side === "home" ? muAway : muHome;
+
+  const useSplit = side === "home" ? team.homeMatches >= 4 : team.awayMatches >= 4;
   const matches = useSplit
     ? side === "home"
       ? team.homeMatches
@@ -112,13 +122,34 @@ export function computeAttackAndDefenseRates(
       : team.awayGoalsAgainst
     : team.goalsAgainst;
 
-  const rawAttack = matches > 0 ? goalsFor / matches : DEFAULT_LEAGUE_HOME_AVG;
-  const rawDefense = matches > 0 ? goalsAgainst / matches : DEFAULT_LEAGUE_AWAY_AVG;
+  // Empirical Bayes shrinkage toward league baseline to cap extreme early/outlier differentials
+  const shrunkAttack =
+    (Math.max(0, goalsFor) + PRIOR_MATCHES_WEIGHT * attackPrior) /
+    (Math.max(0, matches) + PRIOR_MATCHES_WEIGHT);
+  const shrunkDefense =
+    (Math.max(0, goalsAgainst) + PRIOR_MATCHES_WEIGHT * defensePrior) /
+    (Math.max(0, matches) + PRIOR_MATCHES_WEIGHT);
+
+  const formAdjustedAttack = computeFormFactor(team.recentForm, shrunkAttack);
+  const cappedAttack =
+    attackPrior * clamp(formAdjustedAttack / attackPrior, MIN_STRENGTH_RATIO, MAX_STRENGTH_RATIO);
+  const cappedDefense =
+    defensePrior * clamp(shrunkDefense / defensePrior, MIN_STRENGTH_RATIO, MAX_STRENGTH_RATIO);
 
   return {
-    attack: Math.max(0.25, computeFormFactor(team.recentForm, rawAttack)),
-    defense: Math.max(0.25, rawDefense),
+    attack: round4(Math.max(0.25, cappedAttack)),
+    defense: round4(Math.max(0.25, cappedDefense)),
   };
+}
+
+/** Applies temperature calibration before basis-point normalization to avoid overconfident tails. */
+export function calibrateProbabilities(
+  raw: number[],
+  temperature = CALIBRATION_TEMPERATURE,
+): number[] {
+  const invT = temperature > 0 ? 1 / temperature : 1;
+  const tempered = raw.map((p) => Math.pow(Math.max(1e-6, p), invT));
+  return normalizeToBasisPoints(tempered);
 }
 
 export function resolveConfidence(

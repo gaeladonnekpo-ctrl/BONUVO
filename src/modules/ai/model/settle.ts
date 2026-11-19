@@ -14,6 +14,8 @@ export interface SettledRecordForSummary {
   market: PredictionMarketType;
 }
 
+export const MIN_SETTLED_FOR_BRIER = 50;
+
 export interface AccuracySummary {
   totalSettled: number;
   won: number;
@@ -21,6 +23,7 @@ export interface AccuracySummary {
   voidCount: number;
   winRatePct: number | null;
   avgBrierScore: number | null;
+  brierReady: boolean;
 }
 
 function round4(value: number): number {
@@ -137,5 +140,6 @@ export function computeAccuracySummary(records: SettledRecordForSummary[]): Accu
     voidCount,
     winRatePct,
     avgBrierScore,
+    brierReady: decided >= MIN_SETTLED_FOR_BRIER,
   };
 }

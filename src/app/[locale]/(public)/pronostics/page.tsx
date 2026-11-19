@@ -1,5 +1,6 @@
 import { Activity, BarChart2, Layers, ShieldCheck, Sparkles } from "lucide-react";
 import { setRequestLocale } from "next-intl/server";
+import { AiResponsibilityNotice } from "@/components/ai/AiResponsibilityNotice";
 import { CouponsSection } from "@/components/ai/CouponsSection";
 import { FixturesExplorer } from "@/components/ai/FixturesExplorer";
 import { UiBadge } from "@/components/ui/badge";
@@ -163,16 +164,20 @@ export default async function PublicPredictionsPage({
                     : "Actif"}
               </p>
               <p className="text-[11px] text-fg-muted">
-                {statsData.overall.totalSettled > 0
-                  ? `${statsData.overall.totalSettled} ${isEn ? "settled" : "réglés"}`
-                  : isEn
-                    ? "Auto-settled post-match"
-                    : "Règlement auto après match"}
+                {statsData.overall.brierReady && statsData.overall.avgBrierScore !== null
+                  ? `Brier ${statsData.overall.avgBrierScore.toFixed(3)} · ${statsData.overall.totalSettled} ${isEn ? "settled" : "réglés"}`
+                  : statsData.overall.totalSettled > 0
+                    ? `${statsData.overall.totalSettled}/50 ${isEn ? "for Brier score" : "pour score de Brier"}`
+                    : isEn
+                      ? "Auto-settled post-match"
+                      : "Règlement auto après match"}
               </p>
             </CardContent>
           </Card>
         </div>
       </header>
+
+      <AiResponsibilityNotice locale={resolvedLocale} />
 
       {/* Interactive Combined Coupons, Single Picks & Platform Games */}
       <CouponsSection

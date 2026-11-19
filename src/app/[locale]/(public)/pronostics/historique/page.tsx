@@ -1,6 +1,7 @@
 import { ArrowLeft } from "lucide-react";
 import { setRequestLocale } from "next-intl/server";
 import { AccuracyChart } from "@/components/ai/AccuracyChart";
+import { AiResponsibilityNotice } from "@/components/ai/AiResponsibilityNotice";
 import { FixtureRow } from "@/components/ai/FixtureRow";
 import { UiBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -76,7 +77,9 @@ export default async function PublicPredictionHistoryPage({
         </p>
       </header>
 
-      <div className="grid gap-4 sm:grid-cols-4">
+      <AiResponsibilityNotice locale={resolvedLocale} />
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <Card>
           <CardContent className="pt-5">
             <p className="text-xs uppercase text-fg-muted">
@@ -114,6 +117,27 @@ export default async function PublicPredictionHistoryPage({
             </p>
             <p className="mt-1 font-display text-2xl font-bold text-fg">
               {stats.overall.voidCount}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-5">
+            <p className="text-xs uppercase text-fg-muted">
+              {isEn ? "Brier score" : "Score de Brier"}
+            </p>
+            <p className="mt-1 font-display text-2xl font-bold text-fg">
+              {stats.overall.brierReady && stats.overall.avgBrierScore !== null
+                ? stats.overall.avgBrierScore.toFixed(3)
+                : `${stats.overall.won + stats.overall.lost}/50`}
+            </p>
+            <p className="mt-0.5 text-[11px] text-fg-muted">
+              {stats.overall.brierReady
+                ? isEn
+                  ? "Lower is better calibrated"
+                  : "Plus proche de 0 = mieux calibré"
+                : isEn
+                  ? "Displayed from 50 settled matches"
+                  : "Affiché dès 50 matchs réglés"}
             </p>
           </CardContent>
         </Card>

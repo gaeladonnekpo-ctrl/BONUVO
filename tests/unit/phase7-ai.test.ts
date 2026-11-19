@@ -143,6 +143,7 @@ describe("Phase 7 — Modèle Poisson v1.0, garde-fous et règlement", () => {
       voidCount: 1,
       winRatePct: 50,
       avgBrierScore: 0.5225,
+      brierReady: false,
     });
   });
 

@@ -136,6 +136,32 @@ export async function runComputePredictionsJob(options?: {
         if (!latestStatMap.has(key)) latestStatMap.set(key, s);
       }
       const standingMap = new Map(standingRows.map((st) => [`${st.teamId}:${st.seasonId}`, st]));
+      const seasonBaselineMap = new Map<string, { homeGoalAvg: number; awayGoalAvg: number }>();
+      const seasonTotals = new Map<
+        string,
+        { homeGoals: number; homeMatches: number; awayGoals: number; awayMatches: number }
+      >();
+      for (const s of latestStatMap.values()) {
+        const cur = seasonTotals.get(s.seasonId) ?? {
+          homeGoals: 0,
+          homeMatches: 0,
+          awayGoals: 0,
+          awayMatches: 0,
+        };
+        cur.homeGoals += s.homeGoalsFor;
+        cur.homeMatches += s.homeMatchesPlayed;
+        cur.awayGoals += s.awayGoalsFor;
+        cur.awayMatches += s.awayMatchesPlayed;
+        seasonTotals.set(s.seasonId, cur);
+      }
+      for (const [sid, tot] of seasonTotals.entries()) {
+        if (tot.homeMatches >= 20 && tot.awayMatches >= 20) {
+          seasonBaselineMap.set(sid, {
+            homeGoalAvg: tot.homeGoals / tot.homeMatches,
+            awayGoalAvg: tot.awayGoals / tot.awayMatches,
+          });
+        }
+      }
 
       let predictionsCreated = 0;
       let skippedInsufficientData = 0;
@@ -183,6 +209,7 @@ export async function runComputePredictionsJob(options?: {
           fixtureId: fix.id,
           home: homeInput,
           away: awayInput,
+          baseline: seasonBaselineMap.get(fix.seasonId),
         });
         if (!computed.eligible) {
           skippedInsufficientData += 1;

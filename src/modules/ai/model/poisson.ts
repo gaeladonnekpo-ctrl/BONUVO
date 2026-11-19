@@ -5,10 +5,10 @@ import {
   MIN_MATCHES_THRESHOLD,
   MODEL_VERSION_TAG,
   buildDeterministicAnalysisText,
+  calibrateProbabilities,
   clamp,
   computeAttackAndDefenseRates,
   computeInputSnapshotHash,
-  normalizeToBasisPoints,
   poissonPmf,
   resolveConfidence,
   round4,
@@ -75,16 +75,22 @@ export function predictFixtureMarkets(params: {
     };
   }
 
-  const muHome = params.baseline?.homeGoalAvg ?? DEFAULT_LEAGUE_HOME_AVG;
-  const muAway = params.baseline?.awayGoalAvg ?? DEFAULT_LEAGUE_AWAY_AVG;
-  const homeRates = computeAttackAndDefenseRates(home, "home");
-  const awayRates = computeAttackAndDefenseRates(away, "away");
+  const muHome = clamp(params.baseline?.homeGoalAvg ?? DEFAULT_LEAGUE_HOME_AVG, 0.8, 2.4);
+  const muAway = clamp(params.baseline?.awayGoalAvg ?? DEFAULT_LEAGUE_AWAY_AVG, 0.6, 2.1);
+  const homeRates = computeAttackAndDefenseRates(home, "home", {
+    homeGoalAvg: muHome,
+    awayGoalAvg: muAway,
+  });
+  const awayRates = computeAttackAndDefenseRates(away, "away", {
+    homeGoalAvg: muHome,
+    awayGoalAvg: muAway,
+  });
 
   const lambdaHome = round4(
-    clamp(muHome * (homeRates.attack / muHome) * (awayRates.defense / muHome), 0.2, 4.5),
+    clamp(muHome * (homeRates.attack / muHome) * (awayRates.defense / muHome), 0.25, 3.2),
   );
   const lambdaAway = round4(
-    clamp(muAway * (awayRates.attack / muAway) * (homeRates.defense / muAway), 0.2, 4.5),
+    clamp(muAway * (awayRates.attack / muAway) * (homeRates.defense / muAway), 0.25, 3.2),
   );
 
   let pHomeRaw = 0;
@@ -114,9 +120,9 @@ export function predictFixtureMarkets(params: {
   }
 
   const norm = matrixMass > 0 ? matrixMass : 1;
-  const probs1x2Arr = normalizeToBasisPoints([pHomeRaw / norm, pDrawRaw / norm, pAwayRaw / norm]);
-  const probsOuArr = normalizeToBasisPoints([pOver25Raw / norm, pUnder25Raw / norm]);
-  const probsBttsArr = normalizeToBasisPoints([pBttsYesRaw / norm, pBttsNoRaw / norm]);
+  const probs1x2Arr = calibrateProbabilities([pHomeRaw / norm, pDrawRaw / norm, pAwayRaw / norm]);
+  const probsOuArr = calibrateProbabilities([pOver25Raw / norm, pUnder25Raw / norm]);
+  const probsBttsArr = calibrateProbabilities([pBttsYesRaw / norm, pBttsNoRaw / norm]);
   const probHome = probs1x2Arr[0] ?? 0;
   const probDraw = probs1x2Arr[1] ?? 0;
   const probAway = probs1x2Arr[2] ?? 0;
