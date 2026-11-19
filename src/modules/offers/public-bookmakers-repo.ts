@@ -6,7 +6,11 @@ import {
   loadCatalogMetaTx,
   resolveCountryIdOnTx,
 } from "@/modules/offers/public-catalog-meta-repo";
-import { buildShortCode, getPaymentSortPriority } from "@/modules/offers/public-mappers";
+import {
+  buildShortCode,
+  getPaymentSortPriority,
+  resolveBookmakerLicenseSummary,
+} from "@/modules/offers/public-mappers";
 import type { PublicBookmakerListItem, PublicCatalogMeta } from "@/modules/offers/public-types";
 import { getCatalogCacheGeneration } from "@/server/cache/catalog-tags";
 import { withAppDb, type AppDbTransaction } from "@/server/db/context";
@@ -192,7 +196,14 @@ export async function listPublicBookmakersRepo(params: {
         foundedYear: bookmaker.foundedYear,
         appPlatforms: bookmaker.appPlatforms,
         finalScore: rating ? Number(rating.finalScore) : null,
-        licenseSummary: countryEntry?.localLicense || countryEntry?.authorityName || null,
+        licenseSummary: resolveBookmakerLicenseSummary({
+          localLicense: countryEntry?.localLicense,
+          authorityName: countryEntry?.authorityName,
+          operatorLicenseNumber: bookmaker.operatorLicenseNumber,
+          operatorLicenseAuthority: bookmaker.operatorLicenseAuthority,
+        }),
+        operatorLicenseNumber: bookmaker.operatorLicenseNumber || null,
+        operatorLicenseAuthority: bookmaker.operatorLicenseAuthority || null,
         activeOffersCount: bmOffers.length,
         activePromoCount: activePromos.filter((p) => p.bookmakerId === bookmaker.id).length,
         paymentMethods: Array.from(paymentsMap.values()).sort(

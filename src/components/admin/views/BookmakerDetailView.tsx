@@ -22,6 +22,8 @@ export interface BookmakerDetailProps {
     descriptionEn: string;
     foundedYear: number | null;
     allowedHosts: string[];
+    operatorLicenseNumber?: string;
+    operatorLicenseAuthority?: string;
     status: string;
   };
   countries: Array<{ id: string; code: string; nameFr: string; currencyCode: string }>;
@@ -74,6 +76,12 @@ export function BookmakerDetailView({
   const [name, setName] = React.useState(bookmaker.name);
   const [slug, setSlug] = React.useState(bookmaker.slug);
   const [hosts, setHosts] = React.useState(bookmaker.allowedHosts.join(", "));
+  const [opLicenseNumber, setOpLicenseNumber] = React.useState(
+    bookmaker.operatorLicenseNumber ?? "",
+  );
+  const [opLicenseAuthority, setOpLicenseAuthority] = React.useState(
+    bookmaker.operatorLicenseAuthority ?? "",
+  );
   const [logoAssetId, setLogoAssetId] = React.useState<string | null>(bookmaker.logoAssetId);
   const [descFr, setDescFr] = React.useState(bookmaker.descriptionFr);
   const [descEn, setDescEn] = React.useState(bookmaker.descriptionEn);
@@ -108,6 +116,8 @@ export function BookmakerDetailView({
               slug,
               logoAssetId,
               allowedHosts: hosts,
+              operatorLicenseNumber: opLicenseNumber,
+              operatorLicenseAuthority: opLicenseAuthority,
               descriptionFr: descFr,
               descriptionEn: descEn,
               foundedYear: bookmaker.foundedYear,
@@ -150,6 +160,28 @@ export function BookmakerDetailView({
                 Hôtes autorisés
               </label>
               <Input id="edit-bm-hosts" value={hosts} onChange={(e) => setHosts(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="edit-bm-op-license" className="text-xs font-semibold text-fg">
+                Licence de l&apos;opérateur (numéro)
+              </label>
+              <Input
+                id="edit-bm-op-license"
+                value={opLicenseNumber}
+                placeholder="ex. Licence Curaçao GCB OGL/2024/..."
+                onChange={(e) => setOpLicenseNumber(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="edit-bm-op-authority" className="text-xs font-semibold text-fg">
+                Autorité de l&apos;opérateur
+              </label>
+              <Input
+                id="edit-bm-op-authority"
+                value={opLicenseAuthority}
+                placeholder="ex. Curaçao Gaming Control Board"
+                onChange={(e) => setOpLicenseAuthority(e.target.value)}
+              />
             </div>
             <div className="space-y-1.5">
               <label htmlFor="edit-bm-fr" className="text-xs font-semibold text-fg">

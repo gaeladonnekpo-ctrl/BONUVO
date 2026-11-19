@@ -83,6 +83,8 @@ export async function saveBookmaker(
           foundedYear: parsed.foundedYear,
           appPlatforms: parsed.appPlatforms,
           allowedHosts: parsed.allowedHosts,
+          operatorLicenseNumber: parsed.operatorLicenseNumber,
+          operatorLicenseAuthority: parsed.operatorLicenseAuthority,
           status: parsed.status,
           deletedAt: parsed.status === "archived" ? new Date() : null,
         })
@@ -103,6 +105,8 @@ export async function saveBookmaker(
         foundedYear: parsed.foundedYear,
         appPlatforms: parsed.appPlatforms,
         allowedHosts: parsed.allowedHosts,
+        operatorLicenseNumber: parsed.operatorLicenseNumber,
+        operatorLicenseAuthority: parsed.operatorLicenseAuthority,
         status: parsed.status,
       })
       .returning();

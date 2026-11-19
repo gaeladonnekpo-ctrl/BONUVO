@@ -88,6 +88,8 @@ export interface PublicBookmakerListItem {
   readonly activePromoCount: number;
   readonly primaryOfferSlug?: string | null;
   readonly licenseSummary: string | null;
+  readonly operatorLicenseNumber?: string | null;
+  readonly operatorLicenseAuthority?: string | null;
   readonly paymentMethods: readonly PublicPaymentMethodSummary[];
 }
 

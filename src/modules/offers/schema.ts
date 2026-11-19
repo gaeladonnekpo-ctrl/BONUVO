@@ -59,6 +59,8 @@ export const bookmakerInputSchema = z.object({
     .refine((hosts) => hosts.length >= 1, {
       message: "Au moins un hôte autorisé valide (ex. betclic.bj) est requis.",
     }),
+  operatorLicenseNumber: z.string().trim().max(180).default(""),
+  operatorLicenseAuthority: z.string().trim().max(180).default(""),
   status: z.enum(["active", "inactive", "archived"]).default("active"),
 });
 

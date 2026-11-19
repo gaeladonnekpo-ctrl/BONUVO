@@ -171,23 +171,54 @@ export default async function BookmakerDetailPage({
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">{t("bookmakerLicensesTitle")}</CardTitle>
+            <CardTitle className="text-lg">{t("operatorLicenseTitle")}</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2.5 text-sm">
-            {detail.countryLicenses.map((item) => (
-              <div
-                key={item.countryCode}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-surface-subtle/50 p-3"
-              >
-                <span className="font-semibold text-fg">
-                  {resolvedLocale === "en" ? item.countryNameEn : item.countryNameFr}
-                </span>
-                <span className="inline-flex items-center gap-1.5 text-xs text-fg-muted">
-                  <Shield className="h-3.5 w-3.5 text-trust" aria-hidden="true" />
-                  <span>{item.localLicense || item.authorityName || "—"}</span>
-                </span>
+          <CardContent className="space-y-4 text-sm">
+            <div className="rounded-lg border border-border bg-surface-subtle/50 p-3">
+              <div className="flex items-start gap-2">
+                <Shield className="mt-0.5 h-4 w-4 shrink-0 text-trust" aria-hidden="true" />
+                <div className="space-y-1">
+                  <p className="font-semibold text-fg">
+                    {detail.bookmaker.operatorLicenseNumber || "—"}
+                  </p>
+                  {detail.bookmaker.operatorLicenseAuthority ? (
+                    <p className="text-xs text-fg-muted">
+                      {detail.bookmaker.operatorLicenseAuthority}
+                    </p>
+                  ) : null}
+                  <p className="text-[11px] text-fg-muted">{t("operatorLicenseNote")}</p>
+                </div>
               </div>
-            ))}
+            </div>
+
+            <div className="space-y-2.5">
+              <h3 className="text-sm font-semibold text-fg">{t("offeredCountriesTitle")}</h3>
+              {detail.countryLicenses.map((item) => {
+                const localNum = item.localLicense.trim();
+                const localAuth = item.authorityName.trim();
+                const verifiedLocal = localNum && localAuth ? `${localNum} · ${localAuth}` : null;
+                return (
+                  <div
+                    key={item.countryCode}
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-surface-subtle/50 p-3"
+                  >
+                    <span className="font-semibold text-fg">
+                      {resolvedLocale === "en" ? item.countryNameEn : item.countryNameFr}
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 text-xs text-fg-muted">
+                      {verifiedLocal ? (
+                        <>
+                          <Shield className="h-3.5 w-3.5 text-trust" aria-hidden="true" />
+                          <span>{t("localAuthLabel", { license: verifiedLocal })}</span>
+                        </>
+                      ) : (
+                        <span>{t("noLocalAuthLabel")}</span>
+                      )}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
           </CardContent>
         </Card>
 

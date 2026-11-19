@@ -18,7 +18,11 @@ import {
   selectBestAffiliateSlug,
 } from "@/modules/offers/public-catalog-meta-repo";
 import { localizePaymentMinDeposit } from "@/modules/offers/public-currency-localize";
-import { buildShortCode, getPaymentSortPriority } from "@/modules/offers/public-mappers";
+import {
+  buildShortCode,
+  getPaymentSortPriority,
+  resolveBookmakerLicenseSummary,
+} from "@/modules/offers/public-mappers";
 import { queryPublishedOffersTx } from "@/modules/offers/public-offers-repo";
 import type { PublicBookmakerDetailData } from "@/modules/offers/public-types";
 
@@ -218,7 +222,14 @@ export async function getPublicBookmakerBySlugRepo(params: {
         finalScore: latestRating ? Number(latestRating.finalScore) : null,
         activeOffersCount: activeOffers.length,
         activePromoCount: activePromoCodes.length,
-        licenseSummary: countryLicense?.localLicense || countryLicense?.authorityName || null,
+        licenseSummary: resolveBookmakerLicenseSummary({
+          localLicense: countryLicense?.localLicense,
+          authorityName: countryLicense?.authorityName,
+          operatorLicenseNumber: row.bookmaker.operatorLicenseNumber,
+          operatorLicenseAuthority: row.bookmaker.operatorLicenseAuthority,
+        }),
+        operatorLicenseNumber: row.bookmaker.operatorLicenseNumber || null,
+        operatorLicenseAuthority: row.bookmaker.operatorLicenseAuthority || null,
         paymentMethods: uniquePayments,
       },
       rating: latestRating

@@ -41,6 +41,8 @@ export const bookmakers = pgTable(
       .array()
       .notNull()
       .default(sql`ARRAY[]::text[]`),
+    operatorLicenseNumber: text("operator_license_number").notNull().default(""),
+    operatorLicenseAuthority: text("operator_license_authority").notNull().default(""),
     status: text("status").$type<BookmakerStatus>().notNull().default("active"),
     deletedAt: timestamp("deleted_at", { withTimezone: true, mode: "date" }),
     createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).notNull().defaultNow(),

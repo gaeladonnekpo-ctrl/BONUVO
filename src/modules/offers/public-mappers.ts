@@ -41,7 +41,10 @@ export function dedupePaymentItems<
     }
   }
   return Array.from(seen.values())
-    .sort((a, b) => getPaymentSortPriority(a) - getPaymentSortPriority(b))
+    .sort(
+      (a, b) =>
+        getPaymentSortPriority(a) - getPaymentSortPriority(b) || a.name.localeCompare(b.name),
+    )
     .map((row) => ({
       slug: row.slug,
       name: row.name,
@@ -190,4 +193,33 @@ export function filterAndRankOffers(
     ...item,
     rank: idx + 1,
   }));
+}
+
+/**
+ * Formats a per-country license only when both a local authorization number and authority exist.
+ */
+export function formatLocalCountryLicense(
+  localLicense: string | null | undefined,
+  authorityName: string | null | undefined,
+): string | null {
+  const num = localLicense?.trim() ?? "";
+  const auth = authorityName?.trim() ?? "";
+  if (!num || !auth) return null;
+  return `${num} · ${auth}`;
+}
+
+/**
+ * Resolves the display summary preferring a verified local license, else the single operator license.
+ */
+export function resolveBookmakerLicenseSummary(params: {
+  localLicense?: string | null;
+  authorityName?: string | null;
+  operatorLicenseNumber?: string | null;
+  operatorLicenseAuthority?: string | null;
+}): string | null {
+  const local = formatLocalCountryLicense(params.localLicense, params.authorityName);
+  if (local) return local;
+  const opNum = params.operatorLicenseNumber?.trim() ?? "";
+  const opAuth = params.operatorLicenseAuthority?.trim() ?? "";
+  return opNum || opAuth || null;
 }

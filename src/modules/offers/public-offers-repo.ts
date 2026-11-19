@@ -12,6 +12,7 @@ import {
   dedupePaymentItems,
   formatVerifiedLabel,
   filterAndRankOffers,
+  resolveBookmakerLicenseSummary,
   resolveOfferBadges,
 } from "@/modules/offers/public-mappers";
 import {
@@ -143,7 +144,13 @@ export async function queryPublishedOffersTx(
       promoCodeId: matchingPromo?.id ?? null,
       ctaHref: bestSlug ? `/go/${bestSlug}` : undefined,
       verifiedDateLabel: formatVerifiedLabel(offer.lastVerifiedAt, params.locale),
-      licenseLabel: countryLicense?.localLicense || countryLicense?.authorityName || undefined,
+      licenseLabel:
+        resolveBookmakerLicenseSummary({
+          localLicense: countryLicense?.localLicense,
+          authorityName: countryLicense?.authorityName,
+          operatorLicenseNumber: bookmaker.operatorLicenseNumber,
+          operatorLicenseAuthority: bookmaker.operatorLicenseAuthority,
+        }) ?? undefined,
       lastVerifiedIso: offer.lastVerifiedAt ? offer.lastVerifiedAt.toISOString() : null,
       updatedAtIso: offer.updatedAt.toISOString(),
       effectiveRank: countryOverrideRank ?? offer.rankOrder,
