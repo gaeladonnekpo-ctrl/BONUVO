@@ -19,7 +19,9 @@ const optionalNumberString = (minVal: number, maxVal = 1_000_000_000) =>
         return parsed >= minVal && parsed <= maxVal;
       },
       { message: `Valeur numérique attendue entre ${minVal} et ${maxVal}.` },
-    );
+    )
+    .optional()
+    .transform((val) => (val === undefined ? null : val));
 
 const optionalDateSchema = z
   .union([z.string(), z.date(), z.null(), z.undefined()])
@@ -29,7 +31,9 @@ const optionalDateSchema = z
     return Number.isNaN(date.getTime()) ? "INVALID" : date;
   })
   .refine((val) => val !== "INVALID", { message: "Date invalide." })
-  .transform((val) => (val === "INVALID" ? null : val));
+  .transform((val) => (val === "INVALID" ? null : val))
+  .optional()
+  .transform((val) => (val === undefined ? null : val));
 
 export const bookmakerInputSchema = z.object({
   id: z.string().uuid().optional(),
@@ -129,6 +133,7 @@ export const offerInputSchema = z
     validFrom: optionalDateSchema,
     validUntil: optionalDateSchema,
     badgeCode: z.string().trim().max(40).nullable().optional().default(null),
+    badgeJustification: z.string().trim().max(400).default(""),
     rankOrder: z.coerce.number().int().min(1).max(10000).default(100),
     countryIds: z
       .array(z.string().uuid())
@@ -138,6 +143,10 @@ export const offerInputSchema = z
   .refine((data) => !data.validFrom || !data.validUntil || data.validUntil > data.validFrom, {
     path: ["validUntil"],
     message: "La date de fin doit être postérieure à la date de début.",
+  })
+  .refine((data) => !data.badgeCode || data.badgeJustification.trim().length >= 5, {
+    path: ["badgeJustification"],
+    message: "Une justification éditoriale est requise lorsqu'un badge est sélectionné.",
   });
 
 export const offerStatusActionSchema = z.object({
@@ -169,6 +178,7 @@ export const promoCodeSchema = z
     countryId: z.string().uuid().nullable().optional().default(null),
     code: z.string().trim().toUpperCase().min(2).max(48),
     description: z.string().trim().max(500).default(""),
+    programSource: z.string().trim().max(160).default(""),
     validFrom: optionalDateSchema,
     validUntil: optionalDateSchema,
     status: z.enum(["active", "expired", "disabled", "archived"]).default("active"),
