@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { routing } from "@/i18n/routing";
 import { isDesignShowcaseEnabled } from "@/lib/design/showcase-guard";
 import { createSupabaseProxyClient } from "@/server/auth/supabase";
+import { buildNonceReportOnlyCsp, generateCspNonce } from "@/server/security/csp";
 import { sanitizeRelativeRedirect } from "@/server/security/redirect";
 
 const handleI18nRouting = createMiddleware(routing);
@@ -23,6 +24,15 @@ function stripLocalePrefix(pathname: string): { locale: "fr" | "en"; path: strin
  */
 export async function proxy(request: NextRequest) {
   request.headers.delete("x-bonuvo-dev-showcase");
+
+  const nonce = generateCspNonce();
+  request.headers.set("x-nonce", nonce);
+  const isHttpsSite = (process.env.NEXT_PUBLIC_SITE_URL ?? "").startsWith("https://");
+  const reportOnlyCsp = buildNonceReportOnlyCsp(nonce, isHttpsSite);
+  const attachCspReportOnly = (res: NextResponse) => {
+    res.headers.set("Content-Security-Policy-Report-Only", reportOnlyCsp);
+    return res;
+  };
 
   const { locale, path } = stripLocalePrefix(request.nextUrl.pathname);
   const isDevShowcasePath = path === "/admin/design" || path.startsWith("/admin/design/");
@@ -58,7 +68,7 @@ export async function proxy(request: NextRequest) {
   const hasAuthCookie = request.cookies.getAll().some((cookie) => cookie.name.startsWith("sb-"));
 
   if (!requiresAuth && !hasAuthCookie) {
-    return response;
+    return attachCspReportOnly(response);
   }
 
   const supabase = createSupabaseProxyClient(
@@ -76,7 +86,7 @@ export async function proxy(request: NextRequest) {
         new URL(`/${locale}/connexion?next=${encodeURIComponent(target)}`, request.url),
       );
     }
-    return response;
+    return attachCspReportOnly(response);
   }
 
   const { data: claimsData, error: claimsError } = await supabase.auth.getClaims();
@@ -96,7 +106,7 @@ export async function proxy(request: NextRequest) {
     return redirectResponse;
   }
 
-  return response;
+  return attachCspReportOnly(response);
 }
 
 export const config = {
