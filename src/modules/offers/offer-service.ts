@@ -70,6 +70,7 @@ export async function saveOffer(
           validFrom: parsed.validFrom,
           validUntil: parsed.validUntil,
           badgeCode: parsed.badgeCode,
+          badgeJustification: parsed.badgeCode ? parsed.badgeJustification : "",
           rankOrder: parsed.rankOrder,
         })
         .where(eq(offers.id, parsed.id))
@@ -101,6 +102,7 @@ export async function saveOffer(
         validFrom: parsed.validFrom,
         validUntil: parsed.validUntil,
         badgeCode: parsed.badgeCode,
+        badgeJustification: parsed.badgeCode ? parsed.badgeJustification : "",
         rankOrder: parsed.rankOrder,
         status: "draft",
       })

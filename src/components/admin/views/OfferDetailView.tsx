@@ -32,6 +32,8 @@ export interface OfferDetailViewProps {
     currencyCode: string;
     minDeposit: string | null;
     rolloverText: string;
+    badgeCode?: string | null;
+    badgeJustification?: string;
     status: string;
     rankOrder: number;
     lastVerifiedAt: Date | string | null;
@@ -66,6 +68,10 @@ export function OfferDetailView({
   const [currencyCode, setCurrencyCode] = React.useState(offer.currencyCode);
   const [minDeposit, setMinDeposit] = React.useState(offer.minDeposit ?? "");
   const [rolloverText, setRolloverText] = React.useState(offer.rolloverText);
+  const [badgeCode, setBadgeCode] = React.useState(offer.badgeCode ?? "");
+  const [badgeJustification, setBadgeJustification] = React.useState(
+    offer.badgeJustification ?? "",
+  );
   const [countryIds, setCountryIds] = React.useState(selectedCountryIds);
   const [statusResult, setStatusResult] = React.useState<AdminActionResult<unknown> | null>(null);
   const [editResult, setEditResult] = React.useState<AdminActionResult<unknown> | null>(null);
@@ -199,6 +205,8 @@ export function OfferDetailView({
               currencyCode,
               minDeposit,
               rolloverText,
+              badgeCode: badgeCode || null,
+              badgeJustification,
               rankOrder: offer.rankOrder,
               countryIds,
             });
@@ -243,6 +251,33 @@ export function OfferDetailView({
                 id="ed-roll"
                 value={rolloverText}
                 onChange={(e) => setRolloverText(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="ed-badge" className="text-xs font-semibold text-fg">
+                Badge éditorial
+              </label>
+              <select
+                id="ed-badge"
+                value={badgeCode}
+                onChange={(e) => setBadgeCode(e.target.value)}
+                className="h-10 w-full rounded-input border border-border bg-surface px-3 text-sm text-fg"
+              >
+                <option value="">Aucun badge</option>
+                <option value="recommended">Recommandé</option>
+                <option value="exclusive">Exclusif</option>
+                <option value="new">Nouveau</option>
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="ed-badge-justif" className="text-xs font-semibold text-fg">
+                Justification du badge {badgeCode ? "*" : "(optionnelle)"}
+              </label>
+              <Input
+                id="ed-badge-justif"
+                placeholder="Motif objectif (requis si badge actif)"
+                value={badgeJustification}
+                onChange={(e) => setBadgeJustification(e.target.value)}
               />
             </div>
           </div>

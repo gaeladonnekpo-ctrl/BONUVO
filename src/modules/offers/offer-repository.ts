@@ -139,6 +139,7 @@ export async function listPromoCodesRepo(actorId: string) {
         id: promoCodes.id,
         code: promoCodes.code,
         description: promoCodes.description,
+        programSource: promoCodes.programSource,
         bookmakerId: promoCodes.bookmakerId,
         bookmakerName: bookmakers.name,
         offerId: promoCodes.offerId,

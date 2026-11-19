@@ -76,15 +76,21 @@ export function formatAmountDisplay(params: {
 
 export function resolveOfferBadges(params: {
   badgeCode: string | null;
+  badgeJustification?: string | null;
+  isSharedPromoCode?: boolean;
   createdAt: Date;
   lastVerifiedAt: Date | null;
   now?: Date;
 }): BusinessBadgeTone[] {
   const badges: BusinessBadgeTone[] = [];
   const nowMs = (params.now ?? new Date()).getTime();
+  const hasJustification =
+    params.badgeJustification === undefined || params.badgeJustification?.trim().length !== 0;
 
-  if (params.badgeCode && ALLOWED_BADGES.has(params.badgeCode)) {
-    if (params.badgeCode === "new") {
+  if (params.badgeCode && ALLOWED_BADGES.has(params.badgeCode) && hasJustification) {
+    if (params.badgeCode === "exclusive" && params.isSharedPromoCode) {
+      // Never show "Exclusif" when the same promo code is shared across multiple operators
+    } else if (params.badgeCode === "new") {
       if (nowMs - params.createdAt.getTime() <= THIRTY_DAYS_MS) {
         badges.push("new");
       }

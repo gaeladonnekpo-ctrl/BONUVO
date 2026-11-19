@@ -13,6 +13,7 @@ export interface PromoCodeRow {
   id: string;
   code: string;
   description: string;
+  programSource?: string;
   bookmakerName: string;
   offerTitleFr: string | null;
   countryCode: string | null;
@@ -37,6 +38,7 @@ export function PromoCodesView({
   const [offerId, setOfferId] = React.useState("");
   const [countryId, setCountryId] = React.useState("");
   const [code, setCode] = React.useState("");
+  const [programSource, setProgramSource] = React.useState("");
   const [description, setDescription] = React.useState("");
   const [result, setResult] = React.useState<AdminActionResult<unknown> | null>(null);
 
@@ -47,12 +49,14 @@ export function PromoCodesView({
       offerId: offerId || null,
       countryId: countryId || null,
       code,
+      programSource,
       description,
       status: "active",
     });
     setResult(res);
     if (res.ok) {
       setCode("");
+      setProgramSource("");
       setDescription("");
       router.refresh();
     }
@@ -65,6 +69,13 @@ export function PromoCodesView({
       cell: ({ row }) => <span className="font-mono font-bold text-fg">{row.original.code}</span>,
     },
     { accessorKey: "bookmakerName", header: "Bookmaker" },
+    {
+      accessorKey: "programSource",
+      header: "Programme d'affiliation",
+      cell: ({ row }) => (
+        <span className="text-xs font-medium text-fg">{row.original.programSource || "—"}</span>
+      ),
+    },
     {
       accessorKey: "offerTitleFr",
       header: "Offre liée",
@@ -172,6 +183,17 @@ export function PromoCodesView({
                   </option>
                 ))}
               </select>
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="pc-program" className="text-xs font-semibold text-fg">
+                Programme d&apos;affiliation source
+              </label>
+              <Input
+                id="pc-program"
+                placeholder="ex. 1xPartners, Melbet Affiliates"
+                value={programSource}
+                onChange={(e) => setProgramSource(e.target.value)}
+              />
             </div>
             <div className="space-y-1.5 sm:col-span-2">
               <label htmlFor="pc-desc" className="text-xs font-semibold text-fg">

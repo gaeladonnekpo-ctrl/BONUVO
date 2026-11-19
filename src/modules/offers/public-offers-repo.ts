@@ -55,6 +55,14 @@ export async function queryPublishedOffersTx(
     }
   }
 
+  const bookmakersByPromoCode = new Map<string, Set<string>>();
+  for (const p of promoRows) {
+    const key = p.code.trim().toUpperCase();
+    const set = bookmakersByPromoCode.get(key) ?? new Set<string>();
+    set.add(p.bookmakerId);
+    bookmakersByPromoCode.set(key, set);
+  }
+
   const mapped: PublicOfferListItem[] = [];
   for (const { offer, bookmaker, logoUrl } of rawOffers) {
     const eligibleCountries = offerCountryRows.filter((c) => c.offerId === offer.id);
@@ -133,6 +141,10 @@ export async function queryPublishedOffersTx(
       ratingMax: 10,
       badges: resolveOfferBadges({
         badgeCode: offer.badgeCode,
+        badgeJustification: offer.badgeJustification,
+        isSharedPromoCode: matchingPromo
+          ? (bookmakersByPromoCode.get(matchingPromo.code.trim().toUpperCase())?.size ?? 0) > 1
+          : false,
         createdAt: offer.createdAt,
         lastVerifiedAt: offer.lastVerifiedAt,
         now,
