@@ -24,6 +24,9 @@ export interface BookmakerSubSectionsProps {
     eligible: boolean;
     localLicense: string;
     authorityName: string;
+    legalValidatedAt?: Date | string | null;
+    legalValidatedBy?: string | null;
+    legalSource?: string;
   }>;
   paymentRows: Array<{
     id: string;
@@ -59,6 +62,8 @@ export function BookmakerSubSections({
   const [countryId, setCountryId] = React.useState(countries[0]?.id ?? "");
   const [localLicense, setLocalLicense] = React.useState("");
   const [authorityName, setAuthorityName] = React.useState("");
+  const [legalValidatedBy, setLegalValidatedBy] = React.useState("");
+  const [legalSource, setLegalSource] = React.useState("");
   const [pmId, setPmId] = React.useState(paymentMethods[0]?.id ?? "");
   const [pmMinDeposit, setPmMinDeposit] = React.useState("500");
   const [scores, setScores] = React.useState({
@@ -90,8 +95,17 @@ export function BookmakerSubSections({
                   </span>
                   {row.localLicense ? (
                     <p className="text-xs text-fg-muted">
-                      Licence : {row.localLicense}{" "}
+                      Autorisation locale : {row.localLicense}{" "}
                       {row.authorityName ? `· ${row.authorityName}` : ""}
+                    </p>
+                  ) : null}
+                  {row.legalValidatedBy || row.legalSource ? (
+                    <p className="text-[11px] text-fg-muted">
+                      Validation : {row.legalValidatedBy || "—"}
+                      {row.legalValidatedAt
+                        ? ` · ${new Date(row.legalValidatedAt).toLocaleDateString("fr-FR")}`
+                        : ""}
+                      {row.legalSource ? ` · ${row.legalSource}` : ""}
                     </p>
                   ) : null}
                 </div>
@@ -110,15 +124,19 @@ export function BookmakerSubSections({
                     eligible: true,
                     localLicense,
                     authorityName,
+                    legalValidatedBy,
+                    legalSource,
                   });
                   onResult(res);
                   if (res.ok) {
                     setLocalLicense("");
                     setAuthorityName("");
+                    setLegalValidatedBy("");
+                    setLegalSource("");
                     router.refresh();
                   }
                 }}
-                className="grid gap-2 border-t border-border pt-3 sm:grid-cols-3"
+                className="grid gap-2 border-t border-border pt-3 sm:grid-cols-2"
               >
                 <select
                   aria-label="Pays"
@@ -133,15 +151,27 @@ export function BookmakerSubSections({
                   ))}
                 </select>
                 <Input
-                  placeholder="N° licence locale"
+                  placeholder="N° autorisation locale (optionnel)"
                   value={localLicense}
                   onChange={(e) => setLocalLicense(e.target.value)}
                 />
-                <div className="flex gap-2">
+                <Input
+                  placeholder="Autorité locale (optionnel)"
+                  value={authorityName}
+                  onChange={(e) => setAuthorityName(e.target.value)}
+                />
+                <Input
+                  placeholder="Auteur validation juridique *"
+                  required
+                  value={legalValidatedBy}
+                  onChange={(e) => setLegalValidatedBy(e.target.value)}
+                />
+                <div className="flex gap-2 sm:col-span-2">
                   <Input
-                    placeholder="Autorité"
-                    value={authorityName}
-                    onChange={(e) => setAuthorityName(e.target.value)}
+                    placeholder="Source juridique / référence *"
+                    required
+                    value={legalSource}
+                    onChange={(e) => setLegalSource(e.target.value)}
                   />
                   <Button type="submit" size="sm">
                     Ajouter

@@ -37,6 +37,9 @@ export interface BookmakerDetailProps {
     localLicense: string;
     authorityName: string;
     countryScore: string | null;
+    legalValidatedAt?: Date | string | null;
+    legalValidatedBy?: string | null;
+    legalSource?: string;
   }>;
   paymentRows: Array<{
     id: string;

@@ -84,6 +84,9 @@ export async function getBookmakerByIdRepo(actorId: string, bookmakerId: string)
         authorityName: bookmakerCountries.authorityName,
         countryScore: bookmakerCountries.countryScore,
         notes: bookmakerCountries.notes,
+        legalValidatedAt: bookmakerCountries.legalValidatedAt,
+        legalValidatedBy: bookmakerCountries.legalValidatedBy,
+        legalSource: bookmakerCountries.legalSource,
       })
       .from(bookmakerCountries)
       .innerJoin(countries, eq(bookmakerCountries.countryId, countries.id))

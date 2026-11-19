@@ -64,15 +64,29 @@ export const bookmakerInputSchema = z.object({
   status: z.enum(["active", "inactive", "archived"]).default("active"),
 });
 
-export const bookmakerCountrySchema = z.object({
-  bookmakerId: z.string().uuid(),
-  countryId: z.string().uuid(),
-  eligible: z.boolean().default(true),
-  localLicense: z.string().trim().max(180).default(""),
-  authorityName: z.string().trim().max(180).default(""),
-  countryScore: optionalNumberString(0, 10),
-  notes: z.string().trim().max(1000).default(""),
-});
+export const bookmakerCountrySchema = z
+  .object({
+    bookmakerId: z.string().uuid(),
+    countryId: z.string().uuid(),
+    eligible: z.boolean().default(true),
+    localLicense: z.string().trim().max(180).default(""),
+    authorityName: z.string().trim().max(180).default(""),
+    countryScore: optionalNumberString(0, 10),
+    notes: z.string().trim().max(1000).default(""),
+    legalValidatedAt: optionalDateSchema.optional(),
+    legalValidatedBy: z.string().trim().max(120).default(""),
+    legalSource: z.string().trim().max(500).default(""),
+  })
+  .refine(
+    (data) =>
+      !data.eligible ||
+      (data.legalValidatedBy.trim().length > 0 && data.legalSource.trim().length > 0),
+    {
+      message:
+        "Une validation juridique (auteur et source) est obligatoire pour ouvrir un pays éligible.",
+      path: ["legalSource"],
+    },
+  );
 
 export const bookmakerPaymentMethodSchema = z.object({
   bookmakerId: z.string().uuid(),

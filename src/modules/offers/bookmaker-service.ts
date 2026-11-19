@@ -169,6 +169,10 @@ export async function upsertBookmakerCountry(
   const parsed = bookmakerCountrySchema.parse(rawInput);
 
   const saved = await withAppDb({ scope: "user_session", actorId: actor.id }, async (tx) => {
+    const validatedAt = parsed.eligible
+      ? (parsed.legalValidatedAt ?? new Date())
+      : (parsed.legalValidatedAt ?? null);
+    const validatedBy = parsed.legalValidatedBy.trim() || actor.email || actor.id;
     const [row] = await tx
       .insert(bookmakerCountries)
       .values({
@@ -179,6 +183,9 @@ export async function upsertBookmakerCountry(
         authorityName: parsed.authorityName,
         countryScore: parsed.countryScore,
         notes: parsed.notes,
+        legalValidatedAt: validatedAt,
+        legalValidatedBy: parsed.eligible ? validatedBy : parsed.legalValidatedBy || null,
+        legalSource: parsed.legalSource,
       })
       .onConflictDoUpdate({
         target: [bookmakerCountries.bookmakerId, bookmakerCountries.countryId],
@@ -188,6 +195,9 @@ export async function upsertBookmakerCountry(
           authorityName: parsed.authorityName,
           countryScore: parsed.countryScore,
           notes: parsed.notes,
+          legalValidatedAt: validatedAt,
+          legalValidatedBy: parsed.eligible ? validatedBy : parsed.legalValidatedBy || null,
+          legalSource: parsed.legalSource,
           deletedAt: null,
           status: "active",
         },
