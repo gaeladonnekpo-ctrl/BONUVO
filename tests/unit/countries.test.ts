@@ -35,11 +35,12 @@ describe("Phase 1 — Country directory across continents", () => {
     expect(getBettingPriorityTier("KE")).toBe(1);
     expect(getBettingPriorityTier("GB")).toBe(1);
     expect(getBettingPriorityTier("BR")).toBe(1);
-    expect(getBettingPriorityTier("TG")).toBe(2);
+    expect(getBettingPriorityTier("TG")).toBe(1);
+    expect(getBettingPriorityTier("RW")).toBe(2);
     expect(getBettingPriorityTier("AD")).toBe(3);
 
     const sorted = [{ code: "AD" }, { code: "TG" }, { code: "NG" }].sort(compareByBettingPriority);
-    expect(sorted.map((c) => c.code)).toEqual(["NG", "TG", "AD"]);
+    expect(sorted.map((c) => c.code)).toEqual(["TG", "NG", "AD"]);
     expect(TOP_BETTING_TIER1_CODES.length + TOP_BETTING_TIER2_CODES.length).toBeGreaterThanOrEqual(
       90,
     );

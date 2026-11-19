@@ -71,7 +71,7 @@ export const bookmakerCountrySchema = z
     eligible: z.boolean().default(true),
     localLicense: z.string().trim().max(180).default(""),
     authorityName: z.string().trim().max(180).default(""),
-    countryScore: optionalNumberString(0, 10),
+    countryScore: optionalNumberString(0, 10).optional(),
     notes: z.string().trim().max(1000).default(""),
     legalValidatedAt: optionalDateSchema.optional(),
     legalValidatedBy: z.string().trim().max(120).default(""),
