@@ -31,7 +31,10 @@ export async function GET(request: NextRequest, context: { params: Promise<{ rep
       {
         error: {
           code: status === 401 ? "UNAUTHORIZED" : "FORBIDDEN",
-          message: error instanceof Error ? error.message : "Accès refusé.",
+          message:
+            error instanceof UnauthorizedError || error instanceof ForbiddenError
+              ? error.message
+              : "Accès refusé.",
         },
       },
       { status, headers: { "Cache-Control": "no-store" } },

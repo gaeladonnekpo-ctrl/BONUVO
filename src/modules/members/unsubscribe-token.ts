@@ -13,11 +13,19 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-
 const VALID_SCOPES = new Set<UnsubscribeScope>(["all", "marketing_email", "notifications"]);
 
 function resolveSigningSecret(explicitSecret?: string): string {
-  const secret =
-    explicitSecret ??
-    process.env.IP_HASH_SECRET ??
-    "bonuvo-dev-unsubscribe-fallback-secret-32chars";
-  return secret;
+  const configured = explicitSecret ?? process.env.IP_HASH_SECRET;
+  if (configured && configured.trim().length > 0) {
+    return configured;
+  }
+
+  const isProdRuntime =
+    (process.env.APP_ENV === "production" || process.env.NODE_ENV === "production") &&
+    process.env.VITEST !== "true";
+  if (isProdRuntime) {
+    throw new Error("MISSING_UNSUBSCRIBE_SIGNING_SECRET");
+  }
+
+  return "bonuvo-dev-unsubscribe-fallback-secret-32chars";
 }
 
 function computeSignature(encodedPayload: string, secret: string): string {
