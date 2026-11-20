@@ -52,7 +52,7 @@ function mapPredictionCard(
   };
 }
 
-async function queryPublicFixturesUncached(filter?: {
+export async function queryPublicFixturesUncached(filter?: {
   leagueId?: string;
   upcomingOnly?: boolean;
   settledOnly?: boolean;

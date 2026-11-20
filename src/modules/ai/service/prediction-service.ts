@@ -9,7 +9,7 @@ import {
 } from "@/modules/ai/model/poisson";
 import { runSettlePredictionsJob } from "@/modules/ai/service/settlement-service";
 import { syncCombinedCouponsForFixtures } from "@/modules/ai/service/coupon-sync-service";
-import { listPublicFixtures } from "@/modules/ai/service/public-ai-service";
+import { queryPublicFixturesUncached } from "@/modules/ai/service/public-ai-service";
 import { resolveJobLockBackend } from "@/modules/intelligence/lock";
 import { invalidatePublicCatalogTags } from "@/server/cache/catalog-tags";
 import { withAppDb, type AppDbTransaction, type DbExecutionScope } from "@/server/db/context";
@@ -281,7 +281,7 @@ export async function runComputePredictionsJob(options?: {
     let couponsSynced = 0;
     if (options?.syncCoupons !== false) {
       try {
-        const upcomingData = await listPublicFixtures({ upcomingOnly: true, limit: 40 });
+        const upcomingData = await queryPublicFixturesUncached({ upcomingOnly: true, limit: 40 });
         if (upcomingData.fixtures.length >= 2) {
           couponsSynced = await withAppDb({ scope }, (db) =>
             syncCombinedCouponsForFixtures(db, upcomingData.fixtures, now),
