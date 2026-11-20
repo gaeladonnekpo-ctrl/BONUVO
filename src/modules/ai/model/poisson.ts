@@ -203,3 +203,53 @@ export function predictFixtureMarkets(params: {
     markets,
   };
 }
+
+export interface ExactScorePrediction {
+  score: string;
+  probabilityPct: number;
+}
+
+export interface DoubleChanceSummary {
+  oneX: number;
+  twelve: number;
+  xTwo: number;
+}
+
+/**
+ * Derives Double Chance probabilities and Top 3 Exact Scorelines strictly from
+ * the calibrated Poisson expected-goals outputs (never arbitrary values).
+ */
+export function derivePoissonExactScoresAndDoubleChance(params: {
+  expectedHomeGoals: number;
+  expectedAwayGoals: number;
+  probs1x2: Record<string, number>;
+}): { doubleChance: DoubleChanceSummary; topExactScores: ExactScorePrediction[] } {
+  const pHome = params.probs1x2.home ?? 0;
+  const pDraw = params.probs1x2.draw ?? 0;
+  const pAway = params.probs1x2.away ?? 0;
+
+  const doubleChance: DoubleChanceSummary = {
+    oneX: Math.round((pHome + pDraw) * 1000) / 10,
+    twelve: Math.round((pHome + pAway) * 1000) / 10,
+    xTwo: Math.round((pDraw + pAway) * 1000) / 10,
+  };
+
+  const lamH = clamp(params.expectedHomeGoals, 0.1, 4.5);
+  const lamA = clamp(params.expectedAwayGoals, 0.1, 4.5);
+  const candidates: Array<{ score: string; prob: number }> = [];
+
+  for (let i = 0; i <= 6; i += 1) {
+    const px = poissonPmf(lamH, i);
+    for (let j = 0; j <= 6; j += 1) {
+      candidates.push({ score: `${i}-${j}`, prob: px * poissonPmf(lamA, j) });
+    }
+  }
+
+  candidates.sort((a, b) => b.prob - a.prob);
+  const topExactScores = candidates.slice(0, 3).map((c) => ({
+    score: c.score,
+    probabilityPct: Math.round(c.prob * 1000) / 10,
+  }));
+
+  return { doubleChance, topExactScores };
+}

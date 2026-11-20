@@ -15,9 +15,10 @@ import {
   buildSinglePicks,
 } from "@/modules/ai/model/coupons";
 import {
-  getPublicPredictionStats,
-  listPublicFixtures,
-} from "@/modules/ai/service/public-ai-service";
+  formatUtcDateIso,
+  syncAndQueryFixturesByDate,
+} from "@/modules/ai/service/date-sync-service";
+import { getPublicPredictionStats } from "@/modules/ai/service/public-ai-service";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
@@ -46,9 +47,12 @@ export default async function PublicPredictionsPage({
   const resolvedLocale: "fr" | "en" = locale === "en" ? "en" : "fr";
   const isEn = resolvedLocale === "en";
   const leagueFilter = typeof sp.ligue === "string" ? sp.ligue : undefined;
+  const rawDate = typeof sp.date === "string" ? sp.date : undefined;
+  const selectedDateIso =
+    rawDate && /^\d{4}-\d{2}-\d{2}$/.test(rawDate) ? rawDate : formatUtcDateIso(new Date(), 60);
 
   const [fixturesData, statsData] = await Promise.all([
-    listPublicFixtures({ upcomingOnly: true, limit: 40 }),
+    syncAndQueryFixturesByDate({ dateIso: selectedDateIso, tzOffsetMinutes: 60 }),
     getPublicPredictionStats(),
   ]);
 
@@ -187,10 +191,11 @@ export default async function PublicPredictionsPage({
         locale={resolvedLocale}
       />
 
-      {/* Interactive Competition Carousel, Club Search & Match Cards */}
+      {/* Interactive Calendar, Competition Sections & Match Cards */}
       <FixturesExplorer
         fixtures={fixturesData.fixtures}
         leagues={fixturesData.leagues}
+        initialDateIso={selectedDateIso}
         initialLeagueId={leagueFilter}
         locale={resolvedLocale}
       />

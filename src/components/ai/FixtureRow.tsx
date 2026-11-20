@@ -5,6 +5,7 @@ import { LeagueBadge, TeamCrest } from "@/components/ai/SportCrest";
 import { UiBadge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "@/i18n/navigation";
+import { derivePoissonExactScoresAndDoubleChance } from "@/modules/ai/model/poisson";
 import type { PublicFixtureDto } from "@/modules/ai/service/public-ai-types";
 
 export interface FixtureRowProps {
@@ -51,8 +52,37 @@ export function FixtureRow({ fixture, locale = "fr" }: FixtureRowProps) {
   }).format(new Date(fixture.kickoffAt));
 
   const scoreLine =
-    fixture.fixtureStatus === "finished" && fixture.homeGoals !== null && fixture.awayGoals !== null
+    (fixture.fixtureStatus === "finished" || fixture.fixtureStatus === "live") &&
+    fixture.homeGoals !== null &&
+    fixture.awayGoals !== null
       ? `${fixture.homeGoals} - ${fixture.awayGoals}`
+      : null;
+
+  const isPostponedOrCancelled = ["postponed", "cancelled", "abandoned"].includes(
+    fixture.fixtureStatus,
+  );
+  const statusBadgeText =
+    fixture.fixtureStatus === "live"
+      ? isEn
+        ? "Live"
+        : "En direct"
+      : fixture.fixtureStatus === "finished"
+        ? isEn
+          ? "Finished"
+          : "Terminé"
+        : isPostponedOrCancelled
+          ? isEn
+            ? "Postponed / Cancelled"
+            : "Reporté / Annulé"
+          : null;
+
+  const derivedExtra =
+    primary && primary.market === "1x2"
+      ? derivePoissonExactScoresAndDoubleChance({
+          expectedHomeGoals: primary.expectedHomeGoals,
+          expectedAwayGoals: primary.expectedAwayGoals,
+          probs1x2: primary.probabilities,
+        })
       : null;
 
   const xgBadge =
@@ -92,13 +122,22 @@ export function FixtureRow({ fixture, locale = "fr" }: FixtureRowProps) {
           </div>
 
           {primary ? (
-            <ConfidenceBadge
-              level={primary.confidenceLevel}
-              score={primary.confidenceScore}
-              locale={locale}
-            />
+            <div className="flex items-center gap-1.5">
+              {statusBadgeText ? (
+                <UiBadge tone={fixture.fixtureStatus === "live" ? "accent" : "outline"}>
+                  {statusBadgeText}
+                </UiBadge>
+              ) : null}
+              <ConfidenceBadge
+                level={primary.confidenceLevel}
+                score={primary.confidenceScore}
+                locale={locale}
+              />
+            </div>
           ) : (
-            <UiBadge tone="neutral">{isEn ? "Analysis in progress" : "Analyse en cours"}</UiBadge>
+            <UiBadge tone={isPostponedOrCancelled ? "warning" : "neutral"}>
+              {statusBadgeText ?? (isEn ? "Insufficient stats" : "Données insuffisantes")}
+            </UiBadge>
           )}
         </div>
 
@@ -186,8 +225,50 @@ export function FixtureRow({ fixture, locale = "fr" }: FixtureRowProps) {
               pickedSelection={primary.pickedSelection}
               locale={locale}
             />
+
+            {derivedExtra ? (
+              <div className="grid gap-2 rounded-xl border border-border/70 bg-surface-subtle/50 p-2.5 text-[11px] sm:grid-cols-2">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="font-semibold text-fg-muted">
+                    {isEn ? "Double Chance:" : "Double chance :"}
+                  </span>
+                  <span className="rounded border border-border bg-surface px-1.5 py-0.5 font-mono text-fg">
+                    1X {derivedExtra.doubleChance.oneX}%
+                  </span>
+                  <span className="rounded border border-border bg-surface px-1.5 py-0.5 font-mono text-fg">
+                    12 {derivedExtra.doubleChance.twelve}%
+                  </span>
+                  <span className="rounded border border-border bg-surface px-1.5 py-0.5 font-mono text-fg">
+                    X2 {derivedExtra.doubleChance.xTwo}%
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center gap-1.5 sm:justify-end">
+                  <span className="font-semibold text-fg-muted">
+                    {isEn ? "Top exact scores:" : "Scores probables :"}
+                  </span>
+                  {derivedExtra.topExactScores.map((sc) => (
+                    <span
+                      key={sc.score}
+                      className="rounded border border-border bg-surface px-1.5 py-0.5 font-mono text-fg"
+                    >
+                      {sc.score} ({sc.probabilityPct}%)
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </div>
-        ) : null}
+        ) : (
+          <div className="rounded-xl border border-dashed border-border bg-surface-subtle/40 px-3 py-2 text-xs text-fg-muted">
+            {fixture.fixtureStatus === "scheduled"
+              ? isEn
+                ? "Insufficient pre-match statistical sample (< 6 matches) — no arbitrary probability generated."
+                : "Base statistique insuffisante (< 6 matchs) — aucune probabilité arbitraire générée."
+              : isEn
+                ? "No pre-kickoff locked forecast available for this historical fixture."
+                : "Aucune prédiction pré-match verrouillée avant le coup d'envoi pour cette rencontre."}
+          </div>
+        )}
 
         {/* Touch-friendly Mobile Footer Action */}
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/60 pt-2.5 text-xs">

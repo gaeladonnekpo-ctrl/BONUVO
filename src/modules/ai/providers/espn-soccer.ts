@@ -21,6 +21,30 @@ import {
 
 const FREE_QUOTA: ProviderQuotaSnapshot = { limit: 5000, remaining: 4990 };
 
+function buildEspnDateStrings(fromDateIso: string, toDateIso: string): string[] {
+  const fromMs = Date.parse(fromDateIso);
+  const toMs = Date.parse(toDateIso);
+  if (!Number.isFinite(fromMs) || !Number.isFinite(toMs) || toMs < fromMs) {
+    return [];
+  }
+  const dayMs = 24 * 3600_000;
+  // Pad by -1 day/+1 day to account for ESPN US-Eastern day boundary vs UTC/Europe/Africa
+  const startDay = new Date(fromMs - 12 * 3600_000);
+  const endDay = new Date(toMs + 12 * 3600_000);
+  startDay.setUTCHours(0, 0, 0, 0);
+  endDay.setUTCHours(0, 0, 0, 0);
+
+  const dates: string[] = [];
+  for (let cur = startDay.getTime(); cur <= endDay.getTime() && dates.length < 16; cur += dayMs) {
+    const d = new Date(cur);
+    const y = d.getUTCFullYear();
+    const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+    const day = String(d.getUTCDate()).padStart(2, "0");
+    dates.push(`${y}${m}${day}`);
+  }
+  return dates;
+}
+
 export class EspnSoccerProvider implements SportsDataProvider {
   public readonly code = "espn-soccer";
   public readonly name = "ESPN Live Soccer Feeds";
@@ -64,6 +88,15 @@ export class EspnSoccerProvider implements SportsDataProvider {
     return this.fetchScoreboardFixtures(params, "finished");
   }
 
+  public async fetchFixturesForDateRange(params: {
+    leagueExternalId: string;
+    seasonYear: number;
+    fromDateIso: string;
+    toDateIso: string;
+  }): Promise<ProviderFetchResult<ExternalFixtureDto>> {
+    return this.fetchScoreboardFixtures(params, "all");
+  }
+
   private async fetchScoreboardFixtures(
     params: {
       leagueExternalId: string;
@@ -71,74 +104,107 @@ export class EspnSoccerProvider implements SportsDataProvider {
       fromDateIso: string;
       toDateIso: string;
     },
-    mode: "upcoming" | "finished",
+    mode: "upcoming" | "finished" | "all",
   ): Promise<ProviderFetchResult<ExternalFixtureDto>> {
     const slug = resolveEspnLeagueSlug(params.leagueExternalId);
-    const url = `https://site.api.espn.com/apis/site/v2/sports/soccer/${encodeURIComponent(slug)}/scoreboard`;
-    const raw = await this.fetchJson(url);
-    const parsed = espnScoreboardSchema.safeParse(raw);
-    if (!parsed.success) {
-      return { items: [], quota: FREE_QUOTA, rejectedCount: 1, requestsMade: 1 };
-    }
+    const dateStrings = buildEspnDateStrings(params.fromDateIso, params.toDateIso);
+    const urls =
+      dateStrings.length > 0
+        ? dateStrings.map(
+            (ds) =>
+              `https://site.api.espn.com/apis/site/v2/sports/soccer/${encodeURIComponent(slug)}/scoreboard?dates=${ds}`,
+          )
+        : [
+            `https://site.api.espn.com/apis/site/v2/sports/soccer/${encodeURIComponent(slug)}/scoreboard`,
+          ];
 
+    const seenEventIds = new Set<string>();
     const items: ExternalFixtureDto[] = [];
     let rejectedCount = 0;
+    let requestsMade = 0;
 
-    for (const ev of parsed.data.events) {
-      const comp = ev.competitions[0];
-      if (!comp) continue;
-      const home = comp.competitors.find((c) => c.homeAway === "home") ?? comp.competitors[0];
-      const away = comp.competitors.find((c) => c.homeAway === "away") ?? comp.competitors[1];
-      if (!home || !away) continue;
-
-      const status = mapEspnFixtureStatus(
-        comp.status?.type?.state,
-        comp.status?.type?.name,
-        comp.status?.type?.completed,
+    for (let i = 0; i < urls.length; i += 4) {
+      const batch = urls.slice(i, i + 4);
+      const responses = await Promise.all(
+        batch.map(async (url) => {
+          requestsMade += 1;
+          try {
+            return await this.fetchJson(url);
+          } catch {
+            return null;
+          }
+        }),
       );
-      if (mode === "upcoming" && status !== "scheduled" && status !== "live") continue;
-      if (mode === "finished" && status === "scheduled") continue;
 
-      const homeScore =
-        home.score !== undefined && /^\d+$/.test(home.score)
-          ? Number.parseInt(home.score, 10)
-          : null;
-      const awayScore =
-        away.score !== undefined && /^\d+$/.test(away.score)
-          ? Number.parseInt(away.score, 10)
-          : null;
+      for (const raw of responses) {
+        if (!raw) continue;
+        const parsed = espnScoreboardSchema.safeParse(raw);
+        if (!parsed.success) {
+          rejectedCount += 1;
+          continue;
+        }
 
-      const dto = externalFixtureSchema.safeParse({
-        externalId: String(ev.id),
-        leagueExternalId: params.leagueExternalId,
-        seasonYear: params.seasonYear,
-        roundLabel: slug.toUpperCase(),
-        kickoffAt: new Date(ev.date).toISOString(),
-        venue: comp.venue?.fullName ?? null,
-        status,
-        homeGoals: homeScore,
-        awayGoals: awayScore,
-        homeTeam: {
-          externalId: String(home.team.id),
-          name: home.team.displayName ?? home.team.name ?? "Home",
-          shortCode: home.team.abbreviation ?? null,
-          logoUrl: home.team.logo ?? null,
-        },
-        awayTeam: {
-          externalId: String(away.team.id),
-          name: away.team.displayName ?? away.team.name ?? "Away",
-          shortCode: away.team.abbreviation ?? null,
-          logoUrl: away.team.logo ?? null,
-        },
-      });
-      if (!dto.success) {
-        rejectedCount += 1;
-        continue;
+        for (const ev of parsed.data.events) {
+          const eventId = String(ev.id);
+          if (seenEventIds.has(eventId)) continue;
+          seenEventIds.add(eventId);
+
+          const comp = ev.competitions[0];
+          if (!comp) continue;
+          const home = comp.competitors.find((c) => c.homeAway === "home") ?? comp.competitors[0];
+          const away = comp.competitors.find((c) => c.homeAway === "away") ?? comp.competitors[1];
+          if (!home || !away) continue;
+
+          const status = mapEspnFixtureStatus(
+            comp.status?.type?.state,
+            comp.status?.type?.name,
+            comp.status?.type?.completed,
+          );
+          if (mode === "upcoming" && status !== "scheduled" && status !== "live") continue;
+          if (mode === "finished" && status === "scheduled") continue;
+
+          const homeScore =
+            home.score !== undefined && /^\d+$/.test(home.score)
+              ? Number.parseInt(home.score, 10)
+              : null;
+          const awayScore =
+            away.score !== undefined && /^\d+$/.test(away.score)
+              ? Number.parseInt(away.score, 10)
+              : null;
+
+          const dto = externalFixtureSchema.safeParse({
+            externalId: eventId,
+            leagueExternalId: params.leagueExternalId,
+            seasonYear: params.seasonYear,
+            roundLabel: slug.toUpperCase(),
+            kickoffAt: new Date(ev.date).toISOString(),
+            venue: comp.venue?.fullName ?? null,
+            status,
+            homeGoals: homeScore,
+            awayGoals: awayScore,
+            homeTeam: {
+              externalId: String(home.team.id),
+              name: home.team.displayName ?? home.team.name ?? "Home",
+              shortCode: home.team.abbreviation ?? null,
+              logoUrl: home.team.logo ?? null,
+            },
+            awayTeam: {
+              externalId: String(away.team.id),
+              name: away.team.displayName ?? away.team.name ?? "Away",
+              shortCode: away.team.abbreviation ?? null,
+              logoUrl: away.team.logo ?? null,
+            },
+          });
+          if (!dto.success) {
+            rejectedCount += 1;
+            continue;
+          }
+          items.push(dto.data);
+        }
       }
-      items.push(dto.data);
     }
 
-    return { items, quota: FREE_QUOTA, rejectedCount, requestsMade: 1 };
+    return { items, quota: FREE_QUOTA, rejectedCount, requestsMade };
   }
 
   public async fetchStandings(params: {

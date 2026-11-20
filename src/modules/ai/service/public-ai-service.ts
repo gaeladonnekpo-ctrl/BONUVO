@@ -56,12 +56,18 @@ export async function queryPublicFixturesUncached(filter?: {
   leagueId?: string;
   upcomingOnly?: boolean;
   settledOnly?: boolean;
+  fromDateIso?: string;
+  toDateIso?: string;
   limit?: number;
 }): Promise<{ fixtures: PublicFixtureDto[]; leagues: LeagueFilterOption[] }> {
   return withAppDb({ scope: "public_catalog" }, async (db) => {
     const now = new Date();
-    const minKickoff = new Date(now.getTime() - 45 * 24 * 3600_000);
-    const maxKickoff = new Date(now.getTime() + 14 * 24 * 3600_000);
+    const minKickoff = filter?.fromDateIso
+      ? new Date(filter.fromDateIso)
+      : new Date(now.getTime() - 45 * 24 * 3600_000);
+    const maxKickoff = filter?.toDateIso
+      ? new Date(filter.toDateIso)
+      : new Date(now.getTime() + 14 * 24 * 3600_000);
 
     const rawLeagues = await db
       .select({
@@ -93,7 +99,7 @@ export async function queryPublicFixturesUncached(filter?: {
       .from(fixtures)
       .where(and(...conditions))
       .orderBy(filter?.settledOnly ? desc(fixtures.kickoffAt) : fixtures.kickoffAt)
-      .limit(filter?.limit ?? 40);
+      .limit(filter?.limit ?? (filter?.fromDateIso && filter?.toDateIso ? 250 : 120));
 
     const activeLeagueIds = new Set(fixRows.map((f) => f.leagueId));
     const dedupedLeaguesMap = new Map<string, LeagueFilterOption>();
