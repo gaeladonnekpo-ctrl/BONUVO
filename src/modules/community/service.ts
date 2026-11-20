@@ -32,6 +32,8 @@ export type PublicCouponItem = {
   couponCode: string;
   combinedOdds: string | null;
   confidenceLabel: string;
+  settlementStatus: "pending" | "won" | "lost" | "void";
+  settledAt: Date | null;
   validatedAt: Date | null;
   publishedToTelegramAt: Date | null;
 };
@@ -117,6 +119,8 @@ const listPublicCommunityDataCached = withCatalogCache(
             couponCode: coupons.couponCode,
             combinedOdds: coupons.combinedOdds,
             confidenceLabel: coupons.confidenceLabel,
+            settlementStatus: coupons.settlementStatus,
+            settledAt: coupons.settledAt,
             validatedAt: coupons.validatedAt,
             publishedToTelegramAt: coupons.publishedToTelegramAt,
           })

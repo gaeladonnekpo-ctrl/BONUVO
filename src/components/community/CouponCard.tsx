@@ -1,4 +1,4 @@
-import { CheckCircle2, Ticket } from "lucide-react";
+import { CheckCircle2, Clock, Ticket, Trophy, XCircle } from "lucide-react";
 import type { PublicCouponItem } from "@/modules/community/service";
 
 interface CouponCardProps {
@@ -10,15 +10,33 @@ export function CouponCard({ coupon, locale }: CouponCardProps) {
   const isFr = locale === "fr";
   const title = isFr ? coupon.titleFr : coupon.titleEn || coupon.titleFr;
   const description = isFr ? coupon.descriptionFr : coupon.descriptionEn || coupon.descriptionFr;
+  const settlement = coupon.settlementStatus ?? "pending";
 
   return (
     <article className="flex flex-col justify-between rounded-2xl border border-border bg-surface p-5 shadow-xs">
       <div className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-success/30 bg-success/10 px-3 py-1 text-xs font-semibold text-fg">
-            <CheckCircle2 className="size-3.5 text-success" aria-hidden="true" />
-            {isFr ? "Coupon validé" : "Validated coupon"}
-          </span>
+          {settlement === "won" ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-trust/40 bg-trust-soft px-3 py-1 text-xs font-semibold text-trust">
+              <Trophy className="size-3.5" aria-hidden="true" />
+              {isFr ? "Coupon gagnant" : "Winning coupon"}
+            </span>
+          ) : settlement === "lost" ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-danger/30 bg-danger-soft px-3 py-1 text-xs font-semibold text-danger">
+              <XCircle className="size-3.5" aria-hidden="true" />
+              {isFr ? "Coupon manqué" : "Lost coupon"}
+            </span>
+          ) : settlement === "void" ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-muted px-3 py-1 text-xs font-semibold text-fg-muted">
+              {isFr ? "Annulé / Neutre" : "Void / Cancelled"}
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-success/30 bg-success/10 px-3 py-1 text-xs font-semibold text-fg">
+              <CheckCircle2 className="size-3.5 text-success" aria-hidden="true" />
+              <Clock className="size-3 text-fg-muted" aria-hidden="true" />
+              {isFr ? "Coupon validé · En cours" : "Validated · Pending"}
+            </span>
+          )}
           {coupon.combinedOdds ? (
             <span className="rounded-lg bg-surface-muted px-2.5 py-1 font-mono text-xs font-bold text-fg">
               {isFr ? "Cote" : "Odds"} {coupon.combinedOdds}

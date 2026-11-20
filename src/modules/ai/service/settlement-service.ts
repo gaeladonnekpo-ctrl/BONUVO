@@ -1,5 +1,6 @@
 import { and, eq, inArray, isNull, lte } from "drizzle-orm";
 import { settlePrediction } from "@/modules/ai/model/settle";
+import { reconcilePendingCoupons } from "@/modules/ai/service/coupon-sync-service";
 import { createActiveSportsDataProvider } from "@/modules/ai/providers/registry";
 import type { SportsDataProvider } from "@/modules/ai/providers/types";
 import {
@@ -202,11 +203,13 @@ export async function runSettlePredictionsJob(options?: {
         else voidCount += 1;
       }
 
-      return { settledCount, wonCount, lostCount, voidCount };
+      const couponStats = await reconcilePendingCoupons(db, now);
+
+      return { settledCount, wonCount, lostCount, voidCount, ...couponStats };
     });
 
     if (options?.invalidateCache !== false) {
-      invalidatePublicCatalogTags(["predictions"]);
+      invalidatePublicCatalogTags(["predictions", "community"]);
     }
     return { ok: true as const, ...summary };
   } finally {

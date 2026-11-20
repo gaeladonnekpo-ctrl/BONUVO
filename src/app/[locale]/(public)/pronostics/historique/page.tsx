@@ -2,6 +2,7 @@ import { ArrowLeft } from "lucide-react";
 import { setRequestLocale } from "next-intl/server";
 import { AccuracyChart } from "@/components/ai/AccuracyChart";
 import { AiResponsibilityNotice } from "@/components/ai/AiResponsibilityNotice";
+import { CouponTrackRecordSection } from "@/components/ai/CouponTrackRecordSection";
 import { FixtureRow } from "@/components/ai/FixtureRow";
 import { UiBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ import {
   getPublicPredictionStats,
   listPublicFixtures,
 } from "@/modules/ai/service/public-ai-service";
+import { getPublicCouponTrackRecord } from "@/modules/ai/service/public-coupon-history";
 
 export const dynamic = "force-dynamic";
 
@@ -43,9 +45,10 @@ export default async function PublicPredictionHistoryPage({
   const resolvedLocale: "fr" | "en" = locale === "en" ? "en" : "fr";
   const isEn = resolvedLocale === "en";
 
-  const [stats, settledData] = await Promise.all([
+  const [stats, settledData, couponRecord] = await Promise.all([
     getPublicPredictionStats(),
     listPublicFixtures({ settledOnly: true, limit: 30 }),
+    getPublicCouponTrackRecord(),
   ]);
 
   const marketCards = [
@@ -161,6 +164,8 @@ export default async function PublicPredictionHistoryPage({
       </div>
 
       <AccuracyChart timeline={stats.timeline} locale={resolvedLocale} />
+
+      <CouponTrackRecordSection record={couponRecord} locale={resolvedLocale} />
 
       <section aria-labelledby="settled-fixtures-heading" className="space-y-4">
         <h2 id="settled-fixtures-heading" className="font-display text-xl font-bold text-fg">

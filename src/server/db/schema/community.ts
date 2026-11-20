@@ -6,6 +6,7 @@ import {
   check,
   index,
   integer,
+  jsonb,
   numeric,
   pgTable,
   text,
@@ -33,6 +34,24 @@ export type ChannelPlatform = (typeof CHANNEL_PLATFORMS)[number];
 
 export const COUPON_STATUSES = ["draft", "validated", "archived"] as const;
 export type CouponStatus = (typeof COUPON_STATUSES)[number];
+export const COUPON_SETTLEMENT_STATUSES = ["pending", "won", "lost", "void"] as const;
+export type CouponSettlementStatus = (typeof COUPON_SETTLEMENT_STATUSES)[number];
+export const COUPON_SOURCES = ["community", "bonuvo_ai"] as const;
+export type CouponSource = (typeof COUPON_SOURCES)[number];
+
+export interface CouponLegSnapshot {
+  fixtureId: string;
+  predictionId?: string;
+  matchLabel: string;
+  leagueName: string;
+  market?: string;
+  marketLabel: string;
+  pickedSelection?: string;
+  selectionLabel: string;
+  probabilityPct: number;
+  fairOdds?: number;
+  kickoffAt?: string;
+}
 
 export const NOTIFICATION_CHANNELS = ["email", "telegram"] as const;
 export type NotificationChannel = (typeof NOTIFICATION_CHANNELS)[number];
@@ -119,7 +138,15 @@ export const coupons = pgTable(
       .array()
       .notNull()
       .default(sql`ARRAY[]::uuid[]`),
+    legsJson: jsonb("legs_json").$type<CouponLegSnapshot[]>().notNull().default([]),
     status: text("status").$type<CouponStatus>().notNull().default("draft"),
+    settlementStatus: text("settlement_status")
+      .$type<CouponSettlementStatus>()
+      .notNull()
+      .default("pending"),
+    settledAt: timestamp("settled_at", { withTimezone: true, mode: "date" }),
+    source: text("source").$type<CouponSource>().notNull().default("community"),
+    externalKey: text("external_key"),
     validatedBy: uuid("validated_by").references(() => profiles.id, { onDelete: "set null" }),
     validatedAt: timestamp("validated_at", { withTimezone: true, mode: "date" }),
     publishedToTelegramAt: timestamp("published_to_telegram_at", {

@@ -11,6 +11,8 @@ export interface SingleBetSuggestion {
   leagueName: string;
   leagueLogo: string;
   kickoffAt: string;
+  market: string;
+  pickedSelection: string;
   marketLabel: string;
   selectionLabel: string;
   probabilityPct: number;
@@ -21,6 +23,7 @@ export interface SingleBetSuggestion {
 
 export interface CombinedCouponLeg {
   fixtureId: string;
+  predictionId?: string;
   matchLabel: string;
   homeTeamName: string;
   homeTeamLogo: string;
@@ -28,9 +31,13 @@ export interface CombinedCouponLeg {
   awayTeamLogo: string;
   leagueName: string;
   leagueLogo: string;
+  kickoffAt?: string;
+  market?: string;
+  pickedSelection?: string;
   marketLabel: string;
   selectionLabel: string;
   probabilityPct: number;
+  fairOdds?: number;
 }
 
 export interface CombinedCouponDto {
@@ -107,6 +114,8 @@ function deriveDoubleChanceCandidate(fix: PublicFixtureDto): SingleBetSuggestion
     leagueName: fix.leagueName,
     leagueLogo: fix.leagueLogo,
     kickoffAt: fix.kickoffAt,
+    market: "double_chance",
+    pickedSelection: p1x >= px2 ? "1x" : "x2",
     marketLabel: "Double Chance",
     selectionLabel: pickLabel,
     probabilityPct: probPct,
@@ -161,6 +170,8 @@ export function buildSinglePicks(fixtures: PublicFixtureDto[]): SingleBetSuggest
         leagueName: fix.leagueName,
         leagueLogo: fix.leagueLogo,
         kickoffAt: fix.kickoffAt,
+        market: pred.market,
+        pickedSelection: pred.pickedSelection,
         marketLabel: labels.marketLabel,
         selectionLabel: labels.selectionLabel,
         probabilityPct: probPct,
@@ -178,6 +189,7 @@ export function buildSinglePicks(fixtures: PublicFixtureDto[]): SingleBetSuggest
 function toCouponLeg(l: SingleBetSuggestion): CombinedCouponLeg {
   return {
     fixtureId: l.fixtureId,
+    predictionId: l.predictionId,
     matchLabel: l.matchLabel,
     homeTeamName: l.homeTeamName,
     homeTeamLogo: l.homeTeamLogo,
@@ -185,9 +197,13 @@ function toCouponLeg(l: SingleBetSuggestion): CombinedCouponLeg {
     awayTeamLogo: l.awayTeamLogo,
     leagueName: l.leagueName,
     leagueLogo: l.leagueLogo,
+    kickoffAt: l.kickoffAt,
+    market: l.market,
+    pickedSelection: l.pickedSelection,
     marketLabel: l.marketLabel,
     selectionLabel: l.selectionLabel,
     probabilityPct: l.probabilityPct,
+    fairOdds: l.fairOdds,
   };
 }
 

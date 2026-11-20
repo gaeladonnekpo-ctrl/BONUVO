@@ -8,6 +8,8 @@ import {
   type TeamModelInput,
 } from "@/modules/ai/model/poisson";
 import { runSettlePredictionsJob } from "@/modules/ai/service/settlement-service";
+import { syncCombinedCouponsForFixtures } from "@/modules/ai/service/coupon-sync-service";
+import { listPublicFixtures } from "@/modules/ai/service/public-ai-service";
 import { resolveJobLockBackend } from "@/modules/intelligence/lock";
 import { invalidatePublicCatalogTags } from "@/server/cache/catalog-tags";
 import { withAppDb, type AppDbTransaction, type DbExecutionScope } from "@/server/db/context";
@@ -50,6 +52,7 @@ export async function ensureActiveModelVersion(db: AppDbTransaction) {
 export async function runComputePredictionsJob(options?: {
   dbScope?: DbExecutionScope;
   invalidateCache?: boolean;
+  syncCoupons?: boolean;
 }) {
   const scope = options?.dbScope ?? "ai_pipeline";
   const lock = resolveJobLockBackend();
@@ -275,10 +278,24 @@ export async function runComputePredictionsJob(options?: {
       };
     });
 
-    if (options?.invalidateCache !== false) {
-      invalidatePublicCatalogTags(["predictions"]);
+    let couponsSynced = 0;
+    if (options?.syncCoupons !== false) {
+      try {
+        const upcomingData = await listPublicFixtures({ upcomingOnly: true, limit: 40 });
+        if (upcomingData.fixtures.length >= 2) {
+          couponsSynced = await withAppDb({ scope }, (db) =>
+            syncCombinedCouponsForFixtures(db, upcomingData.fixtures, now),
+          );
+        }
+      } catch {
+        // Non-blocking: prediction computation remains valid even if coupon sync fails
+      }
     }
-    return { ok: true as const, ...summary };
+
+    if (options?.invalidateCache !== false) {
+      invalidatePublicCatalogTags(["predictions", "community"]);
+    }
+    return { ok: true as const, ...summary, couponsSynced };
   } finally {
     await lock.release("ai:compute-predictions", lockToken);
   }
