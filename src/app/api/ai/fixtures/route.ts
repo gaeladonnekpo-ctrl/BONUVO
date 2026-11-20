@@ -32,7 +32,7 @@ function getLimiter() {
 export async function GET(request: NextRequest) {
   const env = getServerEnv();
   const ipHash = hashIp(extractTrustedClientIp(request.headers, env.APP_ENV)) ?? "00000000";
-  const rl = await getLimiter().consume("ai_fixtures_date", ipHash);
+  const rl = await getLimiter().consume("public_events", ipHash);
   if (!rl.allowed) {
     return NextResponse.json(
       { error: { code: "RATE_LIMITED", message: "Trop de requêtes, veuillez patienter." } },

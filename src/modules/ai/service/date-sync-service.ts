@@ -94,7 +94,7 @@ export async function syncAndQueryFixturesByDate(params: {
           .insert(ingestionRuns)
           .values({
             providerId: providerRow.id,
-            jobName: `date-sync:${params.dateIso}`,
+            jobName: "ingest-fixtures",
             status: "running",
           })
           .returning();
