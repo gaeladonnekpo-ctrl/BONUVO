@@ -7,6 +7,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Filter,
+  Image as ImageIcon,
   Loader2,
   Search,
   Sparkles,
@@ -15,6 +16,7 @@ import { FixtureRow } from "@/components/ai/FixtureRow";
 import { LeagueBadge } from "@/components/ai/SportCrest";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Link } from "@/i18n/navigation";
 import type { LeagueFilterOption, PublicFixtureDto } from "@/modules/ai/service/public-ai-types";
 
 export interface FixturesExplorerProps {
@@ -452,6 +454,14 @@ export function FixturesExplorer({
                   {items.length > 1 ? (isEn ? "matches" : "matchs") : isEn ? "match" : "match"}
                 </span>
               </div>
+              {items.length > 0 ? (
+                <Button asChild variant="ghost" size="sm" className="h-7 px-2.5 text-xs">
+                  <Link href={`/pronostics/visuels?date=${selectedDate}&ligue=${league.id}`}>
+                    <ImageIcon className="mr-1 h-3.5 w-3.5 text-accent" aria-hidden="true" />
+                    {isEn ? "Poster" : "Visuel"}
+                  </Link>
+                </Button>
+              ) : null}
             </div>
 
             {items.length === 0 ? (

@@ -1,4 +1,11 @@
-import { Activity, BarChart2, Layers, ShieldCheck, Sparkles } from "lucide-react";
+import {
+  Activity,
+  BarChart2,
+  Image as ImageIcon,
+  Layers,
+  ShieldCheck,
+  Sparkles,
+} from "lucide-react";
 import { setRequestLocale } from "next-intl/server";
 import { AiResponsibilityNotice } from "@/components/ai/AiResponsibilityNotice";
 import { CouponsSection } from "@/components/ai/CouponsSection";
@@ -95,12 +102,20 @@ export default async function PublicPredictionsPage({
             </p>
           </div>
 
-          <Button asChild variant="outline" className="self-start shrink-0">
-            <Link href="/pronostics/historique">
-              <BarChart2 className="mr-1.5 h-4 w-4" aria-hidden="true" />
-              {isEn ? "Accuracy & History" : "Historique & Précision"}
-            </Link>
-          </Button>
+          <div className="flex flex-wrap items-center gap-2 self-start shrink-0">
+            <Button asChild variant="primary" size="sm">
+              <Link href={`/pronostics/visuels?date=${selectedDateIso}`}>
+                <ImageIcon className="mr-1.5 h-4 w-4" aria-hidden="true" />
+                {isEn ? "Match Posters" : "Visuels des matchs"}
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="sm">
+              <Link href="/pronostics/historique">
+                <BarChart2 className="mr-1.5 h-4 w-4" aria-hidden="true" />
+                {isEn ? "Accuracy & History" : "Historique & Précision"}
+              </Link>
+            </Button>
+          </div>
         </div>
 
         {/* Mobile-First 2x2 / Desktop 4-Column Live Telemetry Grid */}
