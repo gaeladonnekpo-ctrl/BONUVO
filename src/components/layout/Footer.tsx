@@ -2,6 +2,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { OFFICIAL_BONUVO_CHANNELS, SocialBrandIcon } from "@/components/community/SocialBrandIcon";
 import { Link } from "@/i18n/navigation";
+import { ClearCacheButton } from "./ClearCacheButton";
 import { PUBLIC_PRIMARY_LINKS, TRUST_PAGE_LINKS } from "./navigation-links";
 
 export interface FooterProps {
@@ -88,8 +89,9 @@ export function Footer({ showDevDesignLink = false }: FooterProps) {
           </div>
         </div>
 
-        <div className="mt-8 border-t border-border pt-6 text-xs text-fg-muted">
+        <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-border pt-6 text-xs text-fg-muted">
           <p>{tFooter("rights", { year: currentYear })}</p>
+          <ClearCacheButton locale={locale} compact />
         </div>
       </div>
     </footer>

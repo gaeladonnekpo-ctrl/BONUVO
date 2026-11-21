@@ -17,6 +17,7 @@ import { LeagueBadge } from "@/components/ai/SportCrest";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "@/i18n/navigation";
+import { deduplicateRequest, getCachedValue, setCachedValue } from "@/lib/cache/app-cache";
 import type { LeagueFilterOption, PublicFixtureDto } from "@/modules/ai/service/public-ai-types";
 
 export interface FixturesExplorerProps {
@@ -98,7 +99,6 @@ export function FixturesExplorer({
     if (!/^\d{4}-\d{2}-\d{2}$/.test(nextDate)) return;
     setSelectedDate(nextDate);
     setFetchError(null);
-    setLoading(true);
 
     if (typeof window !== "undefined") {
       const url = new URL(window.location.href);
@@ -106,27 +106,49 @@ export function FixturesExplorer({
       window.history.replaceState({}, "", url.toString());
     }
 
+    const tz = -new Date().getTimezoneOffset();
+    const cacheKey = `fixtures:${nextDate}:${tz}`;
+    const cached = getCachedValue<{
+      fixtures: PublicFixtureDto[];
+      leagues: LeagueFilterOption[];
+    }>(cacheKey, 180_000);
+
+    if (cached) {
+      setFixtures(cached.data.fixtures);
+      if (cached.data.leagues.length > 0) setLeagues(cached.data.leagues);
+      if (!cached.isStale) {
+        setLoading(false);
+        return;
+      }
+    } else {
+      setLoading(true);
+    }
+
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
 
     try {
-      const tz = -new Date().getTimezoneOffset();
-      const res = await fetch(
-        `/api/ai/fixtures?date=${encodeURIComponent(nextDate)}&tz=${encodeURIComponent(String(tz))}`,
-        { signal: controller.signal, cache: "no-store" },
-      );
-      if (!res.ok) {
-        throw new Error(`HTTP_${res.status}`);
+      const data = await deduplicateRequest(cacheKey, async () => {
+        const res = await fetch(
+          `/api/ai/fixtures?date=${encodeURIComponent(nextDate)}&tz=${encodeURIComponent(String(tz))}`,
+          { signal: controller.signal, cache: "no-store" },
+        );
+        if (!res.ok) {
+          throw new Error(`HTTP_${res.status}`);
+        }
+        return (await res.json()) as {
+          fixtures: PublicFixtureDto[];
+          leagues: LeagueFilterOption[];
+        };
+      });
+      setCachedValue(cacheKey, data);
+      if (!controller.signal.aborted) {
+        setFixtures(data.fixtures);
+        if (data.leagues.length > 0) setLeagues(data.leagues);
       }
-      const data = (await res.json()) as {
-        fixtures: PublicFixtureDto[];
-        leagues: LeagueFilterOption[];
-      };
-      setFixtures(data.fixtures);
-      if (data.leagues.length > 0) setLeagues(data.leagues);
     } catch (err) {
-      if ((err as Error).name !== "AbortError") {
+      if ((err as Error).name !== "AbortError" && !cached) {
         setFetchError(
           isEn
             ? "Unable to refresh matches for this date. Please try again."

@@ -1,10 +1,11 @@
 import { useLocale, useTranslations } from "next-intl";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import { CommunityFab } from "@/components/business/CommunityFab";
 import { OFFICIAL_SOCIAL_LINKS } from "@/components/community/SocialBrandIcon";
 import type { CountryOption } from "@/lib/i18n/countries";
 import { Footer } from "./Footer";
 import { Header, type ShellUserSummary } from "./Header";
+import { NavigationProgress } from "./NavigationProgress";
 import { PublicCountriesProvider } from "./public-countries-context";
 
 export interface PublicShellProps {
@@ -53,6 +54,9 @@ export function PublicShell({
   return (
     <PublicCountriesProvider countries={availableCountries}>
       <div className="flex min-h-screen flex-col bg-bg text-fg">
+        <Suspense fallback={null}>
+          <NavigationProgress />
+        </Suspense>
         <a
           href="#main-content"
           className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-lg focus:bg-accent focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-accent-fg"

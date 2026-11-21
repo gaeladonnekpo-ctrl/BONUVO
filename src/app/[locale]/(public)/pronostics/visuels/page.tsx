@@ -50,6 +50,7 @@ export default async function MatchPostersPage({
   const fixturesData = await syncAndQueryFixturesByDate({
     dateIso: initialDateIso,
     tzOffsetMinutes: 60,
+    syncPolicy: "if_empty",
   });
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim() || "https://www.bonuvofr.com";

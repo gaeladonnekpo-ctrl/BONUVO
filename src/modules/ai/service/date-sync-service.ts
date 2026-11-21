@@ -51,6 +51,7 @@ export async function syncAndQueryFixturesByDate(params: {
   dateIso: string;
   tzOffsetMinutes?: number;
   forceSync?: boolean;
+  syncPolicy?: "blocking" | "if_empty";
 }): Promise<{
   dateIso: string;
   fixtures: PublicFixtureDto[];
@@ -62,6 +63,22 @@ export async function syncAndQueryFixturesByDate(params: {
   const now = new Date();
   const cacheKey = `${params.dateIso}`;
   const lastSync = recentDateSyncs.get(cacheKey) ?? 0;
+
+  if (params.syncPolicy === "if_empty" && !params.forceSync) {
+    const existing = await queryPublicFixturesUncached({
+      fromDateIso,
+      toDateIso,
+      limit: 250,
+    });
+    if (existing.fixtures.length > 0) {
+      return {
+        dateIso: params.dateIso,
+        fixtures: existing.fixtures,
+        leagues: existing.leagues,
+        syncedAt: new Date().toISOString(),
+      };
+    }
+  }
 
   if (params.forceSync || now.getTime() - lastSync > SYNC_TTL_MS) {
     recentDateSyncs.set(cacheKey, now.getTime());

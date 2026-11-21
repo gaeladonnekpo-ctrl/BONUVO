@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Download, History, UserCheck } from "lucide-react";
 import { SignOutButton } from "@/components/auth/SignOutButton";
+import { ClearCacheButton } from "@/components/layout/ClearCacheButton";
 import { updateProfileAction } from "@/modules/members/actions";
 import { ConsentToggle } from "./ConsentToggle";
 import { DeleteAccountDialog } from "./DeleteAccountDialog";
@@ -216,6 +217,20 @@ export function MemberDashboardView({
         preferredChannel={preferences.preferredChannel}
         consentHistory={consentHistory}
       />
+
+      <section className="rounded-2xl border border-border bg-surface p-5 shadow-xs space-y-3">
+        <div className="space-y-1">
+          <h2 className="font-display text-base font-bold text-fg">
+            {isFr ? "Cache & Performances" : "Cache & Performance"}
+          </h2>
+          <p className="text-xs text-fg-muted">
+            {isFr
+              ? "Videz le cache temporaire de l'application pour forcer le rechargement des dernières offres et cotes sans affecter votre compte ni vos préférences."
+              : "Clear temporary application cache to fetch fresh offers and odds without affecting your account or preferences."}
+          </p>
+        </div>
+        <ClearCacheButton locale={locale} />
+      </section>
 
       <DeleteAccountDialog locale={locale} userId={user.id} pendingDeletion={pendingDeletion} />
     </div>

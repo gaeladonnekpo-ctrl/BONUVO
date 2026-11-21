@@ -59,7 +59,11 @@ export default async function PublicPredictionsPage({
     rawDate && /^\d{4}-\d{2}-\d{2}$/.test(rawDate) ? rawDate : formatUtcDateIso(new Date(), 60);
 
   const [fixturesData, statsData] = await Promise.all([
-    syncAndQueryFixturesByDate({ dateIso: selectedDateIso, tzOffsetMinutes: 60 }),
+    syncAndQueryFixturesByDate({
+      dateIso: selectedDateIso,
+      tzOffsetMinutes: 60,
+      syncPolicy: "if_empty",
+    }),
     getPublicPredictionStats(),
   ]);
 

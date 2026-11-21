@@ -46,6 +46,7 @@ export function Header({ initialCountry, currentUser }: HeaderProps) {
               <Link
                 key={item.key}
                 href={item.href}
+                prefetch
                 aria-current={active ? "page" : undefined}
                 className={cn(
                   "whitespace-nowrap rounded-lg px-2.5 py-2 text-[13px] font-medium transition-colors xl:px-3 xl:text-sm",

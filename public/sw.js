@@ -1,4 +1,4 @@
-const CACHE_VERSION = "bonuvo-pwa-v1";
+const CACHE_VERSION = "bonuvo-pwa-v2";
 const OFFLINE_URL = "/offline.html";
 const PRECACHE_URLS = [
   OFFLINE_URL,
@@ -32,6 +32,14 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("message", (event) => {
   if (event.data && event.data.type === "SKIP_WAITING") {
     self.skipWaiting();
+  }
+  if (event.data && event.data.type === "CLEAR_APP_CACHE") {
+    event.waitUntil(
+      caches
+        .keys()
+        .then((keys) => Promise.all(keys.map((key) => caches.delete(key))))
+        .then(() => caches.open(CACHE_VERSION).then((cache) => cache.addAll(PRECACHE_URLS))),
+    );
   }
 });
 
