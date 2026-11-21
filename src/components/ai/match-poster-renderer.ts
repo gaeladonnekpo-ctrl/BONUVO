@@ -4,6 +4,7 @@ import {
   POSTER_DIMENSIONS,
   type PosterAspectRatio,
   type PosterExportFormat,
+  type PosterTheme,
 } from "@/modules/ai/model/match-poster-layout";
 import type { LeagueFilterOption, PublicFixtureDto } from "@/modules/ai/service/public-ai-types";
 
@@ -25,11 +26,86 @@ function drawRoundedRect(
   ctx.closePath();
 }
 
-function drawBonuvoWordmark(ctx: CanvasRenderingContext2D, x: number, y: number, fontSize: number) {
+interface PosterPalette {
+  bgStart: string;
+  bgMid: string;
+  bgEnd: string;
+  glowAccent: string;
+  glowTrust: string;
+  gridLine: string;
+  fg: string;
+  fgMuted: string;
+  accent: string;
+  accentText: string;
+  accentBg: string;
+  accentBorder: string;
+  trust: string;
+  trustBg: string;
+  trustBorder: string;
+  cardBg: string;
+  cardBorder: string;
+  chipBg: string;
+  chipBorder: string;
+  footerBg: string;
+}
+
+const DARK_PALETTE: PosterPalette = {
+  bgStart: "#0b1120",
+  bgMid: "#101a32",
+  bgEnd: "#0b1120",
+  glowAccent: "rgba(255, 122, 26, 0.22)",
+  glowTrust: "rgba(46, 224, 138, 0.16)",
+  gridLine: "rgba(59, 80, 122, 0.12)",
+  fg: "#f8fafc",
+  fgMuted: "#94a3b8",
+  accent: "#ff7a1a",
+  accentText: "#ff8e3d",
+  accentBg: "rgba(255, 122, 26, 0.16)",
+  accentBorder: "rgba(255, 122, 26, 0.55)",
+  trust: "#2ee08a",
+  trustBg: "rgba(46, 224, 138, 0.16)",
+  trustBorder: "rgba(46, 224, 138, 0.5)",
+  cardBg: "rgba(19, 28, 49, 0.92)",
+  cardBorder: "#263554",
+  chipBg: "#1a2642",
+  chipBorder: "#3b507a",
+  footerBg: "rgba(15, 23, 42, 0.95)",
+};
+
+const LIGHT_PALETTE: PosterPalette = {
+  bgStart: "#f6f4ef",
+  bgMid: "#ffffff",
+  bgEnd: "#ece9e1",
+  glowAccent: "rgba(194, 65, 12, 0.10)",
+  glowTrust: "rgba(4, 120, 87, 0.09)",
+  gridLine: "rgba(184, 176, 160, 0.22)",
+  fg: "#101014",
+  fgMuted: "#475569",
+  accent: "#c2410c",
+  accentText: "#c2410c",
+  accentBg: "rgba(194, 65, 12, 0.10)",
+  accentBorder: "rgba(194, 65, 12, 0.40)",
+  trust: "#047857",
+  trustBg: "#ecfdf5",
+  trustBorder: "rgba(4, 120, 87, 0.45)",
+  cardBg: "#ffffff",
+  cardBorder: "#d8d3c8",
+  chipBg: "#f1efe9",
+  chipBorder: "#b8b0a0",
+  footerBg: "#ece9e1",
+};
+
+function drawBonuvoWordmark(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  fontSize: number,
+  palette: PosterPalette,
+) {
   ctx.save();
   ctx.font = `800 ${fontSize}px "Unbounded", "Plus Jakarta Sans", system-ui, sans-serif`;
   ctx.textBaseline = "alphabetic";
-  ctx.fillStyle = "#f8fafc";
+  ctx.fillStyle = palette.fg;
 
   const gap = fontSize * 0.08;
   const markSize = fontSize * 0.74;
@@ -44,7 +120,7 @@ function drawBonuvoWordmark(ctx: CanvasRenderingContext2D, x: number, y: number,
   ctx.beginPath();
   ctx.arc(cursor + ringR, cy, ringR * 0.78, 0, Math.PI * 2);
   ctx.lineWidth = Math.max(3, markSize * 0.21);
-  ctx.strokeStyle = "#f8fafc";
+  ctx.strokeStyle = palette.fg;
   ctx.stroke();
   cursor += markSize + gap;
 
@@ -56,12 +132,12 @@ function drawBonuvoWordmark(ctx: CanvasRenderingContext2D, x: number, y: number,
   ctx.beginPath();
   ctx.arc(targetCx, cy, ringR * 0.78, 0, Math.PI * 2);
   ctx.lineWidth = Math.max(3, markSize * 0.21);
-  ctx.strokeStyle = "#ff7a1a";
+  ctx.strokeStyle = palette.accent;
   ctx.stroke();
 
   ctx.beginPath();
   ctx.arc(targetCx, cy, ringR * 0.28, 0, Math.PI * 2);
-  ctx.fillStyle = "#ff7a1a";
+  ctx.fillStyle = palette.accent;
   ctx.fill();
   ctx.restore();
 }
@@ -92,15 +168,16 @@ function drawTeamLogoOrMonogram(
   cx: number,
   cy: number,
   size: number,
+  palette: PosterPalette,
 ) {
   const r = size / 2;
   ctx.save();
   ctx.beginPath();
   ctx.arc(cx, cy, r, 0, Math.PI * 2);
-  ctx.fillStyle = "#1a2642";
+  ctx.fillStyle = palette.chipBg;
   ctx.fill();
   ctx.lineWidth = 1.5;
-  ctx.strokeStyle = "#3b507a";
+  ctx.strokeStyle = palette.chipBorder;
   ctx.stroke();
 
   if (img && img.naturalWidth > 0) {
@@ -114,7 +191,7 @@ function drawTeamLogoOrMonogram(
     const dh = img.naturalHeight * ratio;
     ctx.drawImage(img, cx - dw / 2, cy - dh / 2, dw, dh);
   } else {
-    ctx.fillStyle = "#ff7a1a";
+    ctx.fillStyle = palette.accent;
     ctx.font = `700 ${Math.max(10, Math.round(size * 0.34))}px "Plus Jakarta Sans", system-ui, sans-serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
@@ -151,11 +228,13 @@ export async function renderMatchPosterToCanvas(
     league: LeagueFilterOption;
     fixtures: PublicFixtureDto[];
     ratio: PosterAspectRatio;
+    theme?: PosterTheme;
     siteUrl?: string;
     locale?: string;
   },
 ) {
   const isEn = params.locale === "en";
+  const palette = params.theme === "light" ? LIGHT_PALETTE : DARK_PALETTE;
   const spec = POSTER_DIMENSIONS[params.ratio];
   const layout = computePosterLayout({
     ratio: params.ratio,
@@ -182,11 +261,11 @@ export async function renderMatchPosterToCanvas(
   );
   const imageMap = new Map<string, HTMLImageElement | null>(loadedEntries);
 
-  // 1. Background (BONUVO Dark Navy + Accent/Trust Glows + Subtle Grid)
+  // 1. Background (BONUVO Dark or Light + Accent/Trust Glows + Subtle Grid)
   const bgGrad = ctx.createLinearGradient(0, 0, spec.width, spec.height);
-  bgGrad.addColorStop(0, "#0b1120");
-  bgGrad.addColorStop(0.55, "#101a32");
-  bgGrad.addColorStop(1, "#0b1120");
+  bgGrad.addColorStop(0, palette.bgStart);
+  bgGrad.addColorStop(0.55, palette.bgMid);
+  bgGrad.addColorStop(1, palette.bgEnd);
   ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, spec.width, spec.height);
 
@@ -198,8 +277,8 @@ export async function renderMatchPosterToCanvas(
     spec.height * 0.1,
     spec.width * 0.55,
   );
-  glowTop.addColorStop(0, "rgba(255, 122, 26, 0.22)");
-  glowTop.addColorStop(1, "rgba(255, 122, 26, 0)");
+  glowTop.addColorStop(0, palette.glowAccent);
+  glowTop.addColorStop(1, "rgba(0, 0, 0, 0)");
   ctx.fillStyle = glowTop;
   ctx.fillRect(0, 0, spec.width, spec.height);
 
@@ -211,13 +290,13 @@ export async function renderMatchPosterToCanvas(
     spec.height * 0.88,
     spec.width * 0.5,
   );
-  glowBot.addColorStop(0, "rgba(46, 224, 138, 0.16)");
-  glowBot.addColorStop(1, "rgba(46, 224, 138, 0)");
+  glowBot.addColorStop(0, palette.glowTrust);
+  glowBot.addColorStop(1, "rgba(0, 0, 0, 0)");
   ctx.fillStyle = glowBot;
   ctx.fillRect(0, 0, spec.width, spec.height);
 
   ctx.save();
-  ctx.strokeStyle = "rgba(59, 80, 122, 0.12)";
+  ctx.strokeStyle = palette.gridLine;
   ctx.lineWidth = 1;
   for (let gx = 0; gx < spec.width; gx += 64) {
     ctx.beginPath();
@@ -235,7 +314,7 @@ export async function renderMatchPosterToCanvas(
 
   // 2. Header: BONUVO Wordmark + Date Pill + Competition Title & Official Logo
   const px = layout.paddingX;
-  drawBonuvoWordmark(ctx, px, 76, 40);
+  drawBonuvoWordmark(ctx, px, 76, 40, palette);
 
   // Date pill on top right
   const dateLabel = formatReadablePosterDate(params.dateIso, isEn).toUpperCase();
@@ -244,12 +323,12 @@ export async function renderMatchPosterToCanvas(
   const dateW = Math.min(spec.width * 0.5, ctx.measureText(dateLabel).width + 40);
   const pillX = spec.width - px - dateW;
   drawRoundedRect(ctx, pillX, 40, dateW, 44, 22);
-  ctx.fillStyle = "rgba(255, 122, 26, 0.16)";
+  ctx.fillStyle = palette.accentBg;
   ctx.fill();
   ctx.lineWidth = 1.5;
-  ctx.strokeStyle = "rgba(255, 122, 26, 0.55)";
+  ctx.strokeStyle = palette.accentBorder;
   ctx.stroke();
-  ctx.fillStyle = "#ff8e3d";
+  ctx.fillStyle = palette.accentText;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText(fitTextEllipsis(ctx, dateLabel, dateW - 24), pillX + dateW / 2, 62);
@@ -258,19 +337,19 @@ export async function renderMatchPosterToCanvas(
   // Competition Banner
   const leagueY = 122;
   const leagueLogo = params.league.logoUrl ? (imageMap.get(params.league.logoUrl) ?? null) : null;
-  drawTeamLogoOrMonogram(ctx, leagueLogo, params.league.name, px + 36, leagueY + 38, 72);
+  drawTeamLogoOrMonogram(ctx, leagueLogo, params.league.name, px + 36, leagueY + 38, 72, palette);
 
   ctx.save();
   ctx.textAlign = "left";
   ctx.textBaseline = "alphabetic";
-  ctx.fillStyle = "#2ee08a";
+  ctx.fillStyle = palette.trust;
   ctx.font = '700 18px "Plus Jakarta Sans", system-ui, sans-serif';
   const subTitle = `${params.league.countryName.toUpperCase()} · ${params.fixtures.length} ${
     params.fixtures.length > 1 ? (isEn ? "MATCHES" : "MATCHS") : isEn ? "MATCH" : "MATCH"
   }`;
   ctx.fillText(subTitle, px + 92, leagueY + 24);
 
-  ctx.fillStyle = "#f8fafc";
+  ctx.fillStyle = palette.fg;
   ctx.font = `800 ${params.ratio === "16:9" ? 42 : 36}px "Unbounded", "Plus Jakarta Sans", system-ui, sans-serif`;
   ctx.fillText(
     fitTextEllipsis(ctx, params.league.name, spec.width - px * 2 - 104),
@@ -282,9 +361,9 @@ export async function renderMatchPosterToCanvas(
   // Divider line
   const dividerY = layout.headerHeight - 16;
   const divGrad = ctx.createLinearGradient(px, dividerY, spec.width - px, dividerY);
-  divGrad.addColorStop(0, "#ff7a1a");
-  divGrad.addColorStop(0.5, "#2ee08a");
-  divGrad.addColorStop(1, "rgba(59, 80, 122, 0.2)");
+  divGrad.addColorStop(0, palette.accent);
+  divGrad.addColorStop(0.5, palette.trust);
+  divGrad.addColorStop(1, palette.cardBorder);
   ctx.fillStyle = divGrad;
   ctx.fillRect(px, dividerY, spec.width - px * 2, 2.5);
 
@@ -302,10 +381,10 @@ export async function renderMatchPosterToCanvas(
 
     // Match Card
     drawRoundedRect(ctx, cardX, cardY, colW, layout.rowHeight, 16);
-    ctx.fillStyle = "rgba(19, 28, 49, 0.92)";
+    ctx.fillStyle = palette.cardBg;
     ctx.fill();
     ctx.lineWidth = 1.5;
-    ctx.strokeStyle = "#263554";
+    ctx.strokeStyle = palette.cardBorder;
     ctx.stroke();
 
     const midY = cardY + layout.rowHeight / 2;
@@ -323,6 +402,7 @@ export async function renderMatchPosterToCanvas(
       cardX + innerPad + logoR,
       midY,
       layout.logoSize,
+      palette,
     );
 
     // Away Logo
@@ -333,6 +413,7 @@ export async function renderMatchPosterToCanvas(
       cardX + colW - innerPad - logoR,
       midY,
       layout.logoSize,
+      palette,
     );
 
     // Center Badge (Kickoff Time or Score)
@@ -353,14 +434,14 @@ export async function renderMatchPosterToCanvas(
         }).format(new Date(fix.kickoffAt));
 
     drawRoundedRect(ctx, centerX, centerY, centerBoxW, centerBoxH, 10);
-    ctx.fillStyle = hasScore ? "rgba(46, 224, 138, 0.16)" : "#0b1120";
+    ctx.fillStyle = hasScore ? palette.trustBg : palette.chipBg;
     ctx.fill();
     ctx.lineWidth = 1.2;
-    ctx.strokeStyle = hasScore ? "rgba(46, 224, 138, 0.5)" : "#3b507a";
+    ctx.strokeStyle = hasScore ? palette.trustBorder : palette.chipBorder;
     ctx.stroke();
 
     ctx.save();
-    ctx.fillStyle = hasScore ? "#2ee08a" : "#ff8e3d";
+    ctx.fillStyle = hasScore ? palette.trust : palette.accentText;
     ctx.font = `700 ${layout.rowHeight >= 80 ? 18 : 15}px "JetBrains Mono", monospace`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
@@ -370,7 +451,7 @@ export async function renderMatchPosterToCanvas(
     // Team Names
     const textAvail = colW / 2 - centerBoxW / 2 - innerPad - layout.logoSize - 18;
     ctx.save();
-    ctx.fillStyle = "#f8fafc";
+    ctx.fillStyle = palette.fg;
     ctx.font = `700 ${layout.teamFontSize}px "Plus Jakarta Sans", system-ui, sans-serif`;
     ctx.textBaseline = "middle";
 
@@ -392,27 +473,27 @@ export async function renderMatchPosterToCanvas(
 
   // 4. Mandatory Footer Bar with BONUVO Website URL
   const footerY = spec.height - layout.footerHeight;
-  ctx.fillStyle = "rgba(15, 23, 42, 0.95)";
+  ctx.fillStyle = palette.footerBg;
   ctx.fillRect(0, footerY, spec.width, layout.footerHeight);
-  ctx.fillStyle = "#263554";
+  ctx.fillStyle = palette.cardBorder;
   ctx.fillRect(0, footerY, spec.width, 1.5);
 
   const displayUrl = params.siteUrl ?? "https://www.bonuvofr.com";
   ctx.save();
   // 18+ badge
   drawRoundedRect(ctx, px, footerY + 28, 52, 36, 8);
-  ctx.fillStyle = "#131c31";
+  ctx.fillStyle = palette.cardBg;
   ctx.fill();
   ctx.lineWidth = 1.5;
-  ctx.strokeStyle = "#3b507a";
+  ctx.strokeStyle = palette.chipBorder;
   ctx.stroke();
-  ctx.fillStyle = "#f8fafc";
+  ctx.fillStyle = palette.fg;
   ctx.font = '700 17px "JetBrains Mono", monospace';
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText("18+", px + 26, footerY + 47);
 
-  ctx.fillStyle = "#94a3b8";
+  ctx.fillStyle = palette.fgMuted;
   ctx.font = '500 18px "Plus Jakarta Sans", system-ui, sans-serif';
   ctx.textAlign = "left";
   ctx.fillText(
@@ -421,7 +502,7 @@ export async function renderMatchPosterToCanvas(
     footerY + 47,
   );
 
-  ctx.fillStyle = "#ff7a1a";
+  ctx.fillStyle = palette.accent;
   ctx.font = '700 24px "JetBrains Mono", monospace';
   ctx.textAlign = "right";
   ctx.fillText(displayUrl.replace(/^https?:\/\//, ""), spec.width - px, footerY + 47);

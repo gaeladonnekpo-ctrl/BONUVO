@@ -1,5 +1,6 @@
 export type PosterAspectRatio = "1:1" | "4:5" | "9:16" | "16:9";
 export type PosterExportFormat = "png" | "jpeg" | "webp" | "pdf";
+export type PosterTheme = "dark" | "light";
 
 export interface PosterDimensionsSpec {
   id: PosterAspectRatio;

@@ -1,7 +1,16 @@
 "use client";
 
 import * as React from "react";
-import { Calendar, Download, Image as ImageIcon, Loader2, RefreshCw, Sparkles } from "lucide-react";
+import {
+  Calendar,
+  Download,
+  Image as ImageIcon,
+  Loader2,
+  Moon,
+  RefreshCw,
+  Sparkles,
+  Sun,
+} from "lucide-react";
 import {
   exportPosterFromCanvas,
   renderMatchPosterToCanvas,
@@ -15,6 +24,7 @@ import {
   POSTER_DIMENSIONS,
   type PosterAspectRatio,
   type PosterExportFormat,
+  type PosterTheme,
 } from "@/modules/ai/model/match-poster-layout";
 import type { LeagueFilterOption, PublicFixtureDto } from "@/modules/ai/service/public-ai-types";
 
@@ -55,6 +65,7 @@ export function MatchPosterStudio({
     return firstWithMatches?.id ?? initialLeagues[0]?.id ?? "";
   });
   const [ratio, setRatio] = React.useState<PosterAspectRatio>("4:5");
+  const [theme, setTheme] = React.useState<PosterTheme>("dark");
   const [format, setFormat] = React.useState<PosterExportFormat>("png");
   const [syncingDate, setSyncingDate] = React.useState(false);
   const [rendering, setRendering] = React.useState(false);
@@ -97,6 +108,7 @@ export function MatchPosterStudio({
         league: selectedLeague,
         fixtures: leagueFixtures,
         ratio,
+        theme,
         siteUrl,
         locale,
       });
@@ -109,7 +121,7 @@ export function MatchPosterStudio({
     } finally {
       setRendering(false);
     }
-  }, [selectedDate, selectedLeague, leagueFixtures, ratio, siteUrl, locale, isEn]);
+  }, [selectedDate, selectedLeague, leagueFixtures, ratio, theme, siteUrl, locale, isEn]);
 
   React.useEffect(() => {
     const canvas = canvasRef.current;
@@ -120,6 +132,7 @@ export function MatchPosterStudio({
       league: selectedLeague,
       fixtures: leagueFixtures,
       ratio,
+      theme,
       siteUrl,
       locale,
     })
@@ -138,7 +151,7 @@ export function MatchPosterStudio({
     return () => {
       cancelled = true;
     };
-  }, [selectedDate, selectedLeague, leagueFixtures, ratio, siteUrl, locale, isEn]);
+  }, [selectedDate, selectedLeague, leagueFixtures, ratio, theme, siteUrl, locale, isEn]);
 
   async function handleDateChange(nextDate: string) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(nextDate)) return;
@@ -179,7 +192,7 @@ export function MatchPosterStudio({
       const slug = selectedLeague.name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
       await exportPosterFromCanvas(canvas, {
         format,
-        filenameBase: `bonuvo-${slug}-${selectedDate}-${ratio.replace(":", "x")}`,
+        filenameBase: `bonuvo-${slug}-${selectedDate}-${ratio.replace(":", "x")}-${theme}`,
       });
     } catch {
       setErrorMsg(
@@ -336,6 +349,34 @@ export function MatchPosterStudio({
                 </Button>
               </div>
             ) : null}
+
+            <div className="space-y-1.5">
+              <p className="text-xs font-semibold text-fg">
+                {isEn ? "Visual theme" : "Thème du visuel"}
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={theme === "dark" ? "primary" : "outline"}
+                  onClick={() => setTheme("dark")}
+                  className="gap-1.5"
+                >
+                  <Moon className="h-3.5 w-3.5" aria-hidden="true" />
+                  {isEn ? "Dark" : "Sombre"}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={theme === "light" ? "primary" : "outline"}
+                  onClick={() => setTheme("light")}
+                  className="gap-1.5"
+                >
+                  <Sun className="h-3.5 w-3.5" aria-hidden="true" />
+                  {isEn ? "Light" : "Clair"}
+                </Button>
+              </div>
+            </div>
 
             <div className="space-y-1.5">
               <p className="text-xs font-semibold text-fg">
