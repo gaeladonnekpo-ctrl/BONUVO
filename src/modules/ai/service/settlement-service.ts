@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNull, lte } from "drizzle-orm";
+import { and, eq, gte, inArray, isNull, lte } from "drizzle-orm";
 import { settlePrediction } from "@/modules/ai/model/settle";
 import { reconcilePendingCoupons } from "@/modules/ai/service/coupon-sync-service";
 import { createActiveSportsDataProvider } from "@/modules/ai/providers/registry";
@@ -203,9 +203,58 @@ export async function runSettlePredictionsJob(options?: {
         else voidCount += 1;
       }
 
+      // Re-verify recently settled predictions (last 7 days) in case an official score or status was corrected
+      const recheckCutoff = new Date(now.getTime() - 7 * 24 * 3600_000);
+      const recentlySettled = await db
+        .select({
+          resultId: predictionResults.id,
+          currentVerdict: predictionResults.verdict,
+          currentActualOutcome: predictionResults.actualOutcome,
+          fixtureStatus: fixtures.fixtureStatus,
+          homeGoals: fixtures.homeGoals,
+          awayGoals: fixtures.awayGoals,
+          market: predictions.market,
+          pickedSelection: predictions.pickedSelection,
+          probabilitiesJson: predictions.probabilitiesJson,
+        })
+        .from(predictionResults)
+        .innerJoin(predictions, eq(predictionResults.predictionId, predictions.id))
+        .innerJoin(fixtures, eq(predictionResults.fixtureId, fixtures.id))
+        .where(gte(predictionResults.settledAt, recheckCutoff));
+
+      let correctedCount = 0;
+      for (const row of recentlySettled) {
+        const evalResult = settlePrediction({
+          fixtureStatus: row.fixtureStatus,
+          homeGoals: row.homeGoals,
+          awayGoals: row.awayGoals,
+          market: row.market,
+          recommendedPick: row.pickedSelection,
+          probabilities: row.probabilitiesJson,
+        });
+        if (!evalResult) continue;
+        if (
+          evalResult.verdict === row.currentVerdict &&
+          evalResult.actualOutcome === row.currentActualOutcome
+        ) {
+          continue;
+        }
+        await db
+          .update(predictionResults)
+          .set({
+            actualOutcome: evalResult.actualOutcome,
+            verdict: evalResult.verdict,
+            brierScore: evalResult.brierScore !== null ? evalResult.brierScore.toFixed(4) : null,
+            settledAt: now,
+            ingestionRunId: refreshRunId,
+          })
+          .where(eq(predictionResults.id, row.resultId));
+        correctedCount += 1;
+      }
+
       const couponStats = await reconcilePendingCoupons(db, now);
 
-      return { settledCount, wonCount, lostCount, voidCount, ...couponStats };
+      return { settledCount, wonCount, lostCount, voidCount, correctedCount, ...couponStats };
     });
 
     if (options?.invalidateCache !== false) {

@@ -1,50 +1,24 @@
 "use client";
 
 import * as React from "react";
-import { ArrowUpRight, CheckCircle2, Clock, Layers, Trophy, XCircle } from "lucide-react";
+import { ArrowUpRight, CalendarDays, CheckCircle2, Layers, Target, Trophy } from "lucide-react";
 import { UiBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "@/i18n/navigation";
-import type {
-  PublicCouponTrackItem,
-  PublicCouponTrackRecord,
-} from "@/modules/ai/service/public-coupon-history";
+import type { PublicCouponTrackRecord } from "@/modules/ai/service/public-coupon-history";
 
-type StatusFilter = "all" | "won" | "pending" | "lost" | "void";
+type WinningTypeFilter = "all" | "combos" | "singles";
 
-function StatusBadge({
-  status,
-  isEn,
-}: {
-  status: PublicCouponTrackItem["settlementStatus"];
-  isEn: boolean;
-}) {
-  if (status === "won") {
-    return (
-      <UiBadge tone="trust" className="gap-1">
-        <Trophy className="h-3 w-3" aria-hidden="true" />
-        {isEn ? "Won" : "Gagnant"}
-      </UiBadge>
-    );
-  }
-  if (status === "lost") {
-    return (
-      <UiBadge tone="danger" className="gap-1">
-        <XCircle className="h-3 w-3" aria-hidden="true" />
-        {isEn ? "Lost" : "Perdu"}
-      </UiBadge>
-    );
-  }
-  if (status === "void") {
-    return <UiBadge tone="outline">{isEn ? "Void / Cancelled" : "Annulé / Neutre"}</UiBadge>;
-  }
-  return (
-    <UiBadge tone="accent" className="gap-1">
-      <Clock className="h-3 w-3" aria-hidden="true" />
-      {isEn ? "Pending" : "En cours"}
-    </UiBadge>
-  );
+function formatShortDate(dateIso: string, isEn: boolean): string {
+  const [y, m, d] = dateIso.split("-").map((n) => Number.parseInt(n, 10));
+  const dt = new Date(Date.UTC(y ?? 2026, (m ?? 1) - 1, d ?? 1, 12, 0, 0));
+  return new Intl.DateTimeFormat(isEn ? "en-GB" : "fr-FR", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(dt);
 }
 
 export function CouponTrackRecordSection({
@@ -55,19 +29,27 @@ export function CouponTrackRecordSection({
   locale?: string;
 }) {
   const isEn = locale === "en";
-  const { summary, coupons } = record;
-  const [filter, setFilter] = React.useState<StatusFilter>(summary.wonCount > 0 ? "won" : "all");
+  const { summary, coupons, winningSingles, availableWinningDates } = record;
 
-  const visibleCoupons =
-    filter === "all" ? coupons : coupons.filter((c) => c.settlementStatus === filter);
+  const wonCoupons = React.useMemo(
+    () => coupons.filter((c) => c.settlementStatus === "won"),
+    [coupons],
+  );
 
-  const filterTabs: Array<{ id: StatusFilter; label: string; count: number }> = [
-    { id: "won", label: isEn ? "Winning" : "Gagnants", count: summary.wonCount },
-    { id: "all", label: isEn ? "All" : "Tous", count: summary.totalCoupons },
-    { id: "pending", label: isEn ? "Pending" : "En cours", count: summary.pendingCount },
-    { id: "lost", label: isEn ? "Lost" : "Perdus", count: summary.lostCount },
-    { id: "void", label: isEn ? "Void" : "Annulés", count: summary.voidCount },
-  ];
+  const [selectedDate, setSelectedDate] = React.useState<string>(availableWinningDates[0] ?? "all");
+  const [typeFilter, setTypeFilter] = React.useState<WinningTypeFilter>("all");
+
+  const filteredCoupons = React.useMemo(() => {
+    if (typeFilter === "singles") return [];
+    if (selectedDate === "all") return wonCoupons;
+    return wonCoupons.filter((c) => c.generationDateIso === selectedDate);
+  }, [wonCoupons, selectedDate, typeFilter]);
+
+  const filteredSingles = React.useMemo(() => {
+    if (typeFilter === "combos") return [];
+    if (selectedDate === "all") return winningSingles;
+    return winningSingles.filter((s) => s.generationDateIso === selectedDate);
+  }, [winningSingles, selectedDate, typeFilter]);
 
   return (
     <section aria-labelledby="coupon-track-record-heading" className="space-y-5">
@@ -75,39 +57,105 @@ export function CouponTrackRecordSection({
         <div className="space-y-1">
           <div className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-accent">
             <Layers className="h-3.5 w-3.5" aria-hidden="true" />
-            <span>{isEn ? "Verified Coupon Ledger" : "Registre vérifié des coupons"}</span>
+            <span>
+              {isEn ? "Verified Winning Archive" : "Historique vérifié des pronostics gagnants"}
+            </span>
           </div>
           <h2 id="coupon-track-record-heading" className="font-display text-xl font-bold text-fg">
             {isEn
-              ? "Combined Coupons Track Record & Winning Slips"
-              : "Bilan des Coupons Combinés & Tickets Gagnants"}
+              ? "Settled Winning Coupons & Single Picks"
+              : "Matchs déjà réglés — Coupons & Pronostics Gagnants"}
           </h2>
           <p className="max-w-2xl text-xs text-fg-muted sm:text-sm">
             {isEn
-              ? "Every combined coupon is locked before kickoff and automatically settled once official match scores are confirmed. Past hit rates never guarantee future results."
-              : "Chaque coupon combiné est verrouillé avant le coup d'envoi puis réglé automatiquement dès confirmation des scores officiels. Aucun taux passé ne garantit de gains futurs."}
+              ? "Only confirmed winning combined coupons and winning single picks generated by BONUVO AI are archived here, filterable by generation date. Past hit rates never guarantee future results."
+              : "Seuls les coupons combinés et pronostics simples générés par BONUVO AI et officiellement validés comme gagnants sont affichés ici, filtrables par date de génération. Aucun taux passé ne garantit de gains futurs."}
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Filtre coupons">
-          {filterTabs.map((t) => (
-            <Button
-              key={t.id}
-              type="button"
-              size="sm"
-              role="tab"
-              aria-selected={filter === t.id}
-              variant={filter === t.id ? "primary" : "outline"}
-              onClick={() => setFilter(t.id)}
-              className="h-8 rounded-full px-3 text-xs"
-            >
-              {t.label} ({t.count})
-            </Button>
-          ))}
+        <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Type de pronostic">
+          <Button
+            type="button"
+            size="sm"
+            role="tab"
+            aria-selected={typeFilter === "all"}
+            variant={typeFilter === "all" ? "primary" : "outline"}
+            onClick={() => setTypeFilter("all")}
+            className="h-8 rounded-full px-3 text-xs"
+          >
+            {isEn ? "All winning" : "Tous gagnants"} ({wonCoupons.length + winningSingles.length})
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            role="tab"
+            aria-selected={typeFilter === "combos"}
+            variant={typeFilter === "combos" ? "primary" : "outline"}
+            onClick={() => setTypeFilter("combos")}
+            className="h-8 rounded-full px-3 text-xs"
+          >
+            <Layers className="mr-1 h-3 w-3" aria-hidden="true" />
+            {isEn ? "Combos" : "Combinés"} ({wonCoupons.length})
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            role="tab"
+            aria-selected={typeFilter === "singles"}
+            variant={typeFilter === "singles" ? "primary" : "outline"}
+            onClick={() => setTypeFilter("singles")}
+            className="h-8 rounded-full px-3 text-xs"
+          >
+            <Target className="mr-1 h-3 w-3" aria-hidden="true" />
+            {isEn ? "Singles" : "Simples"} ({winningSingles.length})
+          </Button>
         </div>
       </div>
 
-      {/* 4 Coupon KPIs */}
+      {/* Interactive Generation Date Calendar Bar */}
+      <div className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-3.5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2">
+          <CalendarDays className="h-4 w-4 text-accent" aria-hidden="true" />
+          <label htmlFor="history-date-picker" className="text-xs font-semibold text-fg">
+            {isEn ? "Filter by generation date:" : "Filtrer par date de génération :"}
+          </label>
+          <input
+            id="history-date-picker"
+            type="date"
+            value={selectedDate === "all" ? "" : selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value || "all")}
+            className="h-8 rounded-lg border border-border bg-surface-subtle px-2.5 text-xs text-fg focus-visible:outline-2 focus-visible:outline-accent"
+          />
+          <Button
+            type="button"
+            size="sm"
+            variant={selectedDate === "all" ? "primary" : "outline"}
+            onClick={() => setSelectedDate("all")}
+            className="h-8 px-2.5 text-xs"
+          >
+            {isEn ? "All dates" : "Toutes"}
+          </Button>
+        </div>
+
+        {availableWinningDates.length > 0 ? (
+          <div className="flex flex-wrap items-center gap-1.5">
+            {availableWinningDates.slice(0, 6).map((d) => (
+              <Button
+                key={d}
+                type="button"
+                size="sm"
+                variant={selectedDate === d ? "primary" : "outline"}
+                onClick={() => setSelectedDate(d)}
+                className="h-7 rounded-full px-2.5 text-[11px]"
+              >
+                {formatShortDate(d, isEn)}
+              </Button>
+            ))}
+          </div>
+        ) : null}
+      </div>
+
+      {/* 4 Transparent Coupon KPIs */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Card>
           <CardContent className="pt-4">
@@ -150,140 +198,157 @@ export function CouponTrackRecordSection({
         <Card>
           <CardContent className="pt-4">
             <p className="text-[11px] uppercase text-fg-muted">
-              {isEn ? "Pending / Void" : "En cours / Annulés"}
+              {isEn ? "Winning singles" : "Simples gagnants"}
             </p>
-            <p className="mt-1 font-display text-2xl font-bold text-fg">
-              {summary.pendingCount} / {summary.voidCount}
+            <p className="mt-1 font-display text-2xl font-bold text-trust">
+              {winningSingles.length}
             </p>
             <p className="text-[11px] text-fg-muted">
-              {isEn ? "Auto-updated after FT" : "Mise à jour auto après score"}
+              {isEn ? "Confirmed after FT" : "Confirmés après score"}
             </p>
           </CardContent>
         </Card>
       </div>
 
-      {visibleCoupons.length === 0 ? (
+      {filteredCoupons.length === 0 && filteredSingles.length === 0 ? (
         <Card>
           <CardContent className="pt-5 text-sm text-fg-muted">
             {isEn
-              ? "No coupons match this status filter yet."
-              : "Aucun coupon ne correspond à ce filtre pour le moment."}
+              ? "No winning coupon or single pick is available for this date."
+              : "Aucun coupon gagnant n'est disponible pour cette journée."}
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2">
-          {visibleCoupons.map((cp) => (
-            <Card key={cp.id} className="flex flex-col justify-between">
-              <CardHeader className="space-y-2 border-b border-dashed border-border pb-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <StatusBadge status={cp.settlementStatus} isEn={isEn} />
-                    <UiBadge tone="outline">
-                      {cp.source === "bonuvo_ai" ? "BONUVO AI" : isEn ? "Community" : "Communauté"}
-                    </UiBadge>
-                  </div>
-                  {cp.combinedOdds ? (
-                    <span className="rounded-lg bg-surface-subtle px-2.5 py-1 font-mono text-xs font-bold text-fg">
-                      {isEn ? "Odds" : "Cote"} {cp.combinedOdds.toFixed(2)}
-                    </span>
-                  ) : null}
-                </div>
-                <CardTitle className="text-base">{isEn ? cp.titleEn : cp.titleFr}</CardTitle>
-                {(isEn ? cp.descriptionEn : cp.descriptionFr) ? (
-                  <p className="text-xs leading-relaxed text-fg-muted">
-                    {isEn ? cp.descriptionEn : cp.descriptionFr}
-                  </p>
-                ) : null}
-              </CardHeader>
-
-              <CardContent className="space-y-2.5 pt-4">
-                {cp.legs.length === 0 ? (
-                  <p className="text-xs text-fg-muted">
-                    {isEn
-                      ? "Editorial coupon without linked match legs."
-                      : "Coupon éditorial sans sélections individuelles liées."}
-                  </p>
-                ) : (
-                  cp.legs.map((leg, idx) => (
-                    <div
-                      key={`${cp.id}-${leg.fixtureId}-${idx}`}
-                      className="flex items-center justify-between gap-2 rounded-xl border border-border bg-surface-subtle/60 px-3 py-2 text-xs"
-                    >
-                      <div className="min-w-0 space-y-0.5">
-                        <p className="text-[10px] font-medium text-fg-muted">{leg.leagueName}</p>
-                        <Link
-                          href={`/pronostics/${leg.fixtureId}`}
-                          className="inline-flex items-center gap-1 font-semibold text-fg hover:text-accent hover:underline"
-                        >
-                          <span className="truncate">{leg.matchLabel}</span>
-                          <ArrowUpRight className="h-3 w-3 shrink-0" aria-hidden="true" />
-                        </Link>
-                        <p className="text-[11px] font-medium text-accent">
-                          {leg.marketLabel} · {leg.selectionLabel}
-                        </p>
+        <div className="space-y-6">
+          {filteredCoupons.length > 0 ? (
+            <div className="space-y-3">
+              <h3 className="font-display text-base font-bold text-fg">
+                {isEn ? "Winning Combined Coupons" : "Paris combinés gagnants"} (
+                {filteredCoupons.length})
+              </h3>
+              <div className="grid gap-4 md:grid-cols-2">
+                {filteredCoupons.map((cp) => (
+                  <Card key={cp.id} className="flex flex-col justify-between border-trust/40">
+                    <CardHeader className="space-y-2 border-b border-dashed border-border pb-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <UiBadge tone="trust" className="gap-1">
+                            <Trophy className="h-3 w-3" aria-hidden="true" />
+                            {isEn ? "Won" : "Gagné"}
+                          </UiBadge>
+                          <UiBadge tone="outline">
+                            {isEn ? "Combined" : "Combiné"} · {cp.generationDateIso}
+                          </UiBadge>
+                        </div>
+                        {cp.combinedOdds ? (
+                          <span className="rounded-lg bg-surface-subtle px-2.5 py-1 font-mono text-xs font-bold text-fg">
+                            {isEn ? "Total odds" : "Cote totale"} {cp.combinedOdds.toFixed(2)}
+                          </span>
+                        ) : null}
                       </div>
+                      <CardTitle className="text-base">{isEn ? cp.titleEn : cp.titleFr}</CardTitle>
+                      {(isEn ? cp.descriptionEn : cp.descriptionFr) ? (
+                        <p className="text-xs leading-relaxed text-fg-muted">
+                          {isEn ? cp.descriptionEn : cp.descriptionFr}
+                        </p>
+                      ) : null}
+                    </CardHeader>
 
-                      <div className="shrink-0 text-right space-y-0.5">
-                        {leg.homeGoals !== null && leg.awayGoals !== null ? (
-                          <p className="font-mono text-xs font-bold text-fg">
-                            {leg.homeGoals} - {leg.awayGoals}
-                          </p>
-                        ) : (
-                          <p className="font-mono text-[11px] text-fg-muted">—</p>
-                        )}
-                        <span
-                          className={
-                            leg.verdict === "won"
-                              ? "inline-flex items-center gap-1 font-semibold text-trust"
-                              : leg.verdict === "lost"
-                                ? "inline-flex items-center gap-1 font-semibold text-danger"
-                                : "text-fg-muted"
-                          }
-                        >
-                          {leg.verdict === "won" ? (
-                            <>
-                              <CheckCircle2 className="h-3 w-3" aria-hidden="true" />
-                              {isEn ? "Won" : "Validé"}
-                            </>
-                          ) : leg.verdict === "lost" ? (
-                            <>
-                              <XCircle className="h-3 w-3" aria-hidden="true" />
-                              {isEn ? "Lost" : "Manqué"}
-                            </>
-                          ) : leg.verdict === "void" ? (
-                            isEn ? (
-                              "Void"
-                            ) : (
-                              "Annulé"
-                            )
-                          ) : isEn ? (
-                            "Pending"
-                          ) : (
-                            "En attente"
-                          )}
+                    <CardContent className="space-y-2.5 pt-4">
+                      <ul className="space-y-2 text-sm">
+                        {cp.legs.map((leg, idx) => (
+                          <li
+                            key={`${cp.id}-${leg.fixtureId}-${idx}`}
+                            className="rounded-xl border border-border/70 bg-surface-subtle/60 p-2.5 text-xs"
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <Link
+                                href={`/pronostics/${leg.fixtureId}`}
+                                className="inline-flex min-w-0 items-center gap-1 font-semibold text-fg hover:text-accent"
+                              >
+                                <span className="truncate">{leg.matchLabel}</span>
+                                <ArrowUpRight className="h-3 w-3 shrink-0 text-fg-muted" />
+                              </Link>
+                              <span className="inline-flex shrink-0 items-center gap-1 font-mono font-bold text-trust">
+                                <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
+                                {leg.homeGoals !== null && leg.awayGoals !== null
+                                  ? `${leg.homeGoals} - ${leg.awayGoals}`
+                                  : isEn
+                                    ? "Won"
+                                    : "Gagné"}
+                              </span>
+                            </div>
+                            <p className="mt-1 flex flex-wrap items-center justify-between gap-2 text-fg-muted">
+                              <span>
+                                {leg.leagueName} · {leg.marketLabel} :{" "}
+                                <strong className="text-fg">{leg.selectionLabel}</strong>
+                              </span>
+                              <span className="font-mono text-[11px]">
+                                {leg.probabilityPct}%{leg.fairOdds ? ` (~${leg.fairOdds})` : ""}
+                              </span>
+                            </p>
+                          </li>
+                        ))}
+                      </ul>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          {filteredSingles.length > 0 ? (
+            <div className="space-y-3">
+              <h3 className="font-display text-base font-bold text-fg">
+                {isEn ? "Winning Single Picks" : "Pronostics simples gagnants"} (
+                {filteredSingles.length})
+              </h3>
+              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                {filteredSingles.map((s) => (
+                  <Card key={s.id} className="border-trust/35">
+                    <CardContent className="space-y-2.5 pt-4 text-xs">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <UiBadge tone="trust" className="gap-1">
+                            <Trophy className="h-3 w-3" aria-hidden="true" />
+                            {isEn ? "Won" : "Gagné"}
+                          </UiBadge>
+                          <UiBadge tone="outline">
+                            {isEn ? "Single" : "Simple"} · {s.generationDateIso}
+                          </UiBadge>
+                        </div>
+                        <span className="font-mono font-bold text-trust">
+                          {s.homeGoals} - {s.awayGoals}
                         </span>
                       </div>
-                    </div>
-                  ))
-                )}
 
-                <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-[11px] text-fg-muted">
-                  <span>
-                    {cp.validatedAt
-                      ? `${isEn ? "Locked" : "Verrouillé"} : ${new Date(cp.validatedAt).toLocaleDateString(isEn ? "en-US" : "fr-FR")}`
-                      : ""}
-                  </span>
-                  <span>
-                    {cp.settledAt
-                      ? `${isEn ? "Settled" : "Réglé"} : ${new Date(cp.settledAt).toLocaleDateString(isEn ? "en-US" : "fr-FR")}`
-                      : isEn
-                        ? "Awaiting final whistle"
-                        : "En attente du coup de sifflet final"}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                      <Link
+                        href={`/pronostics/${s.fixtureId}`}
+                        className="flex items-center justify-between gap-2 font-display text-sm font-bold text-fg hover:text-accent"
+                      >
+                        <span className="truncate">{s.matchLabel}</span>
+                        <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-fg-muted" />
+                      </Link>
+
+                      <p className="text-fg-muted">
+                        {s.leagueName} · {s.marketLabel} :{" "}
+                        <strong className="text-fg">{s.selectionLabel}</strong>
+                      </p>
+
+                      <div className="flex items-center justify-between rounded-lg bg-trust-soft/50 px-2.5 py-1.5 font-mono">
+                        <span className="font-bold text-trust">{s.probabilityPct}%</span>
+                        <span className="text-fg-muted">
+                          {isEn ? "Est. odds" : "Cote est."} ~{s.fairOdds}
+                        </span>
+                      </div>
+
+                      <p className="line-clamp-3 leading-relaxed text-fg-muted">{s.analysisText}</p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          ) : null}
         </div>
       )}
     </section>

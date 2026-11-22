@@ -228,7 +228,7 @@ export async function syncAndQueryFixturesByDate(params: {
         await runComputePredictionsJob({
           dbScope: "ai_pipeline",
           invalidateCache: false,
-          syncCoupons: false,
+          syncCoupons: true,
         });
       }
       if (syncResult.hasFinished) {

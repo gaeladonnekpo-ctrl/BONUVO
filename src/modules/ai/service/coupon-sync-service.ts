@@ -1,4 +1,4 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, gte, inArray, or } from "drizzle-orm";
 import {
   evaluateCouponLegFromFixture,
   evaluateCouponSettlement,
@@ -9,9 +9,17 @@ import type { PublicFixtureDto } from "@/modules/ai/service/public-ai-types";
 import type { AppDbTransaction } from "@/server/db/context";
 import { coupons, fixtures, predictionResults, type CouponLegSnapshot } from "@/server/db/schema";
 
+function formatLocalDateIso(date: Date, tzOffsetMinutes = 60): string {
+  const shifted = new Date(date.getTime() + tzOffsetMinutes * 60_000);
+  const y = shifted.getUTCFullYear();
+  const m = String(shifted.getUTCMonth() + 1).padStart(2, "0");
+  const d = String(shifted.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 /**
  * Persists BONUVO AI combined coupons generated from upcoming fixtures into `public.coupons`
- * using a daily idempotent `externalKey` (`ai:YYYY-MM-DD:safe|balanced`).
+ * using a daily idempotent `externalKey` (`ai:YYYY-MM-DD:safe|balanced|diversified|bold`).
  * Never overwrites a coupon that has already been settled.
  */
 export async function syncCombinedCouponsForFixtures(
@@ -22,7 +30,7 @@ export async function syncCombinedCouponsForFixtures(
   const generated = buildCombinedCoupons(upcomingFixtures);
   if (generated.length === 0) return 0;
 
-  const dateKey = now.toISOString().slice(0, 10);
+  const dateKey = formatLocalDateIso(now, 60);
   let synced = 0;
 
   for (const combo of generated) {
@@ -100,23 +108,33 @@ export async function syncCombinedCouponsForFixtures(
 
 /**
  * Automatically updates `settlementStatus` and `settledAt` on all pending validated coupons
- * once their underlying fixtures / prediction results reach a definitive state.
+ * and re-verifies recently settled coupons (last 7 days) in case an official match score
+ * or status was corrected after initial settlement.
  */
 export async function reconcilePendingCoupons(
   db: AppDbTransaction,
   now = new Date(),
+  options?: { recheckSettledDays?: number },
 ): Promise<{
   couponsSettledCount: number;
   couponsWonCount: number;
   couponsLostCount: number;
   couponsVoidCount: number;
 }> {
-  const pendingCoupons = await db
+  const recheckDays = options?.recheckSettledDays ?? 7;
+  const recentCutoff = new Date(now.getTime() - recheckDays * 24 * 3600_000);
+
+  const candidateCoupons = await db
     .select()
     .from(coupons)
-    .where(and(eq(coupons.status, "validated"), eq(coupons.settlementStatus, "pending")));
+    .where(
+      and(
+        eq(coupons.status, "validated"),
+        or(eq(coupons.settlementStatus, "pending"), gte(coupons.settledAt, recentCutoff)),
+      ),
+    );
 
-  if (pendingCoupons.length === 0) {
+  if (candidateCoupons.length === 0) {
     return {
       couponsSettledCount: 0,
       couponsWonCount: 0,
@@ -127,15 +145,15 @@ export async function reconcilePendingCoupons(
 
   const allFixtureIds = Array.from(
     new Set(
-      pendingCoupons.flatMap((c) =>
+      candidateCoupons.flatMap((c) =>
         Array.isArray(c.legsJson) ? c.legsJson.map((l) => l.fixtureId).filter(Boolean) : [],
       ),
     ),
   );
   const allPredictionIds = Array.from(
     new Set([
-      ...pendingCoupons.flatMap((c) => c.predictionIds ?? []),
-      ...pendingCoupons.flatMap((c) =>
+      ...candidateCoupons.flatMap((c) => c.predictionIds ?? []),
+      ...candidateCoupons.flatMap((c) =>
         Array.isArray(c.legsJson)
           ? c.legsJson.map((l) => l.predictionId).filter((id): id is string => Boolean(id))
           : [],
@@ -174,7 +192,7 @@ export async function reconcilePendingCoupons(
   let couponsLostCount = 0;
   let couponsVoidCount = 0;
 
-  for (const coupon of pendingCoupons) {
+  for (const coupon of candidateCoupons) {
     const legs = Array.isArray(coupon.legsJson) ? coupon.legsJson : [];
     const verdicts: LegVerdict[] = [];
 
@@ -185,30 +203,20 @@ export async function reconcilePendingCoupons(
           ? (verdictByPredictionId.get(leg.predictionId) ?? null)
           : null;
 
-        // Double Chance (1X / X2) must always be evaluated against the fixture score directly
-        if (leg.market === "double_chance") {
-          verdicts.push(
-            fix
-              ? evaluateCouponLegFromFixture({
-                  fixtureStatus: fix.fixtureStatus,
-                  homeGoals: fix.homeGoals,
-                  awayGoals: fix.awayGoals,
-                  market: leg.market,
-                  pickedSelection: leg.pickedSelection,
-                })
-              : null,
-          );
-        } else {
+        // Always re-evaluate directly from the latest confirmed fixture score when fixture data exists
+        // so corrected official scores propagate immediately to both pending and settled coupons.
+        if (fix) {
           verdicts.push(
             evaluateCouponLegFromFixture({
-              fixtureStatus: fix?.fixtureStatus ?? "scheduled",
-              homeGoals: fix?.homeGoals ?? null,
-              awayGoals: fix?.awayGoals ?? null,
+              fixtureStatus: fix.fixtureStatus,
+              homeGoals: fix.homeGoals,
+              awayGoals: fix.awayGoals,
               market: leg.market,
               pickedSelection: leg.pickedSelection,
-              storedVerdict,
             }),
           );
+        } else {
+          verdicts.push(storedVerdict);
         }
       }
     } else if ((coupon.predictionIds ?? []).length > 0) {
@@ -220,21 +228,24 @@ export async function reconcilePendingCoupons(
     if (verdicts.length === 0) continue;
 
     const nextStatus = evaluateCouponSettlement(verdicts);
-    if (nextStatus === "pending") continue;
+    if (nextStatus === coupon.settlementStatus) continue;
+    if (nextStatus === "pending" && coupon.settlementStatus === "pending") continue;
 
     await db
       .update(coupons)
       .set({
         settlementStatus: nextStatus,
-        settledAt: now,
+        settledAt: nextStatus === "pending" ? null : now,
         updatedAt: now,
       })
       .where(eq(coupons.id, coupon.id));
 
-    couponsSettledCount += 1;
-    if (nextStatus === "won") couponsWonCount += 1;
-    else if (nextStatus === "lost") couponsLostCount += 1;
-    else couponsVoidCount += 1;
+    if (nextStatus !== "pending") {
+      couponsSettledCount += 1;
+      if (nextStatus === "won") couponsWonCount += 1;
+      else if (nextStatus === "lost") couponsLostCount += 1;
+      else couponsVoidCount += 1;
+    }
   }
 
   return {

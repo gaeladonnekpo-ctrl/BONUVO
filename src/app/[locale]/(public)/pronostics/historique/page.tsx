@@ -169,21 +169,29 @@ export default async function PublicPredictionHistoryPage({
 
       <section aria-labelledby="settled-fixtures-heading" className="space-y-4">
         <h2 id="settled-fixtures-heading" className="font-display text-xl font-bold text-fg">
-          {isEn ? "Recently Settled Fixtures" : "Dernières rencontres réglées"}
+          {isEn ? "Winning Settled Fixtures" : "Rencontres déjà réglées (Pronostics validés)"}
         </h2>
-        {settledData.fixtures.length === 0 ? (
-          <p className="text-sm text-fg-muted">
-            {isEn
-              ? "No finished fixtures settled yet."
-              : "Aucune rencontre terminée réglée pour le moment."}
-          </p>
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2">
-            {settledData.fixtures.map((fix) => (
-              <FixtureRow key={fix.id} fixture={fix} locale={resolvedLocale} />
-            ))}
-          </div>
-        )}
+        {(() => {
+          const wonFixtures = settledData.fixtures.filter((fix) =>
+            fix.predictions.some((p) => p.verdict === "won"),
+          );
+          if (wonFixtures.length === 0) {
+            return (
+              <p className="text-sm text-fg-muted">
+                {isEn
+                  ? "No winning settled fixtures available yet."
+                  : "Aucune rencontre avec pronostic gagnant confirmé pour le moment."}
+              </p>
+            );
+          }
+          return (
+            <div className="grid gap-4 md:grid-cols-2">
+              {wonFixtures.map((fix) => (
+                <FixtureRow key={fix.id} fixture={fix} locale={resolvedLocale} />
+              ))}
+            </div>
+          );
+        })()}
       </section>
     </div>
   );

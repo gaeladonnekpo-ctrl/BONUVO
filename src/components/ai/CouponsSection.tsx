@@ -34,15 +34,20 @@ export function CouponsSection({
   coupons,
   singles,
   guides,
+  shortfallFr,
+  shortfallEn,
   locale = "fr",
 }: {
   coupons: CombinedCouponDto[];
   singles: SingleBetSuggestion[];
   guides: GamingCategoryGuide[];
+  shortfallFr?: string | null;
+  shortfallEn?: string | null;
   locale?: string;
 }) {
   const isEn = locale === "en";
   const [tab, setTab] = React.useState<"combos" | "singles" | "games">("combos");
+  const shortfallMessage = isEn ? shortfallEn : shortfallFr;
 
   return (
     <section
@@ -116,13 +121,19 @@ export function CouponsSection({
         </div>
       </div>
 
+      {shortfallMessage ? (
+        <div className="rounded-xl border border-border bg-surface px-3.5 py-2.5 text-xs text-fg-muted">
+          {shortfallMessage}
+        </div>
+      ) : null}
+
       {tab === "combos" ? (
         coupons.length === 0 ? (
           <Card>
             <CardContent className="pt-5 text-sm text-fg-muted">
               {isEn
-                ? "At least 2 eligible upcoming fixtures are required to assemble a combined coupon."
-                : "Au moins 2 rencontres analysables à venir sont requises pour assembler un coupon combiné réel."}
+                ? "At least 3 eligible upcoming fixtures are required to assemble a diversified combined coupon."
+                : "Au moins 3 rencontres actives éligibles sont requises pour assembler un coupon combiné diversifié."}
             </CardContent>
           </Card>
         ) : (
@@ -139,7 +150,19 @@ export function CouponsSection({
                       <Sparkles className="h-4 w-4 text-accent" aria-hidden="true" />
                       {isEn ? coupon.titleEn : coupon.titleFr}
                     </CardTitle>
-                    <RiskBadge riskLevel={coupon.riskLevel} isEn={isEn} />
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <UiBadge tone="outline">
+                        {coupon.distinctLeaguesCount}{" "}
+                        {isEn
+                          ? coupon.distinctLeaguesCount > 1
+                            ? "leagues"
+                            : "league"
+                          : coupon.distinctLeaguesCount > 1
+                            ? "ligues"
+                            : "ligue"}
+                      </UiBadge>
+                      <RiskBadge riskLevel={coupon.riskLevel} isEn={isEn} />
+                    </div>
                   </div>
                   <p className="text-xs text-fg-muted">
                     {isEn ? coupon.rationaleEn : coupon.rationaleFr}
@@ -218,7 +241,7 @@ export function CouponsSection({
           </Card>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {singles.slice(0, 6).map((s) => (
+            {singles.slice(0, 9).map((s) => (
               <Card
                 key={`${s.predictionId}-${s.marketLabel}`}
                 className="group transition-all duration-200 hover:-translate-y-0.5 hover:border-accent/60 hover:shadow-md"
@@ -260,12 +283,21 @@ export function CouponsSection({
 
                   <div className="flex items-center justify-between rounded-xl bg-trust-soft/60 px-3 py-2">
                     <span className="text-xs font-bold text-trust">{s.selectionLabel}</span>
-                    <span className="font-mono text-sm font-extrabold text-trust">
-                      {s.probabilityPct}%
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs text-fg-muted">~{s.fairOdds}</span>
+                      <span className="font-mono text-sm font-extrabold text-trust">
+                        {s.probabilityPct}%
+                      </span>
+                    </div>
                   </div>
                   <p className="line-clamp-3 text-xs leading-relaxed text-fg-muted">
                     {s.rationale}
+                  </p>
+                  <p className="text-[11px] leading-snug text-fg-muted/90">
+                    <strong className="text-fg">
+                      {isEn ? "Risk factor:" : "Facteur de risque :"}
+                    </strong>{" "}
+                    {isEn ? s.riskFactorsEn : s.riskFactorsFr}
                   </p>
                 </CardContent>
               </Card>

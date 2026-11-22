@@ -16,11 +16,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "@/i18n/navigation";
 import type { AppLocale } from "@/lib/i18n/config";
 import { buildLocalizedMetadata } from "@/lib/i18n/metadata";
-import {
-  PLATFORM_GAMING_GUIDES,
-  buildCombinedCoupons,
-  buildSinglePicks,
-} from "@/modules/ai/model/coupons";
+import { PLATFORM_GAMING_GUIDES, buildDailyCouponBatch } from "@/modules/ai/model/coupons";
 import {
   formatUtcDateIso,
   syncAndQueryFixturesByDate,
@@ -76,8 +72,9 @@ export default async function PublicPredictionsPage({
         )
       : null;
 
-  const singles = buildSinglePicks(fixturesData.fixtures);
-  const coupons = buildCombinedCoupons(fixturesData.fixtures);
+  const { coupons, singles, shortfallFr, shortfallEn } = buildDailyCouponBatch(
+    fixturesData.fixtures,
+  );
 
   return (
     <div className="space-y-8 py-3 sm:py-5">
@@ -207,6 +204,8 @@ export default async function PublicPredictionsPage({
         coupons={coupons}
         singles={singles}
         guides={PLATFORM_GAMING_GUIDES}
+        shortfallFr={shortfallFr}
+        shortfallEn={shortfallEn}
         locale={resolvedLocale}
       />
 

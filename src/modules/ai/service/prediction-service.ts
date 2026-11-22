@@ -281,7 +281,7 @@ export async function runComputePredictionsJob(options?: {
     let couponsSynced = 0;
     if (options?.syncCoupons !== false) {
       try {
-        const upcomingData = await queryPublicFixturesUncached({ upcomingOnly: true, limit: 40 });
+        const upcomingData = await queryPublicFixturesUncached({ upcomingOnly: true, limit: 200 });
         if (upcomingData.fixtures.length >= 2) {
           couponsSynced = await withAppDb({ scope }, (db) =>
             syncCombinedCouponsForFixtures(db, upcomingData.fixtures, now),

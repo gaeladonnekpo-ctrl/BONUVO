@@ -265,6 +265,7 @@ describe("Phase 7 — Modèle Poisson v1.0, garde-fous et règlement", () => {
     const slate = [
       sampleFixture("f1", "Arsenal", "Everton"),
       sampleFixture("f2", "Man City", "Fulham"),
+      sampleFixture("f3", "Liverpool", "Chelsea"),
     ];
     const singles = buildSinglePicks(slate);
     const coupons = buildCombinedCoupons(slate);
@@ -274,7 +275,7 @@ describe("Phase 7 — Modèle Poisson v1.0, garde-fous et règlement", () => {
     expect(PLATFORM_GAMING_GUIDES.length).toBe(3);
 
     for (const c of coupons) {
-      expect(c.legs.length).toBeGreaterThanOrEqual(2);
+      expect(c.legs.length).toBeGreaterThanOrEqual(3);
       expect(c.combinedProbabilityPct).toBeGreaterThan(0);
       expect(c.combinedProbabilityPct).toBeLessThanOrEqual(100);
     }
@@ -368,6 +369,7 @@ describe("Phase 7 — Modèle Poisson v1.0, garde-fous et règlement", () => {
     const slate = [
       sampleFixture("f1", "Arsenal", "Everton"),
       sampleFixture("f2", "Man City", "Fulham"),
+      sampleFixture("f3", "Liverpool", "Chelsea"),
     ];
     const singles = buildSinglePicks(slate);
     const coupons = buildCombinedCoupons(slate);
@@ -377,7 +379,7 @@ describe("Phase 7 — Modèle Poisson v1.0, garde-fous et règlement", () => {
     expect(PLATFORM_GAMING_GUIDES.length).toBe(3);
 
     for (const c of coupons) {
-      expect(c.legs.length).toBeGreaterThanOrEqual(2);
+      expect(c.legs.length).toBeGreaterThanOrEqual(3);
       expect(c.combinedProbabilityPct).toBeGreaterThan(0);
       expect(c.combinedProbabilityPct).toBeLessThanOrEqual(100);
     }
