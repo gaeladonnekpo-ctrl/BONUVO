@@ -28,6 +28,20 @@ export interface PublicFixtureDto {
   venueName: string;
   roundLabel: string;
   fixtureStatus: string;
+  livePhase?:
+    | "scheduled"
+    | "first_half"
+    | "halftime"
+    | "second_half"
+    | "extra_time"
+    | "penalties"
+    | "finished"
+    | "postponed"
+    | "cancelled"
+    | "abandoned";
+  statusDetail?: string | null;
+  displayClock?: string | null;
+  period?: number | null;
   homeTeamId: string;
   homeTeamName: string;
   homeTeamLogo: string;

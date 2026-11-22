@@ -3,6 +3,11 @@ import {
   humanizeAnalysisText,
   resolveDefaultLeagueLogo,
 } from "@/modules/ai/service/ingestion-helpers";
+import {
+  getLiveTelemetry,
+  isFixtureInActiveWindow,
+  refreshLiveFixturesForLeagueIds,
+} from "@/modules/ai/service/live-fixture-sync";
 import { enrichKeyPlayersWithOfficialPhotos } from "@/modules/ai/service/player-photo-resolver";
 import { getPublicPredictionStats } from "@/modules/ai/service/public-ai-stats";
 import type {
@@ -173,6 +178,7 @@ export async function queryPublicFixturesUncached(filter?: {
       const lName = l?.name ?? "Football";
       const providerName = providerMap.get(f.providerId) ?? "Sports Data";
       const lastIngest = latestRunByProvider.get(f.providerId) ?? f.updatedAt;
+      const liveTel = getLiveTelemetry(f.externalId);
       return {
         id: f.id,
         leagueId: f.leagueId,
@@ -183,6 +189,10 @@ export async function queryPublicFixturesUncached(filter?: {
         venueName: f.venueName,
         roundLabel: f.roundLabel,
         fixtureStatus: f.fixtureStatus,
+        livePhase: liveTel?.livePhase,
+        statusDetail: liveTel?.statusDetail ?? null,
+        displayClock: liveTel?.displayClock ?? null,
+        period: liveTel?.period ?? null,
         homeTeamId: f.homeTeamId,
         homeTeamName: teamMap.get(f.homeTeamId)?.name ?? "Home",
         homeTeamLogo: teamMap.get(f.homeTeamId)?.logoUrl ?? "",
@@ -219,156 +229,192 @@ export async function listPublicFixtures(filter?: {
   ])();
 }
 
-export async function getPublicFixtureDetail(fixtureId: string) {
-  return withCatalogCache(
-    async () =>
-      withAppDb({ scope: "public_catalog" }, async (db) => {
-        const [fix] = await db.select().from(fixtures).where(eq(fixtures.id, fixtureId)).limit(1);
-        if (!fix) return null;
-        const pairIds = [fix.homeTeamId, fix.awayTeamId];
+async function queryPublicFixtureDetailUncached(fixtureId: string) {
+  return withAppDb({ scope: "public_catalog" }, async (db) => {
+    const [fix] = await db.select().from(fixtures).where(eq(fixtures.id, fixtureId)).limit(1);
+    if (!fix) return null;
+    const pairIds = [fix.homeTeamId, fix.awayTeamId];
 
-        const [leagueRows, teamRows, predRows, resRows, statsRows, standingRows, h2hRows] =
-          await Promise.all([
-            db.select().from(leagues).where(eq(leagues.id, fix.leagueId)).limit(1),
-            db.select().from(teams).where(inArray(teams.id, pairIds)),
-            db
-              .select()
-              .from(predictions)
-              .where(
-                and(
-                  eq(predictions.fixtureId, fix.id),
-                  inArray(predictions.status, ["published", "void"]),
-                ),
-              ),
-            db.select().from(predictionResults).where(eq(predictionResults.fixtureId, fix.id)),
-            db
-              .select()
-              .from(teamStatsSnapshots)
-              .where(
-                and(
-                  eq(teamStatsSnapshots.seasonId, fix.seasonId),
-                  inArray(teamStatsSnapshots.teamId, pairIds),
-                ),
-              )
-              .orderBy(desc(teamStatsSnapshots.asOfDate)),
-            db
-              .select()
-              .from(standings)
-              .where(and(eq(standings.seasonId, fix.seasonId), inArray(standings.teamId, pairIds))),
-            db
-              .select()
-              .from(fixtures)
-              .where(
-                and(
-                  eq(fixtures.fixtureStatus, "finished"),
-                  inArray(fixtures.homeTeamId, pairIds),
-                  inArray(fixtures.awayTeamId, pairIds),
-                ),
-              )
-              .orderBy(desc(fixtures.kickoffAt))
-              .limit(6),
-          ]);
-
-        const teamMap = new Map(teamRows.map((t) => [t.id, t]));
-        const resByPred = new Map(resRows.map((r) => [r.predictionId, r]));
-        const latestStats = new Map<string, (typeof statsRows)[number]>();
-        for (const s of statsRows) if (!latestStats.has(s.teamId)) latestStats.set(s.teamId, s);
-        const standingMap = new Map(standingRows.map((st) => [st.teamId, st]));
-        const lRow = leagueRows[0];
-        const lName = lRow?.name ?? "Football";
-
-        const [provRow] = await db
-          .select({ name: sportsProviders.name })
-          .from(sportsProviders)
-          .where(eq(sportsProviders.id, fix.providerId))
-          .limit(1);
-        const [latestRun] = await db
-          .select({ finishedAt: ingestionRuns.finishedAt, startedAt: ingestionRuns.startedAt })
-          .from(ingestionRuns)
+    const [leagueRows, teamRows, predRows, resRows, statsRows, standingRows, h2hRows] =
+      await Promise.all([
+        db.select().from(leagues).where(eq(leagues.id, fix.leagueId)).limit(1),
+        db.select().from(teams).where(inArray(teams.id, pairIds)),
+        db
+          .select()
+          .from(predictions)
           .where(
             and(
-              eq(ingestionRuns.providerId, fix.providerId),
-              eq(ingestionRuns.status, "completed"),
+              eq(predictions.fixtureId, fix.id),
+              inArray(predictions.status, ["published", "void"]),
+            ),
+          ),
+        db.select().from(predictionResults).where(eq(predictionResults.fixtureId, fix.id)),
+        db
+          .select()
+          .from(teamStatsSnapshots)
+          .where(
+            and(
+              eq(teamStatsSnapshots.seasonId, fix.seasonId),
+              inArray(teamStatsSnapshots.teamId, pairIds),
             ),
           )
-          .orderBy(desc(ingestionRuns.startedAt))
-          .limit(1);
+          .orderBy(desc(teamStatsSnapshots.asOfDate)),
+        db
+          .select()
+          .from(standings)
+          .where(and(eq(standings.seasonId, fix.seasonId), inArray(standings.teamId, pairIds))),
+        db
+          .select()
+          .from(fixtures)
+          .where(
+            and(
+              eq(fixtures.fixtureStatus, "finished"),
+              inArray(fixtures.homeTeamId, pairIds),
+              inArray(fixtures.awayTeamId, pairIds),
+            ),
+          )
+          .orderBy(desc(fixtures.kickoffAt))
+          .limit(6),
+      ]);
 
-        const lastIngest = latestRun?.finishedAt ?? latestRun?.startedAt ?? fix.updatedAt;
+    const teamMap = new Map(teamRows.map((t) => [t.id, t]));
+    const resByPred = new Map(resRows.map((r) => [r.predictionId, r]));
+    const latestStats = new Map<string, (typeof statsRows)[number]>();
+    for (const s of statsRows) if (!latestStats.has(s.teamId)) latestStats.set(s.teamId, s);
+    const standingMap = new Map(standingRows.map((st) => [st.teamId, st]));
+    const lRow = leagueRows[0];
+    const lName = lRow?.name ?? "Football";
 
-        const rawHomeStats = latestStats.get(fix.homeTeamId) ?? null;
-        const rawAwayStats = latestStats.get(fix.awayTeamId) ?? null;
-        const homeTeamExtId = teamMap.get(fix.homeTeamId)?.externalId ?? "";
-        const awayTeamExtId = teamMap.get(fix.awayTeamId)?.externalId ?? "";
+    const [provRow] = await db
+      .select({ name: sportsProviders.name })
+      .from(sportsProviders)
+      .where(eq(sportsProviders.id, fix.providerId))
+      .limit(1);
+    const [latestRun] = await db
+      .select({ finishedAt: ingestionRuns.finishedAt, startedAt: ingestionRuns.startedAt })
+      .from(ingestionRuns)
+      .where(
+        and(eq(ingestionRuns.providerId, fix.providerId), eq(ingestionRuns.status, "completed")),
+      )
+      .orderBy(desc(ingestionRuns.startedAt))
+      .limit(1);
 
-        const [enrichedHomePlayers, enrichedAwayPlayers] = await Promise.all([
-          rawHomeStats?.keyPlayersJson?.length
-            ? enrichKeyPlayersWithOfficialPhotos({
-                players: rawHomeStats.keyPlayersJson,
-                leagueExternalId: lRow?.externalId ?? "",
-                leagueName: lName,
-                teamExternalId: homeTeamExtId,
-                teamName: teamMap.get(fix.homeTeamId)?.name ?? "",
-              })
-            : Promise.resolve([]),
-          rawAwayStats?.keyPlayersJson?.length
-            ? enrichKeyPlayersWithOfficialPhotos({
-                players: rawAwayStats.keyPlayersJson,
-                leagueExternalId: lRow?.externalId ?? "",
-                leagueName: lName,
-                teamExternalId: awayTeamExtId,
-                teamName: teamMap.get(fix.awayTeamId)?.name ?? "",
-              })
-            : Promise.resolve([]),
-        ]);
+    const lastIngest = latestRun?.finishedAt ?? latestRun?.startedAt ?? fix.updatedAt;
 
-        const homeStats = rawHomeStats
-          ? { ...rawHomeStats, keyPlayersJson: enrichedHomePlayers }
-          : null;
-        const awayStats = rawAwayStats
-          ? { ...rawAwayStats, keyPlayersJson: enrichedAwayPlayers }
-          : null;
+    const rawHomeStats = latestStats.get(fix.homeTeamId) ?? null;
+    const rawAwayStats = latestStats.get(fix.awayTeamId) ?? null;
+    const homeTeamExtId = teamMap.get(fix.homeTeamId)?.externalId ?? "";
+    const awayTeamExtId = teamMap.get(fix.awayTeamId)?.externalId ?? "";
 
-        return {
-          fixture: {
-            id: fix.id,
-            leagueId: fix.leagueId,
+    const [enrichedHomePlayers, enrichedAwayPlayers] = await Promise.all([
+      rawHomeStats?.keyPlayersJson?.length
+        ? enrichKeyPlayersWithOfficialPhotos({
+            players: rawHomeStats.keyPlayersJson,
+            leagueExternalId: lRow?.externalId ?? "",
             leagueName: lName,
-            leagueLogo: lRow?.logoUrl || resolveDefaultLeagueLogo(lRow?.externalId ?? "", lName),
-            countryName: lRow?.countryName ?? "",
-            kickoffAt: fix.kickoffAt.toISOString(),
-            venueName: fix.venueName,
-            roundLabel: fix.roundLabel,
-            fixtureStatus: fix.fixtureStatus,
-            providerName: provRow?.name ?? "Sports Data",
-            lastIngestedAt: lastIngest ? lastIngest.toISOString() : null,
-            homeTeamId: fix.homeTeamId,
-            homeTeamName: teamMap.get(fix.homeTeamId)?.name ?? "Home",
-            homeTeamLogo: teamMap.get(fix.homeTeamId)?.logoUrl ?? "",
-            awayTeamId: fix.awayTeamId,
-            awayTeamName: teamMap.get(fix.awayTeamId)?.name ?? "Away",
-            awayTeamLogo: teamMap.get(fix.awayTeamId)?.logoUrl ?? "",
-            homeGoals: fix.homeGoals,
-            awayGoals: fix.awayGoals,
-            predictions: predRows.map((p) => mapPredictionCard(p, resByPred.get(p.id))),
-          },
-          homeStats,
-          awayStats,
-          homeStanding: standingMap.get(fix.homeTeamId) ?? null,
-          awayStanding: standingMap.get(fix.awayTeamId) ?? null,
-          headToHead: h2hRows.map((h) => ({
-            id: h.id,
-            kickoffAt: h.kickoffAt.toISOString(),
-            homeTeamName: teamMap.get(h.homeTeamId)?.name ?? "Home",
-            homeTeamLogo: teamMap.get(h.homeTeamId)?.logoUrl ?? "",
-            awayTeamName: teamMap.get(h.awayTeamId)?.name ?? "Away",
-            awayTeamLogo: teamMap.get(h.awayTeamId)?.logoUrl ?? "",
-            homeGoals: h.homeGoals,
-            awayGoals: h.awayGoals,
-          })),
-        };
-      }),
-    ["ai-fixture-detail-v4", fixtureId],
+            teamExternalId: homeTeamExtId,
+            teamName: teamMap.get(fix.homeTeamId)?.name ?? "",
+          })
+        : Promise.resolve([]),
+      rawAwayStats?.keyPlayersJson?.length
+        ? enrichKeyPlayersWithOfficialPhotos({
+            players: rawAwayStats.keyPlayersJson,
+            leagueExternalId: lRow?.externalId ?? "",
+            leagueName: lName,
+            teamExternalId: awayTeamExtId,
+            teamName: teamMap.get(fix.awayTeamId)?.name ?? "",
+          })
+        : Promise.resolve([]),
+    ]);
+
+    const homeStats = rawHomeStats
+      ? { ...rawHomeStats, keyPlayersJson: enrichedHomePlayers }
+      : null;
+    const awayStats = rawAwayStats
+      ? { ...rawAwayStats, keyPlayersJson: enrichedAwayPlayers }
+      : null;
+
+    const liveTel = getLiveTelemetry(fix.externalId);
+
+    return {
+      fixture: {
+        id: fix.id,
+        leagueId: fix.leagueId,
+        leagueName: lName,
+        leagueLogo: lRow?.logoUrl || resolveDefaultLeagueLogo(lRow?.externalId ?? "", lName),
+        countryName: lRow?.countryName ?? "",
+        kickoffAt: fix.kickoffAt.toISOString(),
+        venueName: fix.venueName,
+        roundLabel: fix.roundLabel,
+        fixtureStatus: fix.fixtureStatus,
+        livePhase: liveTel?.livePhase,
+        statusDetail: liveTel?.statusDetail ?? null,
+        displayClock: liveTel?.displayClock ?? null,
+        period: liveTel?.period ?? null,
+        providerName: provRow?.name ?? "Sports Data",
+        lastIngestedAt: lastIngest ? lastIngest.toISOString() : null,
+        homeTeamId: fix.homeTeamId,
+        homeTeamName: teamMap.get(fix.homeTeamId)?.name ?? "Home",
+        homeTeamLogo: teamMap.get(fix.homeTeamId)?.logoUrl ?? "",
+        awayTeamId: fix.awayTeamId,
+        awayTeamName: teamMap.get(fix.awayTeamId)?.name ?? "Away",
+        awayTeamLogo: teamMap.get(fix.awayTeamId)?.logoUrl ?? "",
+        homeGoals: fix.homeGoals,
+        awayGoals: fix.awayGoals,
+        predictions: predRows.map((p) => mapPredictionCard(p, resByPred.get(p.id))),
+      },
+      homeStats,
+      awayStats,
+      homeStanding: standingMap.get(fix.homeTeamId) ?? null,
+      awayStanding: standingMap.get(fix.awayTeamId) ?? null,
+      headToHead: h2hRows.map((h) => ({
+        id: h.id,
+        kickoffAt: h.kickoffAt.toISOString(),
+        homeTeamName: teamMap.get(h.homeTeamId)?.name ?? "Home",
+        homeTeamLogo: teamMap.get(h.homeTeamId)?.logoUrl ?? "",
+        awayTeamName: teamMap.get(h.awayTeamId)?.name ?? "Away",
+        awayTeamLogo: teamMap.get(h.awayTeamId)?.logoUrl ?? "",
+        homeGoals: h.homeGoals,
+        awayGoals: h.awayGoals,
+      })),
+    };
+  });
+}
+
+export async function getPublicFixtureDetail(fixtureId: string) {
+  const statusSnapshot = await withAppDb({ scope: "public_catalog" }, async (db) => {
+    const [row] = await db
+      .select({
+        leagueId: fixtures.leagueId,
+        fixtureStatus: fixtures.fixtureStatus,
+        kickoffAt: fixtures.kickoffAt,
+      })
+      .from(fixtures)
+      .where(eq(fixtures.id, fixtureId))
+      .limit(1);
+    return row ?? null;
+  });
+
+  if (
+    statusSnapshot &&
+    isFixtureInActiveWindow({
+      fixtureStatus: statusSnapshot.fixtureStatus,
+      kickoffAt: statusSnapshot.kickoffAt,
+    })
+  ) {
+    const dayStart = new Date(statusSnapshot.kickoffAt.getTime() - 12 * 3600_000).toISOString();
+    const dayEnd = new Date(statusSnapshot.kickoffAt.getTime() + 12 * 3600_000).toISOString();
+    await refreshLiveFixturesForLeagueIds({
+      leagueIds: [statusSnapshot.leagueId],
+      fromDateIso: dayStart,
+      toDateIso: dayEnd,
+    });
+    return queryPublicFixtureDetailUncached(fixtureId);
+  }
+
+  return withCatalogCache(
+    () => queryPublicFixtureDetailUncached(fixtureId),
+    ["ai-fixture-detail-v5", fixtureId],
     [PUBLIC_CATALOG_CACHE_TAGS.predictions],
   )();
 }

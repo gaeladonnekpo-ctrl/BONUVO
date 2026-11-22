@@ -4,6 +4,7 @@ import {
   espnStandingsSchema,
   espnSummarySchema,
   mapEspnFixtureStatus,
+  mapEspnLivePhase,
   resolveEspnLeagueSlug,
 } from "@/modules/ai/providers/espn-soccer-schemas";
 import {
@@ -160,6 +161,12 @@ export class EspnSoccerProvider implements SportsDataProvider {
             comp.status?.type?.name,
             comp.status?.type?.completed,
           );
+          const livePhase = mapEspnLivePhase({
+            state: comp.status?.type?.state,
+            name: comp.status?.type?.name,
+            completed: comp.status?.type?.completed,
+            period: comp.status?.period,
+          });
           if (mode === "upcoming" && status !== "scheduled" && status !== "live") continue;
           if (mode === "finished" && status === "scheduled") continue;
 
@@ -180,6 +187,10 @@ export class EspnSoccerProvider implements SportsDataProvider {
             kickoffAt: new Date(ev.date).toISOString(),
             venue: comp.venue?.fullName ?? null,
             status,
+            livePhase,
+            statusDetail: comp.status?.type?.shortDetail ?? comp.status?.type?.detail ?? null,
+            displayClock: comp.status?.displayClock ?? null,
+            period: comp.status?.period ?? null,
             homeGoals: homeScore,
             awayGoals: awayScore,
             homeTeam: {

@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import type { ExternalFixtureDto } from "@/modules/ai/providers/types";
+import { recordLiveTelemetryFromItems } from "@/modules/ai/service/live-fixture-sync";
 import type { AppDbTransaction } from "@/server/db/context";
 import { fixtures, leagues, seasons, sportsProviders, teams } from "@/server/db/schema";
 
@@ -313,6 +314,7 @@ export async function upsertNormalizedFixtures(params: {
   ingestionRunId: string;
   items: ExternalFixtureDto[];
 }): Promise<number> {
+  recordLiveTelemetryFromItems(params.items);
   let upserted = 0;
   for (const item of params.items) {
     const [homeTeam] = await params.db

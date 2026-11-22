@@ -76,11 +76,17 @@ export const espnScoreboardSchema = z.object({
             venue: z.object({ fullName: z.string().optional() }).optional(),
             status: z
               .object({
+                clock: z.number().optional(),
+                displayClock: z.string().optional(),
+                period: z.number().int().optional(),
                 type: z
                   .object({
                     state: z.string().optional(),
                     name: z.string().optional(),
                     completed: z.boolean().optional(),
+                    description: z.string().optional(),
+                    detail: z.string().optional(),
+                    shortDetail: z.string().optional(),
                   })
                   .optional(),
               })
@@ -210,6 +216,29 @@ export function mapEspnFixtureStatus(
   if (n.includes("ABANDON")) return "abandoned";
   if (completed || state === "post") return "finished";
   if (state === "in") return "live";
+  return "scheduled";
+}
+
+export function mapEspnLivePhase(params: {
+  state?: string;
+  name?: string;
+  completed?: boolean;
+  period?: number;
+}): NonNullable<ExternalFixtureDto["livePhase"]> {
+  const n = (params.name ?? "").toUpperCase();
+  if (n.includes("POSTPONED")) return "postponed";
+  if (n.includes("CANCEL")) return "cancelled";
+  if (n.includes("ABANDON")) return "abandoned";
+  if (params.completed || params.state === "post") return "finished";
+  if (params.state === "in") {
+    if (n.includes("HALFTIME") || n === "STATUS_HT") return "halftime";
+    if (n.includes("SHOOTOUT") || n.includes("PENALT")) return "penalties";
+    if (n.includes("OVERTIME") || n.includes("EXTRA")) return "extra_time";
+    if (n.includes("SECOND_HALF") || params.period === 2) return "second_half";
+    if (params.period && params.period >= 5) return "penalties";
+    if (params.period && params.period >= 3) return "extra_time";
+    return "first_half";
+  }
   return "scheduled";
 }
 

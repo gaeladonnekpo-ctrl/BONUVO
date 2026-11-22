@@ -1,10 +1,12 @@
 import { ArrowUpRight, CalendarClock, Sparkles } from "lucide-react";
 import { ConfidenceBadge } from "@/components/ai/ConfidenceBadge";
+import { LocalDateTime } from "@/components/ai/LocalDateTime";
 import { ProbabilityBar } from "@/components/ai/ProbabilityBar";
 import { LeagueBadge, TeamCrest } from "@/components/ai/SportCrest";
 import { UiBadge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "@/i18n/navigation";
+import { resolveFixturePresentation } from "@/modules/ai/model/fixture-status-label";
 import { derivePoissonExactScoresAndDoubleChance } from "@/modules/ai/model/poisson";
 import type { PublicFixtureDto } from "@/modules/ai/service/public-ai-types";
 
@@ -43,38 +45,17 @@ export function FixtureRow({ fixture, locale = "fr" }: FixtureRowProps) {
   const ouMarket = fixture.predictions.find((p) => p.market === "over_under_25");
   const bttsMarket = fixture.predictions.find((p) => p.market === "btts");
 
-  const kickoffText = new Intl.DateTimeFormat(isEn ? "en-GB" : "fr-FR", {
-    weekday: "short",
-    day: "2-digit",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(fixture.kickoffAt));
-
-  const scoreLine =
-    (fixture.fixtureStatus === "finished" || fixture.fixtureStatus === "live") &&
-    fixture.homeGoals !== null &&
-    fixture.awayGoals !== null
-      ? `${fixture.homeGoals} - ${fixture.awayGoals}`
-      : null;
-
+  const presentation = resolveFixturePresentation(fixture, isEn);
+  const {
+    scoreLine,
+    statusLabel: statusBadgeText,
+    statusTone,
+    isLive,
+    scoreUnavailable,
+  } = presentation;
   const isPostponedOrCancelled = ["postponed", "cancelled", "abandoned"].includes(
     fixture.fixtureStatus,
   );
-  const statusBadgeText =
-    fixture.fixtureStatus === "live"
-      ? isEn
-        ? "Live"
-        : "En direct"
-      : fixture.fixtureStatus === "finished"
-        ? isEn
-          ? "Finished"
-          : "Terminé"
-        : isPostponedOrCancelled
-          ? isEn
-            ? "Postponed / Cancelled"
-            : "Reporté / Annulé"
-          : null;
 
   const derivedExtra =
     primary && primary.market === "1x2"
@@ -94,15 +75,6 @@ export function FixtureRow({ fixture, locale = "fr" }: FixtureRowProps) {
     ? Math.round((primary.probabilities[primary.pickedSelection] ?? 0) * 100)
     : null;
 
-  const ingestedText = fixture.lastIngestedAt
-    ? new Intl.DateTimeFormat(isEn ? "en-GB" : "fr-FR", {
-        day: "2-digit",
-        month: "short",
-        hour: "2-digit",
-        minute: "2-digit",
-      }).format(new Date(fixture.lastIngestedAt))
-    : null;
-
   return (
     <Card className="group relative overflow-hidden border-border/90 bg-surface transition-all duration-300 hover:-translate-y-0.5 hover:border-accent/60 hover:shadow-md">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-trust via-accent to-warning opacity-75 transition-opacity group-hover:opacity-100" />
@@ -117,14 +89,18 @@ export function FixtureRow({ fixture, locale = "fr" }: FixtureRowProps) {
             />
             <span className="inline-flex items-center gap-1 text-xs font-medium text-fg-muted">
               <CalendarClock className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
-              {kickoffText}
+              <LocalDateTime iso={fixture.kickoffAt} locale={locale} variant="short" />
             </span>
           </div>
 
           {primary ? (
             <div className="flex items-center gap-1.5">
-              {statusBadgeText ? (
-                <UiBadge tone={fixture.fixtureStatus === "live" ? "accent" : "outline"}>
+              {statusBadgeText &&
+              (isLive || fixture.fixtureStatus !== "scheduled" || scoreUnavailable) ? (
+                <UiBadge tone={statusTone} className={isLive ? "gap-1.5" : undefined}>
+                  {isLive ? (
+                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-current" />
+                  ) : null}
                   {statusBadgeText}
                 </UiBadge>
               ) : null}
@@ -135,7 +111,7 @@ export function FixtureRow({ fixture, locale = "fr" }: FixtureRowProps) {
               />
             </div>
           ) : (
-            <UiBadge tone={isPostponedOrCancelled ? "warning" : "neutral"}>
+            <UiBadge tone={isPostponedOrCancelled || scoreUnavailable ? "warning" : "neutral"}>
               {statusBadgeText ?? (isEn ? "Insufficient stats" : "Données insuffisantes")}
             </UiBadge>
           )}
@@ -278,7 +254,13 @@ export function FixtureRow({ fixture, locale = "fr" }: FixtureRowProps) {
             </p>
             <p className="truncate text-[11px] text-fg-muted">
               {isEn ? "Source" : "Source"} : {fixture.providerName ?? "Sports Data"}
-              {ingestedText ? ` · ${isEn ? "Ingested" : "Dernière ingestion"} ${ingestedText}` : ""}
+              {fixture.lastIngestedAt ? (
+                <>
+                  {" · "}
+                  {isEn ? "Updated" : "Mis à jour"}{" "}
+                  <LocalDateTime iso={fixture.lastIngestedAt} locale={locale} variant="compact" />
+                </>
+              ) : null}
             </p>
           </div>
           <Link

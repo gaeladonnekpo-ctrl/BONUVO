@@ -16,6 +16,23 @@ export const externalFixtureSchema = z.object({
   kickoffAt: z.string().datetime({ offset: true }),
   venue: z.string().max(160).nullable().optional(),
   status: z.enum(["scheduled", "live", "finished", "postponed", "cancelled", "abandoned"]),
+  livePhase: z
+    .enum([
+      "scheduled",
+      "first_half",
+      "halftime",
+      "second_half",
+      "extra_time",
+      "penalties",
+      "finished",
+      "postponed",
+      "cancelled",
+      "abandoned",
+    ])
+    .optional(),
+  statusDetail: z.string().max(40).nullable().optional(),
+  displayClock: z.string().max(24).nullable().optional(),
+  period: z.number().int().min(0).max(10).nullable().optional(),
   homeGoals: z.number().int().min(0).max(99).nullable().optional(),
   awayGoals: z.number().int().min(0).max(99).nullable().optional(),
   homeTeam: externalTeamSchema,

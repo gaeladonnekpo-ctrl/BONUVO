@@ -19,6 +19,7 @@ const querySchema = z.object({
     .regex(/^\d{4}-\d{2}-\d{2}$/)
     .optional(),
   tz: z.coerce.number().int().min(-720).max(840).optional().default(60),
+  live: z.enum(["0", "1"]).optional(),
 });
 
 let fallbackLimiter: ReturnType<typeof createTestRateLimitBackend> | null = null;
@@ -47,6 +48,7 @@ export async function GET(request: NextRequest) {
   const parsed = querySchema.safeParse({
     date: sp.get("date") ?? undefined,
     tz: sp.get("tz") ?? undefined,
+    live: sp.get("live") ?? undefined,
   });
 
   if (!parsed.success) {
@@ -60,6 +62,7 @@ export async function GET(request: NextRequest) {
   const data = await syncAndQueryFixturesByDate({
     dateIso,
     tzOffsetMinutes: parsed.data.tz,
+    syncPolicy: parsed.data.live === "1" ? "if_empty" : "blocking",
   });
 
   return NextResponse.json(data, {

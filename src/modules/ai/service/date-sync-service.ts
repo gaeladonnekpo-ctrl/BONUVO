@@ -7,6 +7,10 @@ import {
 } from "@/modules/ai/service/ingestion-helpers";
 import { runIngestStatsJob } from "@/modules/ai/service/ingestion-stats-service";
 import {
+  isFixtureInActiveWindow,
+  refreshLiveFixturesForLeagueIds,
+} from "@/modules/ai/service/live-fixture-sync";
+import {
   runComputePredictionsJob,
   runSettlePredictionsJob,
 } from "@/modules/ai/service/prediction-service";
@@ -71,6 +75,38 @@ export async function syncAndQueryFixturesByDate(params: {
       limit: 250,
     });
     if (existing.fixtures.length > 0) {
+      const nowMs = now.getTime();
+      const activeLeagueIds = Array.from(
+        new Set(
+          existing.fixtures
+            .filter((f) =>
+              isFixtureInActiveWindow({
+                fixtureStatus: f.fixtureStatus,
+                kickoffAt: f.kickoffAt,
+                nowMs,
+              }),
+            )
+            .map((f) => f.leagueId),
+        ),
+      );
+      if (activeLeagueIds.length > 0) {
+        await refreshLiveFixturesForLeagueIds({
+          leagueIds: activeLeagueIds,
+          fromDateIso,
+          toDateIso,
+        });
+        const refreshed = await queryPublicFixturesUncached({
+          fromDateIso,
+          toDateIso,
+          limit: 250,
+        });
+        return {
+          dateIso: params.dateIso,
+          fixtures: refreshed.fixtures,
+          leagues: refreshed.leagues,
+          syncedAt: new Date().toISOString(),
+        };
+      }
       return {
         dateIso: params.dateIso,
         fixtures: existing.fixtures,

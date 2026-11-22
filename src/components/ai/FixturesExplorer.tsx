@@ -108,10 +108,11 @@ export function FixturesExplorer({
 
     const tz = -new Date().getTimezoneOffset();
     const cacheKey = `fixtures:${nextDate}:${tz}`;
+    const ttlMs = nextDate === todayIso ? 20_000 : 180_000;
     const cached = getCachedValue<{
       fixtures: PublicFixtureDto[];
       leagues: LeagueFilterOption[];
-    }>(cacheKey, 180_000);
+    }>(cacheKey, ttlMs);
 
     if (cached) {
       setFixtures(cached.data.fixtures);
@@ -161,6 +162,40 @@ export function FixturesExplorer({
       }
     }
   }
+
+  // Live auto-refresh every 30s when any match on the selected date is in play or past kickoff without a final result
+  React.useEffect(() => {
+    const nowMs = Date.now();
+    const hasActiveMatches = fixtures.some((f) => {
+      if (f.fixtureStatus === "live") return true;
+      if (f.fixtureStatus !== "scheduled") return false;
+      const kMs = Date.parse(f.kickoffAt);
+      return Number.isFinite(kMs) && kMs <= nowMs + 120_000 && kMs >= nowMs - 6 * 3600_000;
+    });
+    if (!hasActiveMatches) return;
+
+    const timer = window.setInterval(async () => {
+      if (document.visibilityState !== "visible") return;
+      const tz = -new Date().getTimezoneOffset();
+      try {
+        const res = await fetch(
+          `/api/ai/fixtures?date=${encodeURIComponent(selectedDate)}&tz=${encodeURIComponent(String(tz))}&live=1`,
+          { cache: "no-store" },
+        );
+        if (!res.ok) return;
+        const data = (await res.json()) as {
+          fixtures: PublicFixtureDto[];
+          leagues: LeagueFilterOption[];
+        };
+        setFixtures(data.fixtures);
+        if (data.leagues.length > 0) setLeagues(data.leagues);
+      } catch {
+        // Keep current visible data on transient network errors
+      }
+    }, 30_000);
+
+    return () => window.clearInterval(timer);
+  }, [fixtures, selectedDate]);
 
   const leagueCounts = React.useMemo(() => {
     const counts = new Map<string, number>();

@@ -4,6 +4,8 @@ import { setRequestLocale } from "next-intl/server";
 import { z } from "zod";
 import { ConfidenceBadge } from "@/components/ai/ConfidenceBadge";
 import { HeadToHead } from "@/components/ai/HeadToHead";
+import { LiveMatchRefresher } from "@/components/ai/LiveMatchRefresher";
+import { LocalDateTime } from "@/components/ai/LocalDateTime";
 import { ProbabilityBar } from "@/components/ai/ProbabilityBar";
 import { LeagueBadge, TeamCrest } from "@/components/ai/SportCrest";
 import { StatsTable } from "@/components/ai/StatsTable";
@@ -13,6 +15,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "@/i18n/navigation";
 import type { AppLocale } from "@/lib/i18n/config";
 import { buildLocalizedMetadata } from "@/lib/i18n/metadata";
+import { resolveFixturePresentation } from "@/modules/ai/model/fixture-status-label";
+import { isFixtureInActiveWindow } from "@/modules/ai/service/live-fixture-sync";
 import { getPublicFixtureDetail } from "@/modules/ai/service/public-ai-service";
 
 export const dynamic = "force-dynamic";
@@ -60,6 +64,11 @@ export default async function PublicFixtureDetailPage({
   }
 
   const { fixture, homeStats, awayStats, headToHead } = detail;
+  const presentation = resolveFixturePresentation(fixture, isEn);
+  const shouldAutoRefresh = isFixtureInActiveWindow({
+    fixtureStatus: fixture.fixtureStatus,
+    kickoffAt: fixture.kickoffAt,
+  });
   const primary =
     fixture.predictions.find((p) => p.market === "1x2") ?? fixture.predictions[0] ?? null;
 
@@ -91,6 +100,22 @@ export default async function PublicFixtureDetailPage({
 
       {/* Immersive Mobile-First Stadium Matchup Header */}
       <header className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-surface via-surface-subtle to-accent/10 p-5 sm:p-7">
+        <LiveMatchRefresher enabled={shouldAutoRefresh} />
+        <div className="mb-4 flex flex-wrap items-center justify-center gap-2">
+          {presentation.statusLabel ? (
+            <UiBadge
+              tone={presentation.statusTone}
+              className={
+                presentation.isLive ? "gap-1.5 px-3 py-1 text-xs font-bold" : "px-3 py-1 text-xs"
+              }
+            >
+              {presentation.isLive ? (
+                <span className="h-2 w-2 animate-pulse rounded-full bg-current" />
+              ) : null}
+              {presentation.statusLabel}
+            </UiBadge>
+          ) : null}
+        </div>
         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 sm:gap-6">
           <div className="flex flex-col items-center gap-2 text-center sm:flex-row sm:text-left">
             <TeamCrest name={fixture.homeTeamName} logoUrl={fixture.homeTeamLogo} size="lg" />
@@ -105,9 +130,15 @@ export default async function PublicFixtureDetailPage({
           </div>
 
           <div className="flex flex-col items-center justify-center text-center">
-            <span className="rounded-2xl border border-accent/40 bg-accent/10 px-3 py-1.5 font-display text-sm font-black text-accent sm:text-base">
-              VS
-            </span>
+            {presentation.scoreLine ? (
+              <span className="rounded-2xl border border-trust/40 bg-trust-soft px-4 py-1.5 font-display text-lg font-black text-trust sm:text-2xl">
+                {presentation.scoreLine}
+              </span>
+            ) : (
+              <span className="rounded-2xl border border-accent/40 bg-accent/10 px-3 py-1.5 font-display text-sm font-black text-accent sm:text-base">
+                VS
+              </span>
+            )}
             {primary ? (
               <span className="mt-1.5 rounded-full bg-surface px-2.5 py-0.5 font-mono text-xs font-bold text-fg">
                 xG {primary.expectedHomeGoals.toFixed(2)} - {primary.expectedAwayGoals.toFixed(2)}
@@ -131,7 +162,7 @@ export default async function PublicFixtureDetailPage({
         <div className="mt-5 flex flex-wrap items-center justify-center gap-4 border-t border-border/70 pt-4 text-xs text-fg-muted">
           <span className="inline-flex items-center gap-1.5">
             <CalendarClock className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
-            {new Date(fixture.kickoffAt).toISOString().slice(0, 16).replace("T", " ")} UTC
+            <LocalDateTime iso={fixture.kickoffAt} locale={resolvedLocale} variant="full" />
           </span>
           {fixture.venueName ? (
             <span className="inline-flex items-center gap-1.5">
