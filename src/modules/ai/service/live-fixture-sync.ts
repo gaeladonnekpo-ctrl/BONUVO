@@ -7,6 +7,7 @@ import {
   upsertNormalizedFixtures,
 } from "@/modules/ai/service/ingestion-helpers";
 import type { PublicFixtureDto } from "@/modules/ai/service/public-ai-types";
+import { reconcileDbSettlements } from "@/modules/ai/service/settlement-service";
 import { withAppDb } from "@/server/db/context";
 import { ingestionRuns, leagues, seasons } from "@/server/db/schema";
 
@@ -180,6 +181,10 @@ export async function refreshLiveFixturesForLeagueIds(params: {
           ingestionRunId: run.id,
           items: res.items,
         });
+      }
+
+      if (itemsUpserted > 0) {
+        await reconcileDbSettlements(db, new Date(), run?.id ?? null);
       }
 
       if (run) {

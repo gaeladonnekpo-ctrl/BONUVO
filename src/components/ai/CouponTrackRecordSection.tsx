@@ -22,22 +22,51 @@ function formatShortDate(dateIso: string, isEn: boolean): string {
 }
 
 export function CouponTrackRecordSection({
-  record,
+  record: initialRecord,
   locale = "fr",
 }: {
   record: PublicCouponTrackRecord;
   locale?: string;
 }) {
   const isEn = locale === "en";
+  const [polledRecord, setPolledRecord] = React.useState<PublicCouponTrackRecord | null>(null);
+  const record = polledRecord ?? initialRecord;
+
   const { summary, coupons, winningSingles, availableWinningDates } = record;
+
+  const todayIso = React.useMemo(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, "0");
+    const d = String(now.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }, []);
 
   const wonCoupons = React.useMemo(
     () => coupons.filter((c) => c.settlementStatus === "won"),
     [coupons],
   );
 
-  const [selectedDate, setSelectedDate] = React.useState<string>(availableWinningDates[0] ?? "all");
+  const [selectedDate, setSelectedDate] = React.useState<string>(() =>
+    availableWinningDates.includes(todayIso) ? todayIso : (availableWinningDates[0] ?? "all"),
+  );
   const [typeFilter, setTypeFilter] = React.useState<WinningTypeFilter>("all");
+
+  // Real-time auto-refresh every 30s without losing the selected date or filter
+  React.useEffect(() => {
+    const timer = window.setInterval(async () => {
+      if (document.visibilityState !== "visible") return;
+      try {
+        const res = await fetch("/api/ai/history", { cache: "no-store" });
+        if (!res.ok) return;
+        const fresh = (await res.json()) as PublicCouponTrackRecord;
+        setPolledRecord(fresh);
+      } catch {
+        // Keep current visible records on transient network errors
+      }
+    }, 30_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const filteredCoupons = React.useMemo(() => {
     if (typeFilter === "singles") return [];
@@ -126,6 +155,15 @@ export function CouponTrackRecordSection({
             onChange={(e) => setSelectedDate(e.target.value || "all")}
             className="h-8 rounded-lg border border-border bg-surface-subtle px-2.5 text-xs text-fg focus-visible:outline-2 focus-visible:outline-accent"
           />
+          <Button
+            type="button"
+            size="sm"
+            variant={selectedDate === todayIso ? "primary" : "outline"}
+            onClick={() => setSelectedDate(todayIso)}
+            className="h-8 px-2.5 text-xs"
+          >
+            {isEn ? "Today" : "Aujourd'hui"}
+          </Button>
           <Button
             type="button"
             size="sm"

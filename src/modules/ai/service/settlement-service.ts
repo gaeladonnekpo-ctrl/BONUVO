@@ -10,7 +10,7 @@ import {
 } from "@/modules/ai/service/ingestion-helpers";
 import { resolveJobLockBackend } from "@/modules/intelligence/lock";
 import { invalidatePublicCatalogTags } from "@/server/cache/catalog-tags";
-import { withAppDb, type DbExecutionScope } from "@/server/db/context";
+import { withAppDb, type AppDbTransaction, type DbExecutionScope } from "@/server/db/context";
 import {
   fixtures,
   ingestionRuns,
@@ -19,6 +19,121 @@ import {
   predictions,
   seasons,
 } from "@/server/db/schema";
+
+export async function reconcileDbSettlements(
+  db: AppDbTransaction,
+  now = new Date(),
+  refreshRunId: string | null = null,
+) {
+  const unsettled = await db
+    .select({
+      predictionId: predictions.id,
+      fixtureId: fixtures.id,
+      fixtureStatus: fixtures.fixtureStatus,
+      homeGoals: fixtures.homeGoals,
+      awayGoals: fixtures.awayGoals,
+      market: predictions.market,
+      pickedSelection: predictions.pickedSelection,
+      probabilitiesJson: predictions.probabilitiesJson,
+    })
+    .from(predictions)
+    .innerJoin(fixtures, eq(predictions.fixtureId, fixtures.id))
+    .leftJoin(predictionResults, eq(predictionResults.predictionId, predictions.id))
+    .where(
+      and(
+        isNull(predictionResults.id),
+        inArray(fixtures.fixtureStatus, ["finished", "postponed", "cancelled", "abandoned"]),
+      ),
+    );
+
+  let settledCount = 0;
+  let wonCount = 0;
+  let lostCount = 0;
+  let voidCount = 0;
+
+  for (const row of unsettled) {
+    const evalResult = settlePrediction({
+      fixtureStatus: row.fixtureStatus,
+      homeGoals: row.homeGoals,
+      awayGoals: row.awayGoals,
+      market: row.market,
+      recommendedPick: row.pickedSelection,
+      probabilities: row.probabilitiesJson,
+    });
+    if (!evalResult) continue;
+
+    await db
+      .insert(predictionResults)
+      .values({
+        predictionId: row.predictionId,
+        fixtureId: row.fixtureId,
+        actualOutcome: evalResult.actualOutcome,
+        verdict: evalResult.verdict,
+        brierScore: evalResult.brierScore !== null ? evalResult.brierScore.toFixed(4) : null,
+        settledAt: now,
+        ingestionRunId: refreshRunId,
+      })
+      .onConflictDoNothing();
+
+    settledCount += 1;
+    if (evalResult.verdict === "won") wonCount += 1;
+    else if (evalResult.verdict === "lost") lostCount += 1;
+    else voidCount += 1;
+  }
+
+  // Re-verify recently settled predictions (last 7 days) in case an official score or status was corrected
+  const recheckCutoff = new Date(now.getTime() - 7 * 24 * 3600_000);
+  const recentlySettled = await db
+    .select({
+      resultId: predictionResults.id,
+      currentVerdict: predictionResults.verdict,
+      currentActualOutcome: predictionResults.actualOutcome,
+      fixtureStatus: fixtures.fixtureStatus,
+      homeGoals: fixtures.homeGoals,
+      awayGoals: fixtures.awayGoals,
+      market: predictions.market,
+      pickedSelection: predictions.pickedSelection,
+      probabilitiesJson: predictions.probabilitiesJson,
+    })
+    .from(predictionResults)
+    .innerJoin(predictions, eq(predictionResults.predictionId, predictions.id))
+    .innerJoin(fixtures, eq(predictionResults.fixtureId, fixtures.id))
+    .where(gte(predictionResults.settledAt, recheckCutoff));
+
+  let correctedCount = 0;
+  for (const row of recentlySettled) {
+    const evalResult = settlePrediction({
+      fixtureStatus: row.fixtureStatus,
+      homeGoals: row.homeGoals,
+      awayGoals: row.awayGoals,
+      market: row.market,
+      recommendedPick: row.pickedSelection,
+      probabilities: row.probabilitiesJson,
+    });
+    if (!evalResult) continue;
+    if (
+      evalResult.verdict === row.currentVerdict &&
+      evalResult.actualOutcome === row.currentActualOutcome
+    ) {
+      continue;
+    }
+    await db
+      .update(predictionResults)
+      .set({
+        actualOutcome: evalResult.actualOutcome,
+        verdict: evalResult.verdict,
+        brierScore: evalResult.brierScore !== null ? evalResult.brierScore.toFixed(4) : null,
+        settledAt: now,
+        ingestionRunId: refreshRunId,
+      })
+      .where(eq(predictionResults.id, row.resultId));
+    correctedCount += 1;
+  }
+
+  const couponStats = await reconcilePendingCoupons(db, now);
+
+  return { settledCount, wonCount, lostCount, voidCount, correctedCount, ...couponStats };
+}
 
 export async function runSettlePredictionsJob(options?: {
   provider?: SportsDataProvider;
@@ -147,114 +262,7 @@ export async function runSettlePredictionsJob(options?: {
         }
       }
 
-      const unsettled = await db
-        .select({
-          predictionId: predictions.id,
-          fixtureId: fixtures.id,
-          fixtureStatus: fixtures.fixtureStatus,
-          homeGoals: fixtures.homeGoals,
-          awayGoals: fixtures.awayGoals,
-          market: predictions.market,
-          pickedSelection: predictions.pickedSelection,
-          probabilitiesJson: predictions.probabilitiesJson,
-        })
-        .from(predictions)
-        .innerJoin(fixtures, eq(predictions.fixtureId, fixtures.id))
-        .leftJoin(predictionResults, eq(predictionResults.predictionId, predictions.id))
-        .where(
-          and(
-            isNull(predictionResults.id),
-            inArray(fixtures.fixtureStatus, ["finished", "postponed", "cancelled", "abandoned"]),
-          ),
-        );
-
-      let settledCount = 0;
-      let wonCount = 0;
-      let lostCount = 0;
-      let voidCount = 0;
-
-      for (const row of unsettled) {
-        const evalResult = settlePrediction({
-          fixtureStatus: row.fixtureStatus,
-          homeGoals: row.homeGoals,
-          awayGoals: row.awayGoals,
-          market: row.market,
-          recommendedPick: row.pickedSelection,
-          probabilities: row.probabilitiesJson,
-        });
-        if (!evalResult) continue;
-
-        await db
-          .insert(predictionResults)
-          .values({
-            predictionId: row.predictionId,
-            fixtureId: row.fixtureId,
-            actualOutcome: evalResult.actualOutcome,
-            verdict: evalResult.verdict,
-            brierScore: evalResult.brierScore !== null ? evalResult.brierScore.toFixed(4) : null,
-            settledAt: new Date(),
-            ingestionRunId: refreshRunId,
-          })
-          .onConflictDoNothing();
-
-        settledCount += 1;
-        if (evalResult.verdict === "won") wonCount += 1;
-        else if (evalResult.verdict === "lost") lostCount += 1;
-        else voidCount += 1;
-      }
-
-      // Re-verify recently settled predictions (last 7 days) in case an official score or status was corrected
-      const recheckCutoff = new Date(now.getTime() - 7 * 24 * 3600_000);
-      const recentlySettled = await db
-        .select({
-          resultId: predictionResults.id,
-          currentVerdict: predictionResults.verdict,
-          currentActualOutcome: predictionResults.actualOutcome,
-          fixtureStatus: fixtures.fixtureStatus,
-          homeGoals: fixtures.homeGoals,
-          awayGoals: fixtures.awayGoals,
-          market: predictions.market,
-          pickedSelection: predictions.pickedSelection,
-          probabilitiesJson: predictions.probabilitiesJson,
-        })
-        .from(predictionResults)
-        .innerJoin(predictions, eq(predictionResults.predictionId, predictions.id))
-        .innerJoin(fixtures, eq(predictionResults.fixtureId, fixtures.id))
-        .where(gte(predictionResults.settledAt, recheckCutoff));
-
-      let correctedCount = 0;
-      for (const row of recentlySettled) {
-        const evalResult = settlePrediction({
-          fixtureStatus: row.fixtureStatus,
-          homeGoals: row.homeGoals,
-          awayGoals: row.awayGoals,
-          market: row.market,
-          recommendedPick: row.pickedSelection,
-          probabilities: row.probabilitiesJson,
-        });
-        if (!evalResult) continue;
-        if (
-          evalResult.verdict === row.currentVerdict &&
-          evalResult.actualOutcome === row.currentActualOutcome
-        ) {
-          continue;
-        }
-        await db
-          .update(predictionResults)
-          .set({
-            actualOutcome: evalResult.actualOutcome,
-            verdict: evalResult.verdict,
-            brierScore: evalResult.brierScore !== null ? evalResult.brierScore.toFixed(4) : null,
-            settledAt: now,
-            ingestionRunId: refreshRunId,
-          })
-          .where(eq(predictionResults.id, row.resultId));
-        correctedCount += 1;
-      }
-
-      const couponStats = await reconcilePendingCoupons(db, now);
-
-      return { settledCount, wonCount, lostCount, voidCount, correctedCount, ...couponStats };
+      return reconcileDbSettlements(db, now, refreshRunId);
     });
 
     if (options?.invalidateCache !== false) {

@@ -12,7 +12,7 @@ import type { AppLocale } from "@/lib/i18n/config";
 import { buildLocalizedMetadata } from "@/lib/i18n/metadata";
 import {
   getPublicPredictionStats,
-  listPublicFixtures,
+  queryPublicFixturesUncached,
 } from "@/modules/ai/service/public-ai-service";
 import { getPublicCouponTrackRecord } from "@/modules/ai/service/public-coupon-history";
 
@@ -45,10 +45,10 @@ export default async function PublicPredictionHistoryPage({
   const resolvedLocale: "fr" | "en" = locale === "en" ? "en" : "fr";
   const isEn = resolvedLocale === "en";
 
-  const [stats, settledData, couponRecord] = await Promise.all([
-    getPublicPredictionStats(),
-    listPublicFixtures({ settledOnly: true, limit: 30 }),
+  const [couponRecord, stats, settledData] = await Promise.all([
     getPublicCouponTrackRecord(),
+    getPublicPredictionStats(),
+    queryPublicFixturesUncached({ settledOnly: true, limit: 80 }),
   ]);
 
   const marketCards = [

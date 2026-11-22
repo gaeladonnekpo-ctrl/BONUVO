@@ -6,7 +6,7 @@ import {
   type LegVerdict,
 } from "@/modules/ai/model/coupon-settlement";
 import { humanizeAnalysisText } from "@/modules/ai/service/ingestion-helpers";
-import { PUBLIC_CATALOG_CACHE_TAGS, withCatalogCache } from "@/server/cache/catalog-tags";
+import { reconcileDbSettlements } from "@/modules/ai/service/settlement-service";
 import { withAppDb } from "@/server/db/context";
 import {
   coupons,
@@ -123,7 +123,24 @@ function formatSingleMarketSelection(
   };
 }
 
+let lastSettlementCheckMs = 0;
+
+async function ensureSettlementsUpToDate(): Promise<void> {
+  const nowMs = Date.now();
+  if (nowMs - lastSettlementCheckMs < 20_000) return;
+  lastSettlementCheckMs = nowMs;
+  try {
+    await withAppDb({ scope: "ai_pipeline" }, async (db) => {
+      await reconcileDbSettlements(db, new Date(), null);
+    });
+  } catch {
+    // Non-blocking: still return persisted history if pipeline check fails
+  }
+}
+
 async function queryPublicCouponTrackRecordUncached(): Promise<PublicCouponTrackRecord> {
+  await ensureSettlementsUpToDate();
+
   return withAppDb({ scope: "public_catalog" }, async (db) => {
     const [couponRows, wonSingleRows] = await Promise.all([
       db
@@ -131,7 +148,7 @@ async function queryPublicCouponTrackRecordUncached(): Promise<PublicCouponTrack
         .from(coupons)
         .where(eq(coupons.status, "validated"))
         .orderBy(desc(coupons.settledAt), desc(coupons.validatedAt), desc(coupons.createdAt))
-        .limit(80),
+        .limit(120),
       db
         .select({
           predictionId: predictions.id,
@@ -159,8 +176,8 @@ async function queryPublicCouponTrackRecordUncached(): Promise<PublicCouponTrack
             eq(predictions.status, "published"),
           ),
         )
-        .orderBy(desc(predictionResults.settledAt))
-        .limit(120),
+        .orderBy(desc(fixtures.kickoffAt), desc(predictionResults.settledAt))
+        .limit(250),
     ]);
 
     const fixtureIds = Array.from(
@@ -305,12 +322,11 @@ async function queryPublicCouponTrackRecordUncached(): Promise<PublicCouponTrack
         homeName,
         awayName,
       );
-      const genDate = row.publishedAt ?? row.lockedAt ?? row.kickoffAt;
-
       return {
         id: row.predictionId,
         fixtureId: row.fixtureId,
-        generationDateIso: formatGenerationDateIso(genDate, 60),
+        // Use the matchday date (kickoffAt in UTC+1) so today's settled winning matches appear under today's date
+        generationDateIso: formatGenerationDateIso(row.kickoffAt, 60),
         publishedAt: row.publishedAt ? row.publishedAt.toISOString() : null,
         kickoffAt: row.kickoffAt.toISOString(),
         matchLabel: `${homeName} vs ${awayName}`,
@@ -349,9 +365,6 @@ async function queryPublicCouponTrackRecordUncached(): Promise<PublicCouponTrack
   });
 }
 
-export const getPublicCouponTrackRecord = withCatalogCache(
-  queryPublicCouponTrackRecordUncached,
-  ["ai-coupon-track-record-v2"],
-  [PUBLIC_CATALOG_CACHE_TAGS.predictions, PUBLIC_CATALOG_CACHE_TAGS.community],
-  180,
-);
+export async function getPublicCouponTrackRecord(): Promise<PublicCouponTrackRecord> {
+  return queryPublicCouponTrackRecordUncached();
+}
