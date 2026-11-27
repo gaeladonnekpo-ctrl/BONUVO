@@ -2,10 +2,9 @@ import { getPeriodBucketKey, safeRate } from "@/modules/intelligence/metrics-mat
 import type { DrillDimension, MetricGroupBy } from "@/modules/intelligence/schema";
 import type {
   BreakdownRow,
-  DailyEvolutionSummary,
+  CountryKpiBreakdownRow,
   FunnelStageItem,
   IntelligenceKpis,
-  MetricDeltaSummary,
   TimeSeriesPoint,
 } from "@/modules/intelligence/stats-types";
 
@@ -235,51 +234,111 @@ export function buildTimeSeries(
   return Array.from(buckets.values()).sort((a, b) => a.period.localeCompare(b.period));
 }
 
-function buildDelta(current: number, previous: number): MetricDeltaSummary {
-  const deltaAbs = current - previous;
-  const deltaPct = previous > 0 ? Math.round((deltaAbs / previous) * 1000) / 10 : null;
-  const trend: MetricDeltaSummary["trend"] = deltaAbs > 0 ? "up" : deltaAbs < 0 ? "down" : "flat";
-  return { current, previous, deltaAbs, deltaPct, trend };
-}
+export function buildCountryKpiBreakdown(params: {
+  countries: readonly { code: string; nameFr: string }[];
+  rows: readonly DailyMetricRowLike[];
+  useDetailGrain: boolean;
+  hasAnyMetrics: boolean;
+  hideFinancials: boolean;
+}): CountryKpiBreakdownRow[] {
+  const { countries, rows, useDetailGrain, hasAnyMetrics, hideFinancials } = params;
+  const map = new Map<
+    string,
+    {
+      countryCode: string;
+      countryName: string;
+      uniqueVisitors: number;
+      pageViews: number;
+      offerViews: number;
+      promoCopies: number;
+      rawClicks: number;
+      validClicks: number;
+      registrations: number;
+      firstDeposits: number;
+      confirmedCommissionsCount: number;
+      confirmedCommissionsEur: number;
+    }
+  >();
 
-export function computeDailyEvolution(
-  timeSeries: readonly TimeSeriesPoint[],
-): DailyEvolutionSummary {
-  const emptyDelta: MetricDeltaSummary = {
-    current: 0,
-    previous: 0,
-    deltaAbs: 0,
-    deltaPct: null,
-    trend: "flat",
-  };
-  if (timeSeries.length === 0) {
-    return {
-      latestPeriod: null,
-      previousPeriod: null,
-      visitors: emptyDelta,
-      validClicks: emptyDelta,
-      registrations: emptyDelta,
-      firstDeposits: emptyDelta,
-    };
+  for (const c of countries) {
+    map.set(c.code, {
+      countryCode: c.code,
+      countryName: c.nameFr,
+      uniqueVisitors: 0,
+      pageViews: 0,
+      offerViews: 0,
+      promoCopies: 0,
+      rawClicks: 0,
+      validClicks: 0,
+      registrations: 0,
+      firstDeposits: 0,
+      confirmedCommissionsCount: 0,
+      confirmedCommissionsEur: 0,
+    });
   }
-  const latest = timeSeries[timeSeries.length - 1]!;
-  const previous = timeSeries.length >= 2 ? timeSeries[timeSeries.length - 2]! : null;
-  if (!previous) {
-    return {
-      latestPeriod: latest.period,
-      previousPeriod: null,
-      visitors: buildDelta(latest.uniqueVisitors, 0),
-      validClicks: buildDelta(latest.validClicks, 0),
-      registrations: buildDelta(latest.registrations, 0),
-      firstDeposits: buildDelta(latest.firstDeposits, 0),
-    };
+
+  for (const r of rows) {
+    if (!r.countryCode || r.countryCode === "ALL") continue;
+    let entry = map.get(r.countryCode);
+    if (!entry) {
+      entry = {
+        countryCode: r.countryCode,
+        countryName: r.countryCode,
+        uniqueVisitors: 0,
+        pageViews: 0,
+        offerViews: 0,
+        promoCopies: 0,
+        rawClicks: 0,
+        validClicks: 0,
+        registrations: 0,
+        firstDeposits: 0,
+        confirmedCommissionsCount: 0,
+        confirmedCommissionsEur: 0,
+      };
+      map.set(r.countryCode, entry);
+    }
+    entry.uniqueVisitors += r.uniqueVisitors;
+    entry.pageViews += r.pageViews;
+    entry.offerViews += r.offerViews;
+    entry.promoCopies += r.promoCopies;
+    entry.rawClicks += r.rawClicks;
+    entry.validClicks += r.validClicks;
+    entry.registrations += r.registrations;
+    entry.firstDeposits += r.firstDeposits;
+    entry.confirmedCommissionsCount += r.confirmedCommissionsCount;
+    entry.confirmedCommissionsEur += Number(r.confirmedCommissionsEur);
   }
-  return {
-    latestPeriod: latest.period,
-    previousPeriod: previous.period,
-    visitors: buildDelta(latest.uniqueVisitors, previous.uniqueVisitors),
-    validClicks: buildDelta(latest.validClicks, previous.validClicks),
-    registrations: buildDelta(latest.registrations, previous.registrations),
-    firstDeposits: buildDelta(latest.firstDeposits, previous.firstDeposits),
-  };
+
+  return Array.from(map.values())
+    .map((item): CountryKpiBreakdownRow => {
+      const visitors = useDetailGrain || !hasAnyMetrics ? null : item.uniqueVisitors;
+      const regs = hasAnyMetrics ? item.registrations : null;
+      const ftds = hasAnyMetrics ? item.firstDeposits : null;
+      const commCount = !hasAnyMetrics || hideFinancials ? null : item.confirmedCommissionsCount;
+      const commEur = !hasAnyMetrics || hideFinancials ? null : item.confirmedCommissionsEur;
+      return {
+        countryCode: item.countryCode,
+        countryName: item.countryName,
+        uniqueVisitors: visitors,
+        pageViews: item.pageViews,
+        offerViews: item.offerViews,
+        promoCopies: item.promoCopies,
+        rawClicks: item.rawClicks,
+        validClicks: item.validClicks,
+        registrations: regs,
+        firstDeposits: ftds,
+        confirmedCommissionsCount: commCount,
+        confirmedCommissionsEur: commEur,
+        ctrRate: safeRate(hasAnyMetrics ? item.validClicks : null, visitors),
+        clickToRegRate: safeRate(regs, hasAnyMetrics ? item.validClicks : null),
+        regToFtdRate: safeRate(ftds, regs),
+        epcEur: safeRate(commEur, hasAnyMetrics ? item.validClicks : null),
+      };
+    })
+    .sort(
+      (a, b) =>
+        (b.uniqueVisitors ?? 0) - (a.uniqueVisitors ?? 0) ||
+        b.validClicks - a.validClicks ||
+        a.countryName.localeCompare(b.countryName),
+    );
 }

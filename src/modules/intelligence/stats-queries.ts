@@ -14,19 +14,13 @@ import {
 } from "@/server/db/schema";
 import { can } from "@/server/auth/permissions";
 import type { AuthenticatedUser } from "@/server/auth/session";
-import {
-  buildReferenceDailyRows,
-  mergeRealAndReferenceRows,
-  REFERENCE_DEMO_TOTALS,
-  sumMetricTotals,
-} from "@/modules/intelligence/reference-demo";
 import { intelligenceFilterSchema } from "@/modules/intelligence/schema";
 import { queryDrilldownRowsTx } from "@/modules/intelligence/stats-drilldown";
 import {
   accumulateBreakdown,
+  buildCountryKpiBreakdown,
   buildKpisAndFunnel,
   buildTimeSeries,
-  computeDailyEvolution,
 } from "@/modules/intelligence/stats-transform";
 import type { IntelligenceDashboardData } from "@/modules/intelligence/stats-types";
 
@@ -54,7 +48,6 @@ export async function queryIntelligenceDashboard(
     drillDimension: rawSearchParams.drillDimension || undefined,
     drillId: rawSearchParams.drillId || undefined,
     drillStep: rawSearchParams.drillStep || undefined,
-    demo: rawSearchParams.demo || undefined,
   });
 
   const filter = parsed.success ? parsed.data : { groupBy: "day" as const };
@@ -64,7 +57,6 @@ export async function queryIntelligenceDashboard(
   const bookmakerId = filter.bookmakerId ?? "";
   const campaignId = filter.campaignId ?? "";
   const groupBy = filter.groupBy;
-  const includeReference = (parsed.success ? parsed.data.demo : undefined) !== "0";
   const canExport = can(actor, "stats.export");
   const canAggregate = can(actor, "conversions.manage");
   const hideFinancials = !canExport && !canAggregate;
@@ -132,25 +124,40 @@ export async function queryIntelligenceDashboard(
     ]);
 
     const useDetailGrain = Boolean(bookmakerId || campaignId);
-    const kpiSourceRows = useDetailGrain
-      ? breakdownRows
-      : await tx
-          .select()
-          .from(dailyMetrics)
-          .where(
-            and(
-              eq(dailyMetrics.grain, country !== "ALL" ? "day_country" : "day_total"),
-              gte(dailyMetrics.metricDate, fromDate),
-              lte(dailyMetrics.metricDate, toDate),
-              eq(dailyMetrics.countryCode, country),
+    const [kpiSourceRows, dayCountryRows] = await Promise.all([
+      useDetailGrain
+        ? Promise.resolve(breakdownRows)
+        : tx
+            .select()
+            .from(dailyMetrics)
+            .where(
+              and(
+                eq(dailyMetrics.grain, country !== "ALL" ? "day_country" : "day_total"),
+                gte(dailyMetrics.metricDate, fromDate),
+                lte(dailyMetrics.metricDate, toDate),
+                eq(dailyMetrics.countryCode, country),
+              ),
             ),
-          );
+      useDetailGrain
+        ? Promise.resolve([])
+        : tx
+            .select()
+            .from(dailyMetrics)
+            .where(
+              and(
+                eq(dailyMetrics.grain, "day_country"),
+                gte(dailyMetrics.metricDate, fromDate),
+                lte(dailyMetrics.metricDate, toDate),
+                ...(country !== "ALL" ? [eq(dailyMetrics.countryCode, country)] : []),
+              ),
+            ),
+    ]);
 
-    const realHasAnyMetrics = kpiSourceRows.length > 0 || breakdownRows.length > 0;
-    let realUniqueVisitors: number | null = useDetailGrain ? null : 0;
-    if (!useDetailGrain && realHasAnyMetrics) {
-      realUniqueVisitors = kpiSourceRows.reduce((s, r) => s + r.uniqueVisitors, 0);
-    } else if (bookmakerId && !campaignId && realHasAnyMetrics) {
+    const hasAnyMetrics = kpiSourceRows.length > 0 || breakdownRows.length > 0;
+    let uniqueVisitors: number | null = useDetailGrain ? null : 0;
+    if (!useDetailGrain && hasAnyMetrics) {
+      uniqueVisitors = kpiSourceRows.reduce((s, r) => s + r.uniqueVisitors, 0);
+    } else if (bookmakerId && !campaignId && hasAnyMetrics) {
       const [visRow] = await tx
         .select({
           cnt: sql<number>`count(distinct (date_trunc('day', ${visitEvents.createdAt} AT TIME ZONE 'UTC'), ${visitEvents.visitorDailyHash}))::int`,
@@ -165,34 +172,17 @@ export async function queryIntelligenceDashboard(
             ...(country !== "ALL" ? [eq(visitEvents.countryCode, country)] : []),
           ),
         );
-      realUniqueVisitors = visRow?.cnt ?? 0;
-    } else if (!realHasAnyMetrics) {
-      realUniqueVisitors = null;
+      uniqueVisitors = visRow?.cnt ?? 0;
+    } else if (!hasAnyMetrics) {
+      uniqueVisitors = null;
     }
 
-    const realTotalsBase = sumMetricTotals(kpiSourceRows);
-    const realTotals = {
-      ...realTotalsBase,
-      uniqueVisitors: realUniqueVisitors ?? realTotalsBase.uniqueVisitors,
-    };
-
-    const refRows = includeReference ? buildReferenceDailyRows(fromDate, toDate, country) : [];
-    const effectiveRows = includeReference
-      ? mergeRealAndReferenceRows(kpiSourceRows, refRows)
-      : kpiSourceRows;
-    const hasAnyMetrics = includeReference ? effectiveRows.length > 0 : realHasAnyMetrics;
-    const uniqueVisitors = includeReference
-      ? (realUniqueVisitors ?? 0) + REFERENCE_DEMO_TOTALS.uniqueVisitors
-      : realUniqueVisitors;
-
     const { kpis, funnel } = buildKpisAndFunnel({
-      rows: effectiveRows,
+      rows: kpiSourceRows,
       uniqueVisitors,
       hasAnyMetrics,
       hideFinancials,
     });
-    const timeSeries = buildTimeSeries(effectiveRows, groupBy, hideFinancials);
-    const dailyEvolution = computeDailyEvolution(timeSeries);
 
     const bmMap = new Map(bmRefs.map((b) => [b.id, b.name]));
     const countryMap = new Map(countryRefs.map((c) => [c.code, c.nameFr]));
@@ -222,6 +212,13 @@ export async function queryIntelligenceDashboard(
       (code) => ({ label: countryMap.get(code) ?? code, secondary: code }),
       hideFinancials,
     );
+    const kpiByCountry = buildCountryKpiBreakdown({
+      countries: country !== "ALL" ? countryRefs.filter((c) => c.code === country) : countryRefs,
+      rows: useDetailGrain ? breakdownRows : dayCountryRows,
+      useDetailGrain,
+      hasAnyMetrics,
+      hideFinancials,
+    });
     const byCampaign = accumulateBreakdown(
       breakdownRows,
       "campaign",
@@ -281,36 +278,17 @@ export async function queryIntelligenceDashboard(
         : null;
 
     return {
-      filters: { fromDate, toDate, country, bookmakerId, campaignId, groupBy, includeReference },
+      filters: { fromDate, toDate, country, bookmakerId, campaignId, groupBy },
       canExport,
       canAggregate,
       hasAnyMetrics,
       lastAggregatedAtIso: lastAggRow[0]?.lastAgg?.toISOString() ?? null,
       kpis,
       funnel,
-      timeSeries,
-      dailyEvolution,
-      referenceMeta: {
-        active: includeReference,
-        realTotals,
-        referenceTotals: includeReference
-          ? {
-              uniqueVisitors: REFERENCE_DEMO_TOTALS.uniqueVisitors,
-              validClicks: REFERENCE_DEMO_TOTALS.validClicks,
-              registrations: REFERENCE_DEMO_TOTALS.registrations,
-              firstDeposits: REFERENCE_DEMO_TOTALS.firstDeposits,
-              promoCopies: REFERENCE_DEMO_TOTALS.promoCopies,
-            }
-          : {
-              uniqueVisitors: 0,
-              validClicks: 0,
-              registrations: 0,
-              firstDeposits: 0,
-              promoCopies: 0,
-            },
-      },
+      timeSeries: buildTimeSeries(kpiSourceRows, groupBy, hideFinancials),
       byBookmaker,
       byCountry,
+      kpiByCountry,
       byCampaign,
       byOffer,
       topOffers,

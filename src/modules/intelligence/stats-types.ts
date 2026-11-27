@@ -76,35 +76,23 @@ export interface IntelligenceFilterOptions {
   campaigns: Array<{ id: string; code: string; name: string }>;
 }
 
-export interface MetricDeltaSummary {
-  current: number;
-  previous: number;
-  deltaAbs: number;
-  deltaPct: number | null;
-  trend: "up" | "down" | "flat";
-}
-
-export interface DailyEvolutionSummary {
-  latestPeriod: string | null;
-  previousPeriod: string | null;
-  visitors: MetricDeltaSummary;
-  validClicks: MetricDeltaSummary;
-  registrations: MetricDeltaSummary;
-  firstDeposits: MetricDeltaSummary;
-}
-
-export interface ReferenceTotalsSnapshot {
-  uniqueVisitors: number;
-  validClicks: number;
-  registrations: number;
-  firstDeposits: number;
+export interface CountryKpiBreakdownRow {
+  countryCode: string;
+  countryName: string;
+  uniqueVisitors: number | null;
+  pageViews: number;
+  offerViews: number;
   promoCopies: number;
-}
-
-export interface ReferenceDatasetMeta {
-  active: boolean;
-  realTotals: ReferenceTotalsSnapshot;
-  referenceTotals: ReferenceTotalsSnapshot;
+  rawClicks: number;
+  validClicks: number;
+  registrations: number | null;
+  firstDeposits: number | null;
+  confirmedCommissionsCount: number | null;
+  confirmedCommissionsEur: number | null;
+  ctrRate: number | null;
+  clickToRegRate: number | null;
+  regToFtdRate: number | null;
+  epcEur: number | null;
 }
 
 export interface IntelligenceDashboardData {
@@ -115,7 +103,6 @@ export interface IntelligenceDashboardData {
     bookmakerId: string;
     campaignId: string;
     groupBy: MetricGroupBy;
-    includeReference: boolean;
   };
   canExport: boolean;
   canAggregate: boolean;
@@ -124,10 +111,9 @@ export interface IntelligenceDashboardData {
   kpis: IntelligenceKpis;
   funnel: FunnelStageItem[];
   timeSeries: TimeSeriesPoint[];
-  dailyEvolution: DailyEvolutionSummary;
-  referenceMeta: ReferenceDatasetMeta;
   byBookmaker: BreakdownRow[];
   byCountry: BreakdownRow[];
+  kpiByCountry: CountryKpiBreakdownRow[];
   byCampaign: BreakdownRow[];
   byOffer: BreakdownRow[];
   topOffers: BreakdownRow[];
