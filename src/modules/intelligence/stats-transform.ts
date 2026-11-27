@@ -2,8 +2,10 @@ import { getPeriodBucketKey, safeRate } from "@/modules/intelligence/metrics-mat
 import type { DrillDimension, MetricGroupBy } from "@/modules/intelligence/schema";
 import type {
   BreakdownRow,
+  DailyEvolutionSummary,
   FunnelStageItem,
   IntelligenceKpis,
+  MetricDeltaSummary,
   TimeSeriesPoint,
 } from "@/modules/intelligence/stats-types";
 
@@ -231,4 +233,53 @@ export function buildTimeSeries(
     buckets.set(period, existing);
   }
   return Array.from(buckets.values()).sort((a, b) => a.period.localeCompare(b.period));
+}
+
+function buildDelta(current: number, previous: number): MetricDeltaSummary {
+  const deltaAbs = current - previous;
+  const deltaPct = previous > 0 ? Math.round((deltaAbs / previous) * 1000) / 10 : null;
+  const trend: MetricDeltaSummary["trend"] = deltaAbs > 0 ? "up" : deltaAbs < 0 ? "down" : "flat";
+  return { current, previous, deltaAbs, deltaPct, trend };
+}
+
+export function computeDailyEvolution(
+  timeSeries: readonly TimeSeriesPoint[],
+): DailyEvolutionSummary {
+  const emptyDelta: MetricDeltaSummary = {
+    current: 0,
+    previous: 0,
+    deltaAbs: 0,
+    deltaPct: null,
+    trend: "flat",
+  };
+  if (timeSeries.length === 0) {
+    return {
+      latestPeriod: null,
+      previousPeriod: null,
+      visitors: emptyDelta,
+      validClicks: emptyDelta,
+      registrations: emptyDelta,
+      firstDeposits: emptyDelta,
+    };
+  }
+  const latest = timeSeries[timeSeries.length - 1]!;
+  const previous = timeSeries.length >= 2 ? timeSeries[timeSeries.length - 2]! : null;
+  if (!previous) {
+    return {
+      latestPeriod: latest.period,
+      previousPeriod: null,
+      visitors: buildDelta(latest.uniqueVisitors, 0),
+      validClicks: buildDelta(latest.validClicks, 0),
+      registrations: buildDelta(latest.registrations, 0),
+      firstDeposits: buildDelta(latest.firstDeposits, 0),
+    };
+  }
+  return {
+    latestPeriod: latest.period,
+    previousPeriod: previous.period,
+    visitors: buildDelta(latest.uniqueVisitors, previous.uniqueVisitors),
+    validClicks: buildDelta(latest.validClicks, previous.validClicks),
+    registrations: buildDelta(latest.registrations, previous.registrations),
+    firstDeposits: buildDelta(latest.firstDeposits, previous.firstDeposits),
+  };
 }

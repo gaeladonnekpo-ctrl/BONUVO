@@ -14,6 +14,7 @@ export interface DateRangePickerProps {
   bookmakerId: string;
   campaignId: string;
   groupBy: MetricGroupBy;
+  includeReference: boolean;
   options: IntelligenceFilterOptions;
   locale: "fr" | "en";
 }
@@ -29,6 +30,7 @@ export function DateRangePicker({
   bookmakerId,
   campaignId,
   groupBy,
+  includeReference,
   options,
   locale,
 }: DateRangePickerProps) {
@@ -49,6 +51,7 @@ export function DateRangePicker({
       bookmakerId: string;
       campaignId: string;
       groupBy: MetricGroupBy;
+      demo: "0" | "1";
     }>,
   ) {
     const sp = new URLSearchParams();
@@ -58,6 +61,7 @@ export function DateRangePicker({
     const b = overrides?.bookmakerId ?? bm;
     const cp = overrides?.campaignId ?? camp;
     const g = overrides?.groupBy ?? grp;
+    const d = overrides?.demo ?? (includeReference ? "1" : "0");
 
     if (f) sp.set("from", f);
     if (t) sp.set("to", t);
@@ -65,6 +69,7 @@ export function DateRangePicker({
     if (b) sp.set("bookmakerId", b);
     if (cp) sp.set("campaignId", cp);
     if (g !== "day") sp.set("groupBy", g);
+    if (d === "0") sp.set("demo", "0");
 
     router.push(`${pathname}?${sp.toString()}`);
   }
@@ -124,6 +129,25 @@ export function DateRangePicker({
                     : "Mois"}
             </Button>
           ))}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Button
+            type="button"
+            variant={includeReference ? "primary" : "outline"}
+            size="sm"
+            onClick={() => pushParams({ demo: "1" })}
+          >
+            {locale === "en" ? "Combined (Demo + Real)" : "Combiné (Référence + Réel)"}
+          </Button>
+          <Button
+            type="button"
+            variant={!includeReference ? "primary" : "outline"}
+            size="sm"
+            onClick={() => pushParams({ demo: "0" })}
+          >
+            {locale === "en" ? "Real data only" : "Données réelles uniquement"}
+          </Button>
         </div>
       </div>
 

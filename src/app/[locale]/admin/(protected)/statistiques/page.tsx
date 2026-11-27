@@ -1,6 +1,7 @@
 import { setRequestLocale } from "next-intl/server";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { BreakdownTable } from "@/components/admin/intelligence/BreakdownTable";
+import { DailyEvolutionCard } from "@/components/admin/intelligence/DailyEvolutionCard";
 import { DateRangePicker } from "@/components/admin/intelligence/DateRangePicker";
 import { DrilldownPanel } from "@/components/admin/intelligence/DrilldownPanel";
 import { FreshnessNote } from "@/components/admin/intelligence/FreshnessNote";
@@ -46,6 +47,7 @@ export default async function AdminStatisticsPage({
     if (data.filters.bookmakerId) sp.set("bookmakerId", data.filters.bookmakerId);
     if (data.filters.campaignId) sp.set("campaignId", data.filters.campaignId);
     if (data.filters.groupBy !== "day") sp.set("groupBy", data.filters.groupBy);
+    if (!data.filters.includeReference) sp.set("demo", "0");
     return sp;
   }
 
@@ -114,14 +116,43 @@ export default async function AdminStatisticsPage({
         bookmakerId={data.filters.bookmakerId}
         campaignId={data.filters.campaignId}
         groupBy={data.filters.groupBy}
+        includeReference={data.filters.includeReference}
         options={data.filterOptions}
         locale={resolvedLocale}
       />
+
+      {data.referenceMeta.active ? (
+        <div className="rounded-xl border border-accent/40 bg-accent/5 p-3.5 text-xs">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="font-semibold text-accent">
+              {resolvedLocale === "en"
+                ? "Reference Partner Dataset Active (Blended with Real Metrics)"
+                : "Jeu de données de référence actif (Simulé + Données réelles combinées)"}
+            </span>
+            <span className="font-mono text-[11px] text-fg-muted">
+              {resolvedLocale === "en" ? "Reference:" : "Référence :"} 1 500 vis. · 998 clics · 900
+              insc. · 851 FTD · 1 200 codes |{" "}
+              {resolvedLocale === "en" ? "Real collected:" : "Réel collecté :"}{" "}
+              {formatMetricCount(data.referenceMeta.realTotals.uniqueVisitors, resolvedLocale)} vis.
+              · {formatMetricCount(data.referenceMeta.realTotals.validClicks, resolvedLocale)} clics
+              · {formatMetricCount(data.referenceMeta.realTotals.registrations, resolvedLocale)}{" "}
+              insc. ·{" "}
+              {formatMetricCount(data.referenceMeta.realTotals.firstDeposits, resolvedLocale)} FTD ·{" "}
+              {formatMetricCount(data.referenceMeta.realTotals.promoCopies, resolvedLocale)} codes
+            </span>
+          </div>
+        </div>
+      ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <KpiCard
           label={resolvedLocale === "en" ? "Unique visitors" : "Visiteurs uniques"}
           value={formatMetricCount(data.kpis.uniqueVisitors, resolvedLocale)}
+          badgeText={
+            data.dailyEvolution.visitors.deltaPct !== null
+              ? `${data.dailyEvolution.visitors.deltaPct > 0 ? "+" : ""}${data.dailyEvolution.visitors.deltaPct}%`
+              : undefined
+          }
           hint={
             data.hasAnyMetrics
               ? `${formatMetricCount(data.kpis.pageViews, resolvedLocale)} ${resolvedLocale === "en" ? "page views" : "pages vues"}`
@@ -133,12 +164,22 @@ export default async function AdminStatisticsPage({
           value={
             data.hasAnyMetrics ? formatMetricCount(data.kpis.validClicks, resolvedLocale) : "—"
           }
+          badgeText={
+            data.dailyEvolution.validClicks.deltaPct !== null
+              ? `${data.dailyEvolution.validClicks.deltaPct > 0 ? "+" : ""}${data.dailyEvolution.validClicks.deltaPct}%`
+              : undefined
+          }
           hint={`CTR ${formatRatioPercent(data.kpis.ctrRate, resolvedLocale)}`}
           href={data.hasAnyMetrics ? buildFunnelDrillHref("clicks") : undefined}
         />
         <KpiCard
           label={resolvedLocale === "en" ? "Registrations" : "Inscriptions"}
           value={formatMetricCount(data.kpis.registrations, resolvedLocale)}
+          badgeText={
+            data.dailyEvolution.registrations.deltaPct !== null
+              ? `${data.dailyEvolution.registrations.deltaPct > 0 ? "+" : ""}${data.dailyEvolution.registrations.deltaPct}%`
+              : undefined
+          }
           hint={`Clic → Insc. ${formatRatioPercent(data.kpis.clickToRegRate, resolvedLocale)}`}
           href={
             data.kpis.registrations !== null ? buildFunnelDrillHref("registrations") : undefined
@@ -147,6 +188,11 @@ export default async function AdminStatisticsPage({
         <KpiCard
           label={resolvedLocale === "en" ? "First deposits (FTD)" : "Premiers dépôts"}
           value={formatMetricCount(data.kpis.firstDeposits, resolvedLocale)}
+          badgeText={
+            data.dailyEvolution.firstDeposits.deltaPct !== null
+              ? `${data.dailyEvolution.firstDeposits.deltaPct > 0 ? "+" : ""}${data.dailyEvolution.firstDeposits.deltaPct}%`
+              : undefined
+          }
           hint={`Insc. → FTD ${formatRatioPercent(data.kpis.regToFtdRate, resolvedLocale)}`}
           href={
             data.kpis.firstDeposits !== null ? buildFunnelDrillHref("first_deposits") : undefined
@@ -193,6 +239,8 @@ export default async function AdminStatisticsPage({
           />
         </div>
       </div>
+
+      <DailyEvolutionCard evolution={data.dailyEvolution} locale={resolvedLocale} />
 
       <BreakdownTable
         byBookmaker={data.byBookmaker}

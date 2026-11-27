@@ -37,6 +37,7 @@ export const intelligenceFilterSchema = z.object({
   drillDimension: z.enum(DRILL_DIMENSIONS).optional(),
   drillId: z.string().trim().max(64).optional(),
   drillStep: z.enum(DRILL_STEPS).optional(),
+  demo: z.enum(["0", "1"]).optional(),
 });
 
 export type IntelligenceFilterInput = z.infer<typeof intelligenceFilterSchema>;

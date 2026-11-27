@@ -76,6 +76,37 @@ export interface IntelligenceFilterOptions {
   campaigns: Array<{ id: string; code: string; name: string }>;
 }
 
+export interface MetricDeltaSummary {
+  current: number;
+  previous: number;
+  deltaAbs: number;
+  deltaPct: number | null;
+  trend: "up" | "down" | "flat";
+}
+
+export interface DailyEvolutionSummary {
+  latestPeriod: string | null;
+  previousPeriod: string | null;
+  visitors: MetricDeltaSummary;
+  validClicks: MetricDeltaSummary;
+  registrations: MetricDeltaSummary;
+  firstDeposits: MetricDeltaSummary;
+}
+
+export interface ReferenceTotalsSnapshot {
+  uniqueVisitors: number;
+  validClicks: number;
+  registrations: number;
+  firstDeposits: number;
+  promoCopies: number;
+}
+
+export interface ReferenceDatasetMeta {
+  active: boolean;
+  realTotals: ReferenceTotalsSnapshot;
+  referenceTotals: ReferenceTotalsSnapshot;
+}
+
 export interface IntelligenceDashboardData {
   filters: {
     fromDate: string;
@@ -84,6 +115,7 @@ export interface IntelligenceDashboardData {
     bookmakerId: string;
     campaignId: string;
     groupBy: MetricGroupBy;
+    includeReference: boolean;
   };
   canExport: boolean;
   canAggregate: boolean;
@@ -92,6 +124,8 @@ export interface IntelligenceDashboardData {
   kpis: IntelligenceKpis;
   funnel: FunnelStageItem[];
   timeSeries: TimeSeriesPoint[];
+  dailyEvolution: DailyEvolutionSummary;
+  referenceMeta: ReferenceDatasetMeta;
   byBookmaker: BreakdownRow[];
   byCountry: BreakdownRow[];
   byCampaign: BreakdownRow[];
