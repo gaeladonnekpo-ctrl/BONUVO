@@ -1,12 +1,14 @@
 import { setRequestLocale } from "next-intl/server";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { BreakdownTable } from "@/components/admin/intelligence/BreakdownTable";
+import { DailyEvolutionCard } from "@/components/admin/intelligence/DailyEvolutionCard";
 import { DateRangePicker } from "@/components/admin/intelligence/DateRangePicker";
 import { DrilldownPanel } from "@/components/admin/intelligence/DrilldownPanel";
 import { FreshnessNote } from "@/components/admin/intelligence/FreshnessNote";
 import { FunnelChart } from "@/components/admin/intelligence/FunnelChart";
 import { KpiCountryBreakdownSection } from "@/components/admin/intelligence/KpiCountryBreakdownSection";
 import { TimeSeriesChart } from "@/components/admin/intelligence/TimeSeriesChart";
+import { formatMetricCount } from "@/modules/intelligence/metrics-math";
 import type { DrillDimension, DrillStep } from "@/modules/intelligence/schema";
 import { queryIntelligenceDashboard } from "@/modules/intelligence/stats-queries";
 import { requireAdminAccess } from "@/server/auth/guards";
@@ -41,6 +43,7 @@ export default async function AdminStatisticsPage({
     if (data.filters.bookmakerId) sp.set("bookmakerId", data.filters.bookmakerId);
     if (data.filters.campaignId) sp.set("campaignId", data.filters.campaignId);
     if (data.filters.groupBy !== "day") sp.set("groupBy", data.filters.groupBy);
+    if (!data.filters.includeReference) sp.set("demo", "0");
     return sp;
   }
 
@@ -109,14 +112,39 @@ export default async function AdminStatisticsPage({
         bookmakerId={data.filters.bookmakerId}
         campaignId={data.filters.campaignId}
         groupBy={data.filters.groupBy}
+        includeReference={data.filters.includeReference}
         options={data.filterOptions}
         locale={resolvedLocale}
       />
+
+      {data.referenceMeta.active ? (
+        <div className="rounded-xl border border-accent/40 bg-accent/5 p-3.5 text-xs">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="font-semibold text-accent">
+              {resolvedLocale === "en"
+                ? "Reference Partner Dataset Active (Blended with Real Metrics)"
+                : "Jeu de données de référence actif (Simulé + Données réelles combinées)"}
+            </span>
+            <span className="font-mono text-[11px] text-fg-muted">
+              {resolvedLocale === "en" ? "Reference:" : "Référence :"} 1 500 vis. · 998 clics · 900
+              insc. · 851 FTD · 1 200 codes |{" "}
+              {resolvedLocale === "en" ? "Real collected:" : "Réel collecté :"}{" "}
+              {formatMetricCount(data.referenceMeta.realTotals.uniqueVisitors, resolvedLocale)} vis.
+              · {formatMetricCount(data.referenceMeta.realTotals.validClicks, resolvedLocale)} clics
+              · {formatMetricCount(data.referenceMeta.realTotals.registrations, resolvedLocale)}{" "}
+              insc. ·{" "}
+              {formatMetricCount(data.referenceMeta.realTotals.firstDeposits, resolvedLocale)} FTD ·{" "}
+              {formatMetricCount(data.referenceMeta.realTotals.promoCopies, resolvedLocale)} codes
+            </span>
+          </div>
+        </div>
+      ) : null}
 
       <KpiCountryBreakdownSection
         kpis={data.kpis}
         hasAnyMetrics={data.hasAnyMetrics}
         kpiByCountry={data.kpiByCountry}
+        dailyEvolution={data.dailyEvolution}
         locale={resolvedLocale}
         drillHrefs={{
           clicks: data.hasAnyMetrics ? buildFunnelDrillHref("clicks") : undefined,
@@ -149,6 +177,8 @@ export default async function AdminStatisticsPage({
           />
         </div>
       </div>
+
+      <DailyEvolutionCard evolution={data.dailyEvolution} locale={resolvedLocale} />
 
       <BreakdownTable
         byBookmaker={data.byBookmaker}

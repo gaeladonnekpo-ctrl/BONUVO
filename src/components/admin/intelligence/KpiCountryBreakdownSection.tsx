@@ -9,7 +9,12 @@ import {
   formatMetricEur,
   formatRatioPercent,
 } from "@/modules/intelligence/metrics-math";
-import type { CountryKpiBreakdownRow, IntelligenceKpis } from "@/modules/intelligence/stats-types";
+import type {
+  CountryKpiBreakdownRow,
+  DailyEvolutionSummary,
+  IntelligenceKpis,
+  MetricDeltaSummary,
+} from "@/modules/intelligence/stats-types";
 
 export type KpiIndicatorKey =
   "visitors" | "clicks" | "registrations" | "first_deposits" | "commissions" | "promo_copies";
@@ -19,19 +24,29 @@ interface IndicatorCardDef {
   label: string;
   value: string;
   hint?: string;
+  badgeText?: string;
   drillHref?: string;
+}
+
+function formatDeltaBadge(delta: MetricDeltaSummary | undefined): string | undefined {
+  if (!delta || delta.deltaPct === null) return undefined;
+  const rounded = Number(delta.deltaPct.toFixed(1));
+  const sign = rounded > 0 ? "+" : "";
+  return `${sign}${rounded}%`;
 }
 
 export function KpiCountryBreakdownSection({
   kpis,
   hasAnyMetrics,
   kpiByCountry,
+  dailyEvolution,
   locale,
   drillHrefs,
 }: {
   kpis: IntelligenceKpis;
   hasAnyMetrics: boolean;
   kpiByCountry: readonly CountryKpiBreakdownRow[];
+  dailyEvolution?: DailyEvolutionSummary;
   locale: "fr" | "en";
   drillHrefs: {
     clicks?: string;
@@ -51,12 +66,14 @@ export function KpiCountryBreakdownSection({
       hint: hasAnyMetrics
         ? `${formatMetricCount(kpis.pageViews, locale)} ${isEn ? "page views" : "pages vues"}`
         : undefined,
+      badgeText: formatDeltaBadge(dailyEvolution?.visitors),
     },
     {
       key: "clicks",
       label: isEn ? "Valid clicks" : "Clics valides",
       value: hasAnyMetrics ? formatMetricCount(kpis.validClicks, locale) : "—",
       hint: `CTR ${formatRatioPercent(kpis.ctrRate, locale)}`,
+      badgeText: formatDeltaBadge(dailyEvolution?.validClicks),
       drillHref: drillHrefs.clicks,
     },
     {
@@ -64,6 +81,7 @@ export function KpiCountryBreakdownSection({
       label: isEn ? "Registrations" : "Inscriptions",
       value: formatMetricCount(kpis.registrations, locale),
       hint: `Clic → Insc. ${formatRatioPercent(kpis.clickToRegRate, locale)}`,
+      badgeText: formatDeltaBadge(dailyEvolution?.registrations),
       drillHref: drillHrefs.registrations,
     },
     {
@@ -71,6 +89,7 @@ export function KpiCountryBreakdownSection({
       label: isEn ? "First deposits (FTD)" : "Premiers dépôts",
       value: formatMetricCount(kpis.firstDeposits, locale),
       hint: `Insc. → FTD ${formatRatioPercent(kpis.regToFtdRate, locale)}`,
+      badgeText: formatDeltaBadge(dailyEvolution?.firstDeposits),
       drillHref: drillHrefs.firstDeposits,
     },
     {
@@ -174,10 +193,17 @@ export function KpiCountryBreakdownSection({
               >
                 <CardHeader className="flex flex-row items-center justify-between gap-2 pb-1.5">
                   <CardTitle className="text-xs font-medium text-fg-muted">{card.label}</CardTitle>
-                  <Globe
-                    className={`h-3.5 w-3.5 shrink-0 ${isSelected ? "text-accent" : "text-fg-muted"}`}
-                    aria-hidden="true"
-                  />
+                  <div className="flex items-center gap-1.5">
+                    {card.badgeText ? (
+                      <span className="rounded bg-surface-elevated px-1.5 py-0.5 text-[11px] font-semibold text-accent">
+                        {card.badgeText}
+                      </span>
+                    ) : null}
+                    <Globe
+                      className={`h-3.5 w-3.5 shrink-0 ${isSelected ? "text-accent" : "text-fg-muted"}`}
+                      aria-hidden="true"
+                    />
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-1">
                   <div className="font-display text-2xl font-bold tracking-tight text-fg sm:text-3xl">

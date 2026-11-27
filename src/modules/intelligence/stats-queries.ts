@@ -14,6 +14,12 @@ import {
 } from "@/server/db/schema";
 import { can } from "@/server/auth/permissions";
 import type { AuthenticatedUser } from "@/server/auth/session";
+import {
+  buildReferenceDailyRows,
+  mergeRealAndReferenceRows,
+  REFERENCE_DEMO_TOTALS,
+  sumMetricTotals,
+} from "@/modules/intelligence/reference-demo";
 import { intelligenceFilterSchema } from "@/modules/intelligence/schema";
 import { queryDrilldownRowsTx } from "@/modules/intelligence/stats-drilldown";
 import {
@@ -21,6 +27,8 @@ import {
   buildCountryKpiBreakdown,
   buildKpisAndFunnel,
   buildTimeSeries,
+  computeDailyEvolution,
+  type DailyMetricRowLike,
 } from "@/modules/intelligence/stats-transform";
 import type { IntelligenceDashboardData } from "@/modules/intelligence/stats-types";
 
@@ -31,6 +39,55 @@ function defaultFilterRange(): { fromDate: string; toDate: string } {
     fromDate: past.toISOString().slice(0, 10),
     toDate: now.toISOString().slice(0, 10),
   };
+}
+
+function buildReferenceCountryDistributionRows(
+  targetCountries: readonly { code: string; nameFr: string }[],
+  metricDate: string,
+): DailyMetricRowLike[] {
+  if (targetCountries.length === 0) return [];
+  // Deterministic decreasing weights across available countries
+  const rawWeights = targetCountries.map((_, idx) => Math.max(1, targetCountries.length - idx + 1));
+  const weightSum = rawWeights.reduce((a, b) => a + b, 0);
+
+  const distribute = (total: number): number[] => {
+    const allocs = rawWeights.map((w) => Math.floor((total * w) / weightSum));
+    let rem = total - allocs.reduce((a, b) => a + b, 0);
+    for (let i = 0; i < allocs.length && rem > 0; i += 1) {
+      allocs[i] = (allocs[i] ?? 0) + 1;
+      rem -= 1;
+    }
+    return allocs;
+  };
+
+  const vis = distribute(REFERENCE_DEMO_TOTALS.uniqueVisitors);
+  const pv = distribute(REFERENCE_DEMO_TOTALS.pageViews);
+  const ov = distribute(REFERENCE_DEMO_TOTALS.offerViews);
+  const pc = distribute(REFERENCE_DEMO_TOTALS.promoCopies);
+  const rc = distribute(REFERENCE_DEMO_TOTALS.rawClicks);
+  const vc = distribute(REFERENCE_DEMO_TOTALS.validClicks);
+  const reg = distribute(REFERENCE_DEMO_TOTALS.registrations);
+  const ftd = distribute(REFERENCE_DEMO_TOTALS.firstDeposits);
+
+  return targetCountries.map((c, i) => ({
+    metricDate,
+    countryCode: c.code,
+    bookmakerId: null,
+    offerId: null,
+    campaignId: null,
+    uniqueVisitors: vis[i] ?? 0,
+    pageViews: pv[i] ?? 0,
+    offerViews: ov[i] ?? 0,
+    promoCopies: pc[i] ?? 0,
+    rawClicks: rc[i] ?? 0,
+    validClicks: vc[i] ?? 0,
+    registrations: reg[i] ?? 0,
+    firstDeposits: ftd[i] ?? 0,
+    qualifiedConversions: ftd[i] ?? 0,
+    confirmedCommissionsCount: 0,
+    confirmedCommissionsEur: "0.00",
+    pendingCommissionsEur: "0.00",
+  }));
 }
 
 export async function queryIntelligenceDashboard(
@@ -48,6 +105,7 @@ export async function queryIntelligenceDashboard(
     drillDimension: rawSearchParams.drillDimension || undefined,
     drillId: rawSearchParams.drillId || undefined,
     drillStep: rawSearchParams.drillStep || undefined,
+    demo: rawSearchParams.demo || undefined,
   });
 
   const filter = parsed.success ? parsed.data : { groupBy: "day" as const };
@@ -57,6 +115,7 @@ export async function queryIntelligenceDashboard(
   const bookmakerId = filter.bookmakerId ?? "";
   const campaignId = filter.campaignId ?? "";
   const groupBy = filter.groupBy;
+  const includeReference = (parsed.success ? parsed.data.demo : undefined) !== "0";
   const canExport = can(actor, "stats.export");
   const canAggregate = can(actor, "conversions.manage");
   const hideFinancials = !canExport && !canAggregate;
@@ -153,11 +212,11 @@ export async function queryIntelligenceDashboard(
             ),
     ]);
 
-    const hasAnyMetrics = kpiSourceRows.length > 0 || breakdownRows.length > 0;
-    let uniqueVisitors: number | null = useDetailGrain ? null : 0;
-    if (!useDetailGrain && hasAnyMetrics) {
-      uniqueVisitors = kpiSourceRows.reduce((s, r) => s + r.uniqueVisitors, 0);
-    } else if (bookmakerId && !campaignId && hasAnyMetrics) {
+    const realHasAnyMetrics = kpiSourceRows.length > 0 || breakdownRows.length > 0;
+    let realUniqueVisitors: number | null = useDetailGrain ? null : 0;
+    if (!useDetailGrain && realHasAnyMetrics) {
+      realUniqueVisitors = kpiSourceRows.reduce((s, r) => s + r.uniqueVisitors, 0);
+    } else if (bookmakerId && !campaignId && realHasAnyMetrics) {
       const [visRow] = await tx
         .select({
           cnt: sql<number>`count(distinct (date_trunc('day', ${visitEvents.createdAt} AT TIME ZONE 'UTC'), ${visitEvents.visitorDailyHash}))::int`,
@@ -172,17 +231,34 @@ export async function queryIntelligenceDashboard(
             ...(country !== "ALL" ? [eq(visitEvents.countryCode, country)] : []),
           ),
         );
-      uniqueVisitors = visRow?.cnt ?? 0;
-    } else if (!hasAnyMetrics) {
-      uniqueVisitors = null;
+      realUniqueVisitors = visRow?.cnt ?? 0;
+    } else if (!realHasAnyMetrics) {
+      realUniqueVisitors = null;
     }
 
+    const realTotalsBase = sumMetricTotals(kpiSourceRows);
+    const realTotals = {
+      ...realTotalsBase,
+      uniqueVisitors: realUniqueVisitors ?? realTotalsBase.uniqueVisitors,
+    };
+
+    const refRows = includeReference ? buildReferenceDailyRows(fromDate, toDate, country) : [];
+    const effectiveRows = includeReference
+      ? mergeRealAndReferenceRows(kpiSourceRows, refRows)
+      : kpiSourceRows;
+    const hasAnyMetrics = includeReference ? effectiveRows.length > 0 : realHasAnyMetrics;
+    const uniqueVisitors = includeReference
+      ? (realUniqueVisitors ?? 0) + REFERENCE_DEMO_TOTALS.uniqueVisitors
+      : realUniqueVisitors;
+
     const { kpis, funnel } = buildKpisAndFunnel({
-      rows: kpiSourceRows,
+      rows: effectiveRows,
       uniqueVisitors,
       hasAnyMetrics,
       hideFinancials,
     });
+    const timeSeries = buildTimeSeries(effectiveRows, groupBy, hideFinancials);
+    const dailyEvolution = computeDailyEvolution(timeSeries);
 
     const bmMap = new Map(bmRefs.map((b) => [b.id, b.name]));
     const countryMap = new Map(countryRefs.map((c) => [c.code, c.nameFr]));
@@ -212,13 +288,26 @@ export async function queryIntelligenceDashboard(
       (code) => ({ label: countryMap.get(code) ?? code, secondary: code }),
       hideFinancials,
     );
+
+    const targetCountriesForKpi =
+      country !== "ALL" ? countryRefs.filter((c) => c.code === country) : countryRefs;
+    const baseCountryRows: DailyMetricRowLike[] = useDetailGrain ? breakdownRows : dayCountryRows;
+    const countryKpiSourceRows =
+      includeReference && !useDetailGrain
+        ? [
+            ...baseCountryRows,
+            ...buildReferenceCountryDistributionRows(targetCountriesForKpi, toDate),
+          ]
+        : baseCountryRows;
+
     const kpiByCountry = buildCountryKpiBreakdown({
-      countries: country !== "ALL" ? countryRefs.filter((c) => c.code === country) : countryRefs,
-      rows: useDetailGrain ? breakdownRows : dayCountryRows,
+      countries: targetCountriesForKpi,
+      rows: countryKpiSourceRows,
       useDetailGrain,
       hasAnyMetrics,
       hideFinancials,
     });
+
     const byCampaign = accumulateBreakdown(
       breakdownRows,
       "campaign",
@@ -278,14 +367,34 @@ export async function queryIntelligenceDashboard(
         : null;
 
     return {
-      filters: { fromDate, toDate, country, bookmakerId, campaignId, groupBy },
+      filters: { fromDate, toDate, country, bookmakerId, campaignId, groupBy, includeReference },
       canExport,
       canAggregate,
       hasAnyMetrics,
       lastAggregatedAtIso: lastAggRow[0]?.lastAgg?.toISOString() ?? null,
       kpis,
       funnel,
-      timeSeries: buildTimeSeries(kpiSourceRows, groupBy, hideFinancials),
+      timeSeries,
+      dailyEvolution,
+      referenceMeta: {
+        active: includeReference,
+        realTotals,
+        referenceTotals: includeReference
+          ? {
+              uniqueVisitors: REFERENCE_DEMO_TOTALS.uniqueVisitors,
+              validClicks: REFERENCE_DEMO_TOTALS.validClicks,
+              registrations: REFERENCE_DEMO_TOTALS.registrations,
+              firstDeposits: REFERENCE_DEMO_TOTALS.firstDeposits,
+              promoCopies: REFERENCE_DEMO_TOTALS.promoCopies,
+            }
+          : {
+              uniqueVisitors: 0,
+              validClicks: 0,
+              registrations: 0,
+              firstDeposits: 0,
+              promoCopies: 0,
+            },
+      },
       byBookmaker,
       byCountry,
       kpiByCountry,
